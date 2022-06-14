@@ -41,18 +41,17 @@ func readFlags() error {
 	flagSet.SetDescription(`TLSX is a tls data gathering toolkit`)
 
 	createGroup(flagSet, "input", "Input",
-		flagSet.StringSliceVarP(&options.Inputs, "inputs", "u", []string{}, "target url / list to grab", goflags.CommaSeparatedStringSliceOptions),
-		flagSet.StringVarP(&options.InputList, "list", "l", "", "target list to perform grabbing of"),
-		flagSet.IntVarP(&options.Port, "port", "p", 0, "port to grab tls data from"),
+		flagSet.StringSliceVarP(&options.Inputs, "l", "list", []string{}, "input host / list to grab", goflags.CommaSeparatedStringSliceOptions),
+		flagSet.IntVarP(&options.Port, "port", "p", 443, "port to grab tls data from"),
 	)
 
 	createGroup(flagSet, "configs", "Configurations",
-		flagSet.StringVar(&cfgFile, "config", "", "path to the nuclei configuration file"),
-		flagSet.IntVar(&options.Timeout, "timeout", 10, "time to wait for request in seconds"),
+		flagSet.StringVar(&cfgFile, "config", "", "tlsx flag configuration file"),
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept"),
-		flagSet.BoolVar(&options.Zcrypto, "zcrypto", false, "use zmap/zcrypto instead of crypto/tls"),
+		flagSet.BoolVar(&options.Zcrypto, "ztls", false, "use zmap/zcrypto instead of crypto/tls"),
+		flagSet.IntVar(&options.Timeout, "timeout", 10, "time to wait for request in seconds"),
 	)
 
 	createGroup(flagSet, "output", "Output",
