@@ -1,0 +1,53 @@
+package clients
+
+// Implementation is an interface implemented by TLSX client
+type Implementation interface {
+	// Connect connects to a host and grabs the response data
+	Connect(hostname, port string) (*Response, error)
+}
+
+// Options contains configuration options for tlsx client
+type Options struct {
+	// Timeout is the number of seconds to wait for connection
+	Timeout int
+	// Port is the port to make request to
+	Port int
+	// MinVersion is the minimum tls version that is acceptable
+	MinVersion string
+	// MaxVersion is the maximum tls version that is acceptable
+	MaxVersion string
+	// Zcrypto enables using of zmap/zcrypto library instead of crypto/tls
+	Zcrypto bool
+	// VerifyServerCertificate enables optional verification of server certificates
+	VerifyServerCertificate bool
+}
+
+// Response is the response returned for a TLS grab event
+type Response struct {
+	// Host is the host to make request to
+	Host string `json:"host"`
+	// Port is the port to make request to
+	Port string `json:"port"`
+	// Version is the tls version responded by the server
+	Version string `json:"version"`
+	// Leaf is the leaf certificate response
+	Leaf CertificateResponse `json:"leaf"`
+	// Chain is the chain of certificates
+	Chain []CertificateResponse `json:"chain,omitempty"`
+}
+
+// CertificateResponse is the response for a certificate
+type CertificateResponse struct {
+	// DNSNames is a list of DNS names for the certificate
+	DNSNames []string `json:"dns-names,omitempty"`
+	// Emails is a list of Emails for the certificate
+	Emails []string `json:"emails,omitempty"`
+	// IssuerCommonName is the common-name for the issuer
+	IssuerCommonName string `json:"issuer-common-name,omitempty"`
+	// SubjectCommonName is the common-name for the subject
+	SubjectCommonName string `json:"subject-common-name,omitempty"`
+	// IssuerOrganization is the organization for the issuer
+	IssuerOrganization []string `json:"issuer-organization,omitempty"`
+	// SubjectOrganization is the organization for the subject
+	SubjectOrganization []string `json:"subject-organization,omitempty"`
+}
