@@ -1,5 +1,7 @@
 package clients
 
+import "github.com/projectdiscovery/goflags"
+
 // Implementation is an interface implemented by TLSX client
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
@@ -8,8 +10,20 @@ type Implementation interface {
 
 // Options contains configuration options for tlsx client
 type Options struct {
+	// OutputFile is the file to write output to
+	OutputFile string
+	// Inputs is a list of inputs to process
+	Inputs goflags.StringSlice
+	// InputList is the list of inputs to process
+	InputList string
+	// Verbose enables display of verbose output
+	Verbose bool
+	// Version shows the version of the program
+	Version bool
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
+	// Concurrency is the number of concurrent threads to process
+	Concurrency int
 	// Port is the port to make request to
 	Port int
 	// MinVersion is the minimum tls version that is acceptable
