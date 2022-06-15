@@ -43,13 +43,13 @@ func readFlags() error {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`TLSX is a tls data gathering toolkit`)
 
-	createGroup(flagSet, "input", "Input",
+	flagSet.CreateGroup("input", "Input",
 		flagSet.StringSliceVarP(&options.Inputs, "inputs", "u", []string{}, "target url / list to grab", goflags.CommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.InputList, "list", "l", "", "target list to perform grabbing of"),
 		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "port to grab tls data from", goflags.FileCommaSeparatedStringSliceOptions),
 	)
 
-	createGroup(flagSet, "configs", "Configurations",
+	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.StringVar(&cfgFile, "config", "", "path to the tlsx configuration file"),
 		flagSet.IntVar(&options.Timeout, "timeout", 10, "time to wait for request in seconds"),
 		flagSet.BoolVar(&options.CertsOnly, "certs-only", false, "do early tls termination using ztls"),
@@ -59,7 +59,7 @@ func readFlags() error {
 		flagSet.BoolVar(&options.Zcrypto, "ztls", false, "use zmap/zcrypto instead of crypto/tls"),
 	)
 
-	createGroup(flagSet, "output", "Output",
+	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output to"),
 		flagSet.BoolVar(&options.JSON, "json", false, "display json format output"),
 		flagSet.BoolVarP(&options.Verbose, "verbose", "v", false, "display verbose output"),
@@ -76,11 +76,4 @@ func readFlags() error {
 		}
 	}
 	return nil
-}
-
-func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
-	flagSet.SetGroup(groupName, description)
-	for _, currentFlag := range flags {
-		currentFlag.Group(groupName)
-	}
 }

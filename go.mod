@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.9.1
+	github.com/projectdiscovery/fileutil v0.0.0-20220506114156-c4ab20801483
 	github.com/projectdiscovery/goflags v0.0.8
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/mapcidr v1.0.0
@@ -19,7 +20,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20210415162320-b38689ae3a2e // indirect
-	github.com/projectdiscovery/fileutil v0.0.0-20220506114156-c4ab20801483 // indirect
 	github.com/projectdiscovery/stringsutil v0.0.0-20220422150559-b54fb5dc6833 // indirect
 	github.com/weppos/publicsuffix-go v0.15.1-0.20220329081811-9a40b608a236 // indirect
 	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect

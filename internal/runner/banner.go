@@ -2,9 +2,9 @@ package runner
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 )
@@ -21,7 +21,7 @@ var version = "v0.0.1"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
-	r.hasStdin = hasStdin()
+	r.hasStdin = fileutil.HasStdin()
 
 	if !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
 		return errors.New("no input provided for enumeration")
@@ -37,18 +37,6 @@ func (r *Runner) validateOptions() error {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 	}
 	return nil
-}
-
-// hasStdin returns true if we have stdin input
-func hasStdin() bool {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
-	if fi.Mode()&os.ModeNamedPipe == 0 {
-		return false
-	}
-	return true
 }
 
 // showBanner is used to show the banner to the user
