@@ -41,27 +41,27 @@ func process() error {
 
 func readFlags() error {
 	flagSet := goflags.NewFlagSet()
-	flagSet.SetDescription(`TLSX is a tls data gathering toolkit`)
+	flagSet.SetDescription(`TLSX is a tls data gathering and analysis toolkit.`)
 
 	flagSet.CreateGroup("input", "Input",
-		flagSet.StringSliceVarP(&options.Inputs, "inputs", "u", []string{}, "target url / list to grab", goflags.CommaSeparatedStringSliceOptions),
-		flagSet.StringVarP(&options.InputList, "list", "l", "", "target list to perform grabbing of"),
-		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "port to grab tls data from", goflags.FileCommaSeparatedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.Inputs, "host", "u", []string{}, "target host to scan (-u INPUT1,INPUT2)", goflags.CommaSeparatedStringSliceOptions),
+		flagSet.StringVarP(&options.InputList, "list", "l", "", "target list to scan (-l INPUT_FILE)"),
+		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "target port to connect (default 443)", goflags.FileCommaSeparatedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.StringVar(&cfgFile, "config", "", "path to the tlsx configuration file"),
-		flagSet.IntVar(&options.Timeout, "timeout", 10, "time to wait for request in seconds"),
-		flagSet.BoolVar(&options.CertsOnly, "certs-only", false, "do early tls termination using ztls"),
+		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
-		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept"),
-		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept"),
-		flagSet.BoolVar(&options.Zcrypto, "ztls", false, "use zmap/zcrypto instead of crypto/tls"),
+		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (tls10,tls11,tls12,tls13)"),
+		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (tls10,tls11,tls12,tls13)"),
+		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
+		flagSet.BoolVar(&options.Zcrypto, "ztls", false, "use zmap/zcrypto instead of crypto/tls for tls connection"),
 	)
 
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output to"),
-		flagSet.BoolVar(&options.JSON, "json", false, "display json format output"),
+		flagSet.BoolVarP(&options.JSON, "json", "j", false, "display json format output"),
 		flagSet.BoolVarP(&options.Verbose, "verbose", "v", false, "display verbose output"),
 		flagSet.BoolVar(&options.Version, "version", false, "display project version"),
 	)
