@@ -1,6 +1,7 @@
 package output
 
 import (
+	"bytes"
 	"os"
 	"regexp"
 	"sync"
@@ -28,7 +29,7 @@ type StandardWriter struct {
 }
 
 // New returns a new output writer instance
-func New(file string) (Writer, error) {
+func New(json bool, file string) (Writer, error) {
 	var outputFile *fileWriter
 	if file != "" {
 		output, err := newFileOutputWriter(file)
@@ -38,6 +39,7 @@ func New(file string) (Writer, error) {
 		outputFile = output
 	}
 	writer := &StandardWriter{
+		json:        json,
 		outputFile:  outputFile,
 		outputMutex: &sync.Mutex{},
 	}
@@ -46,7 +48,14 @@ func New(file string) (Writer, error) {
 
 // Write writes the event to file and/or screen.
 func (w *StandardWriter) Write(event *clients.Response) error {
-	data, err := w.formatJSON(event)
+	var data []byte
+	var err error
+
+	if w.json {
+		data, err = w.formatJSON(event)
+	} else {
+		data, err = w.formatStandard(event)
+	}
 	if err != nil {
 		return errors.Wrap(err, "could not format output")
 	}
@@ -78,4 +87,14 @@ func (w *StandardWriter) Close() error {
 // formatJSON formats the output for json based formatting
 func (w *StandardWriter) formatJSON(output *clients.Response) ([]byte, error) {
 	return jsoniter.Marshal(output)
+}
+
+// formatStandard formats the output for standard client formatting
+func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error) {
+	builder := &bytes.Buffer{}
+	builder.WriteString(output.Host)
+	builder.WriteString(":")
+	builder.WriteString(output.Port)
+	outputdata := builder.Bytes()
+	return outputdata, nil
 }

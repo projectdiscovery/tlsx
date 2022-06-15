@@ -26,8 +26,9 @@ func (r *Runner) validateOptions() error {
 	if !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
 		return errors.New("no input provided for enumeration")
 	}
-	if r.options.Port == 0 {
-		return errors.New("port is required for input")
+	if len(r.options.Ports) == 0 {
+		// Append port 443 for default ports
+		r.options.Ports = append(r.options.Ports, "443")
 	}
 	if r.options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)

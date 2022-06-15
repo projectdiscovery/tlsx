@@ -20,12 +20,14 @@ type Options struct {
 	Verbose bool
 	// Version shows the version of the program
 	Version bool
+	// JSON enables display of JSON output
+	JSON bool
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
 	// Concurrency is the number of concurrent threads to process
 	Concurrency int
-	// Port is the port to make request to
-	Port int
+	// Port is the ports to make request to
+	Ports goflags.StringSlice
 	// MinVersion is the minimum tls version that is acceptable
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
