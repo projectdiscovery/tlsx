@@ -22,6 +22,8 @@ type Options struct {
 	Version bool
 	// JSON enables display of JSON output
 	JSON bool
+	// CertsOnly enables early SSL termination using ztls flag
+	CertsOnly bool
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
 	// Concurrency is the number of concurrent threads to process

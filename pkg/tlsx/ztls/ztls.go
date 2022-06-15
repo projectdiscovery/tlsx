@@ -42,6 +42,7 @@ func New(options *clients.Options) (*Client, error) {
 			Timeout: time.Duration(options.Timeout) * time.Second,
 		},
 		tlsConfig: &tls.Config{
+			CertsOnly:          options.CertsOnly,
 			MinVersion:         tls.VersionSSL30,
 			MaxVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: !options.VerifyServerCertificate,
@@ -70,34 +71,44 @@ func New(options *clients.Options) (*Client, error) {
 func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
 
-	conn, err := tls.DialWithDialer(c.dialer, "tcp", address, c.tlsConfig)
+	conn, err := c.dialer.Dial("tcp", address)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not dial address")
+		return nil, errors.Wrap(err, "could not connect to address")
 	}
 	defer conn.Close()
 
-	connectionState := conn.ConnectionState()
-	if len(connectionState.PeerCertificates) == 0 {
-		return nil, errors.New("no certificates returned by server")
+	tlsConn := tls.Client(conn, c.tlsConfig)
+	err = tlsConn.Handshake()
+	if err == tls.ErrCertsOnly {
+		err = nil
 	}
-	tlsVersion := versionToTLSVersionString[connectionState.Version]
+	if err != nil {
+		return nil, errors.Wrap(err, "could not do tls handshake")
+	}
+	hl := tlsConn.GetHandshakeLog()
 
-	leafCertificate := connectionState.PeerCertificates[0]
-	certificateChain := connectionState.PeerCertificates[1:]
-
+	tlsVersion := versionToTLSVersionString[uint16(hl.ServerHello.Version)]
 	response := &clients.Response{
 		Host:    hostname,
 		Port:    port,
 		Version: tlsVersion,
-		Leaf:    convertCertificateToResponse(leafCertificate),
+		Leaf:    convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 	}
-	for _, cert := range certificateChain {
-		response.Chain = append(response.Chain, convertCertificateToResponse(cert))
+	for _, cert := range hl.ServerCertificates.Chain {
+		response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
 	}
 	return response, nil
 }
 
+func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
+	parsed, _ := x509.ParseCertificate(cert.Raw)
+	return parsed
+}
+
 func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateResponse {
+	if cert == nil {
+		return clients.CertificateResponse{}
+	}
 	return clients.CertificateResponse{
 		DNSNames:            cert.DNSNames,
 		Emails:              cert.EmailAddresses,
