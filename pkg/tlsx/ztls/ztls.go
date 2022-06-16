@@ -5,6 +5,7 @@ package ztls
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -67,9 +68,24 @@ func New(options *clients.Options) (*Client, error) {
 	return c, nil
 }
 
+type timeoutError struct{}
+
+func (timeoutError) Error() string   { return "tls: DialWithDialer timed out" }
+func (timeoutError) Timeout() bool   { return true }
+func (timeoutError) Temporary() bool { return true }
+
 // Connect connects to a host and grabs the response data
 func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
+	timeout := c.dialer.Timeout
+
+	var errChannel chan error
+	if timeout != 0 {
+		errChannel = make(chan error, 2)
+		time.AfterFunc(timeout, func() {
+			errChannel <- timeoutError{}
+		})
+	}
 
 	conn, err := c.dialer.Dial("tcp", address)
 	if err != nil {
@@ -77,8 +93,28 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	}
 	defer conn.Close()
 
+	colonPos := strings.LastIndex(address, ":")
+	if colonPos == -1 {
+		colonPos = len(address)
+	}
+	hostnameValue := address[:colonPos]
+
+	config := c.tlsConfig
+	if config.ServerName == "" {
+		c := *config
+		c.ServerName = hostnameValue
+		config = &c
+	}
+
 	tlsConn := tls.Client(conn, c.tlsConfig)
-	err = tlsConn.Handshake()
+	if timeout == 0 {
+		err = tlsConn.Handshake()
+	} else {
+		go func() {
+			errChannel <- tlsConn.Handshake()
+		}()
+		err = <-errChannel
+	}
 	if err == tls.ErrCertsOnly {
 		err = nil
 	}
