@@ -81,15 +81,18 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		return nil, errors.New("no certificates returned by server")
 	}
 	tlsVersion := versionToTLSVersionString[connectionState.Version]
+	tlsCipher := tls.CipherSuiteName(connectionState.CipherSuite)
 
 	leafCertificate := connectionState.PeerCertificates[0]
 	certificateChain := connectionState.PeerCertificates[1:]
 
 	response := &clients.Response{
-		Host:    hostname,
-		Port:    port,
-		Version: tlsVersion,
-		Leaf:    convertCertificateToResponse(leafCertificate),
+		Timestamp: time.Now(),
+		Host:      hostname,
+		Port:      port,
+		Version:   tlsVersion,
+		Cipher:    tlsCipher,
+		Leaf:      convertCertificateToResponse(leafCertificate),
 	}
 	for _, cert := range certificateChain {
 		response.Chain = append(response.Chain, convertCertificateToResponse(cert))
@@ -99,11 +102,33 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 
 func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateResponse {
 	return clients.CertificateResponse{
-		DNSNames:            cert.DNSNames,
-		Emails:              cert.EmailAddresses,
-		IssuerCommonName:    cert.Issuer.CommonName,
-		IssuerOrganization:  cert.Issuer.Organization,
-		SubjectCommonName:   cert.Subject.CommonName,
-		SubjectOrganization: cert.Subject.Organization,
+		DNSNames:  cert.DNSNames,
+		Emails:    cert.EmailAddresses,
+		NotBefore: cert.NotAfter,
+		NotAfter:  cert.NotAfter,
+		Expired:   clients.IsExpired(cert.NotAfter),
+		Issuer: clients.CertificateDistinguishedName{
+			Country:            cert.Issuer.Country,
+			Organization:       cert.Issuer.Organization,
+			OrganizationalUnit: cert.Issuer.OrganizationalUnit,
+			Locality:           cert.Issuer.Locality,
+			Province:           cert.Issuer.Province,
+			StreetAddress:      cert.Issuer.StreetAddress,
+			CommonName:         cert.Issuer.CommonName,
+		},
+		Subject: clients.CertificateDistinguishedName{
+			Country:            cert.Subject.Country,
+			Organization:       cert.Subject.Organization,
+			OrganizationalUnit: cert.Subject.OrganizationalUnit,
+			Locality:           cert.Subject.Locality,
+			Province:           cert.Subject.Province,
+			StreetAddress:      cert.Subject.StreetAddress,
+			CommonName:         cert.Subject.CommonName,
+		},
+		FingerprintHash: clients.CertificateResponseFingerprintHash{
+			MD5:    clients.MD5Fingerprint(cert.Raw),
+			SHA1:   clients.SHA1Fingerprint(cert.Raw),
+			SHA256: clients.SHA256Fingerprint(cert.Raw),
+		},
 	}
 }
