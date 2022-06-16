@@ -47,6 +47,9 @@ func New(options *clients.Options) (*Client, error) {
 			InsecureSkipVerify: !options.VerifyServerCertificate,
 		},
 	}
+	if options.ServerName != "" {
+		c.tlsConfig.ServerName = options.ServerName
+	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
 		if !ok {
