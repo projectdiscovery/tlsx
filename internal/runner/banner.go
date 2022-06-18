@@ -30,7 +30,7 @@ func (r *Runner) validateOptions() error {
 		// Append port 443 for default ports
 		r.options.Ports = append(r.options.Ports, "443")
 	}
-	if r.options.CertsOnly && !r.options.Zcrypto {
+	if r.options.CertsOnly && r.options.ScanMode != "ztls" {
 		return errors.New("certs-only flag can only be used with ztls flag")
 	}
 	if r.options.Verbose {

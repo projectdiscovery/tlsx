@@ -34,8 +34,8 @@ type Options struct {
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
 	MaxVersion string
-	// Zcrypto enables using of zmap/zcrypto library instead of crypto/tls
-	Zcrypto bool
+	// ScanMode is the tls connection mode to use
+	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool
 }

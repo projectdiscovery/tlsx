@@ -2,6 +2,7 @@ package tlsx
 
 import (
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
@@ -19,9 +20,15 @@ func New(options *clients.Options) (*Service, error) {
 		options: options,
 	}
 	var err error
-	if options.Zcrypto {
+	switch options.ScanMode {
+	case "ztls":
 		service.client, err = ztls.New(options)
-	} else {
+	case "ctls":
+		service.client, err = tls.New(options)
+	case "auto":
+		service.client, err = auto.New(options)
+	default:
+		// Default mode is TLS
 		service.client, err = tls.New(options)
 	}
 	if err != nil {
