@@ -47,7 +47,10 @@ type Response struct {
 	// Port is the port to make request to
 	Port string `json:"port"`
 	// Version is the tls version responded by the server
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
+	// TLSConnection is the client used for TLS connection
+	// when ran using scan-mode auto.
+	TLSConnection string `json:"tls-connection,omitempty"`
 	// Leaf is the leaf certificate response
 	Leaf CertificateResponse `json:"leaf"`
 	// Chain is the chain of certificates

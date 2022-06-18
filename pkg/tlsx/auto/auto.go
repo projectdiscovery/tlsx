@@ -40,9 +40,11 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		if ztlsErr != nil {
 			return nil, ztlsErr
 		}
+		ztlsResponse.TLSConnection = "ztls"
 		stats.IncrementZcryptoTLSConnections()
 		return ztlsResponse, nil
 	}
+	response.TLSConnection = "ctls"
 	stats.IncrementCryptoTLSConnections()
 	return response, nil
 }
