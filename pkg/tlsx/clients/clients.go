@@ -31,6 +31,8 @@ type Options struct {
 	Version bool
 	// JSON enables display of JSON output
 	JSON bool
+	// TLSChain enables printing TLS chain information to output
+	TLSChain bool
 	// CertsOnly enables early SSL termination using ztls flag
 	CertsOnly bool
 	// Timeout is the number of seconds to wait for connection
@@ -61,16 +63,16 @@ type Response struct {
 	Cipher string `json:"cipher,omitempty"`
 	// Version is the tls version responded by the server
 	Version string `json:"version"`
-	// Leaf is the leaf certificate response
-	Leaf CertificateResponse `json:"leaf"`
+	// CertificateResponse is the leaf certificate embedded in json
+	CertificateResponse `json:",inline"`
 	// Chain is the chain of certificates
 	Chain []CertificateResponse `json:"chain,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
 type CertificateResponse struct {
-	// DNSNames is a list of DNS names for the certificate
-	DNSNames []string `json:"dns-names,omitempty"`
+	// SubjectAN is a list of Subject Alternative Names for the certificate
+	SubjectAN []string `json:"subject-an,omitempty"`
 	// Emails is a list of Emails for the certificate
 	Emails []string `json:"emails,omitempty"`
 	// NotBefore is the not-before time for certificate
@@ -79,10 +81,14 @@ type CertificateResponse struct {
 	NotAfter time.Time `json:"not-after,omitempty"`
 	// Expired specifies whether the certificate has expired
 	Expired bool `json:"expired,omitempty"`
-	// Issuer is the distinguished name for cert
-	Issuer CertificateDistinguishedName `json:"issuer,omitempty"`
-	// Subject is the distinguished name for cert
-	Subject CertificateDistinguishedName `json:"subject,omitempty"`
+	// IssuerDN is the distinguished name for cert
+	IssuerDN string `json:"issuer-dn,omitempty"`
+	// SubjectDN is the distinguished name for cert
+	SubjectDN string `json:"subject-dn,omitempty"`
+	// IssuerCN is the common name for cert
+	IssuerCN string `json:"issuer-cn,omitempty"`
+	// SubjectCN is the common name for cert
+	SubjectCN string `json:"subject-cn,omitempty"`
 	// FingerprintHash is the hashes for certificate
 	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint-hash"`
 }

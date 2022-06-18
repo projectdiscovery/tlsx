@@ -17,6 +17,7 @@ import (
 type Client struct {
 	dialer    *net.Dialer
 	tlsConfig *tls.Config
+	options   *clients.Options
 }
 
 // versionStringToTLSVersion converts tls version string to version
@@ -47,6 +48,7 @@ func New(options *clients.Options) (*Client, error) {
 			MaxVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: !options.VerifyServerCertificate,
 		},
+		options: options,
 	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
@@ -91,15 +93,17 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	tlsCipher := hl.ServerHello.CipherSuite.String()
 
 	response := &clients.Response{
-		Timestamp: time.Now(),
-		Host:      hostname,
-		Port:      port,
-		Version:   tlsVersion,
-		Cipher:    tlsCipher,
-		Leaf:      convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		Timestamp:           time.Now(),
+		Host:                hostname,
+		Port:                port,
+		Version:             tlsVersion,
+		Cipher:              tlsCipher,
+		CertificateResponse: convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 	}
-	for _, cert := range hl.ServerCertificates.Chain {
-		response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
+	if c.options.TLSChain {
+		for _, cert := range hl.ServerCertificates.Chain {
+			response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
+		}
 	}
 	return response, nil
 }
@@ -114,29 +118,15 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 		return clients.CertificateResponse{}
 	}
 	return clients.CertificateResponse{
-		DNSNames:  cert.DNSNames,
+		SubjectAN: cert.DNSNames,
 		Emails:    cert.EmailAddresses,
 		NotBefore: cert.NotAfter,
 		NotAfter:  cert.NotAfter,
 		Expired:   clients.IsExpired(cert.NotAfter),
-		Issuer: clients.CertificateDistinguishedName{
-			Country:            cert.Issuer.Country,
-			Organization:       cert.Issuer.Organization,
-			OrganizationalUnit: cert.Issuer.OrganizationalUnit,
-			Locality:           cert.Issuer.Locality,
-			Province:           cert.Issuer.Province,
-			StreetAddress:      cert.Issuer.StreetAddress,
-			CommonName:         cert.Issuer.CommonName,
-		},
-		Subject: clients.CertificateDistinguishedName{
-			Country:            cert.Subject.Country,
-			Organization:       cert.Subject.Organization,
-			OrganizationalUnit: cert.Subject.OrganizationalUnit,
-			Locality:           cert.Subject.Locality,
-			Province:           cert.Subject.Province,
-			StreetAddress:      cert.Subject.StreetAddress,
-			CommonName:         cert.Subject.CommonName,
-		},
+		IssuerDN:  cert.Issuer.String(),
+		IssuerCN:  cert.Issuer.CommonName,
+		SubjectDN: cert.Subject.String(),
+		SubjectCN: cert.Subject.CommonName,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),
