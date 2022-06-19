@@ -86,10 +86,11 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	certificateChain := connectionState.PeerCertificates[1:]
 
 	response := &clients.Response{
-		Host:    hostname,
-		Port:    port,
-		Version: tlsVersion,
-		Leaf:    convertCertificateToResponse(leafCertificate),
+		Host:          hostname,
+		Port:          port,
+		Version:       tlsVersion,
+		TLSConnection: "ctls",
+		Leaf:          convertCertificateToResponse(leafCertificate),
 	}
 	for _, cert := range certificateChain {
 		response.Chain = append(response.Chain, convertCertificateToResponse(cert))
