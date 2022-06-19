@@ -6,10 +6,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
 
@@ -46,6 +48,16 @@ func New(options *clients.Options) (*Client, error) {
 			MaxVersion:         tls.VersionTLS13,
 			InsecureSkipVerify: !options.VerifyServerCertificate,
 		},
+	}
+	if options.CACertificate != "" {
+		caCert, err := ioutil.ReadFile(options.CACertificate)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not read ca certificate")
+		}
+		certPool := x509.NewCertPool()
+		if !certPool.AppendCertsFromPEM(caCert) {
+			gologger.Error().Msgf("Could not append parsed ca-cert to config!")
+		}
 	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]

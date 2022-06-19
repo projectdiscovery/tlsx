@@ -30,6 +30,8 @@ type Options struct {
 	Concurrency int
 	// Port is the ports to make request to
 	Ports goflags.StringSlice
+	// CACertificate is the CA certificate for connection
+	CACertificate string
 	// MinVersion is the minimum tls version that is acceptable
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
