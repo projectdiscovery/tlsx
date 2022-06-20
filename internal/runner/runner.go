@@ -10,6 +10,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/tlsx/pkg/output"
+	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
@@ -78,6 +79,12 @@ func (r *Runner) Execute() error {
 
 	close(inputs)
 	wg.Wait()
+
+	// Print the stats if auto fallback mode is used
+	if r.options.ScanMode == "auto" {
+		gologger.Info().Msgf("Connections made using crypto/tls: %d", stats.LoadCryptoTLSConnections())
+		gologger.Info().Msgf("Connections made using zcrypto/tls: %d", stats.LoadZcryptoTLSConnections())
+	}
 	return nil
 }
 

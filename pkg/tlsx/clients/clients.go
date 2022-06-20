@@ -34,8 +34,8 @@ type Options struct {
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
 	MaxVersion string
-	// Zcrypto enables using of zmap/zcrypto library instead of crypto/tls
-	Zcrypto bool
+	// ScanMode is the tls connection mode to use
+	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool
 }
@@ -47,7 +47,10 @@ type Response struct {
 	// Port is the port to make request to
 	Port string `json:"port"`
 	// Version is the tls version responded by the server
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
+	// TLSConnection is the client used for TLS connection
+	// when ran using scan-mode auto.
+	TLSConnection string `json:"tls-connection,omitempty"`
 	// Leaf is the leaf certificate response
 	Leaf CertificateResponse `json:"leaf"`
 	// Chain is the chain of certificates

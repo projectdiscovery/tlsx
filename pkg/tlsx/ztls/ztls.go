@@ -125,10 +125,11 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 
 	tlsVersion := versionToTLSVersionString[uint16(hl.ServerHello.Version)]
 	response := &clients.Response{
-		Host:    hostname,
-		Port:    port,
-		Version: tlsVersion,
-		Leaf:    convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		Host:          hostname,
+		Port:          port,
+		Version:       tlsVersion,
+		TLSConnection: "ztls",
+		Leaf:          convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 	}
 	for _, cert := range hl.ServerCertificates.Chain {
 		response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
