@@ -25,6 +25,8 @@ type Options struct {
 	Inputs goflags.StringSlice
 	// InputList is the list of inputs to process
 	InputList string
+	// ServerName is the optional server-name for tls connection
+	ServerName string
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
@@ -45,8 +47,8 @@ type Options struct {
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
 	MaxVersion string
-	// Zcrypto enables using of zmap/zcrypto library instead of crypto/tls
-	Zcrypto bool
+	// ScanMode is the tls connection mode to use
+	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool
 }
@@ -65,6 +67,9 @@ type Response struct {
 	Version string `json:"version"`
 	// CertificateResponse is the leaf certificate embedded in json
 	CertificateResponse `json:",inline"`
+	// TLSConnection is the client used for TLS connection
+	// when ran using scan-mode auto.
+	TLSConnection string `json:"tls-connection,omitempty"`
 	// Chain is the chain of certificates
 	Chain []CertificateResponse `json:"chain,omitempty"`
 }

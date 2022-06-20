@@ -49,6 +49,9 @@ func New(options *clients.Options) (*Client, error) {
 		},
 		options: options,
 	}
+	if options.ServerName != "" {
+		c.tlsConfig.ServerName = options.ServerName
+	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
 		if !ok {
@@ -94,6 +97,7 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		Port:                port,
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
+		TLSConnection:       "ctls",
 		CertificateResponse: convertCertificateToResponse(leafCertificate),
 	}
 	if c.options.TLSChain {
