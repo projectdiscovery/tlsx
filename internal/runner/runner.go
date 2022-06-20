@@ -12,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/formatter"
+	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/tlsx/pkg/output"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
@@ -30,6 +32,13 @@ type Runner struct {
 
 // New creates a new runner from provided configuration options
 func New(options *clients.Options) (*Runner, error) {
+	// Disable coloring of log output if asked by user
+	if options.NoColor {
+		gologger.DefaultLogger.SetFormatter(formatter.NewCLI(true))
+	}
+	if options.Silent {
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
+	}
 	showBanner()
 
 	if options.Version {
@@ -55,7 +64,7 @@ func New(options *clients.Options) (*Runner, error) {
 	runner.fastDialer = fastDialer
 	runner.options.Fastdialer = fastDialer
 
-	outputWriter, err := output.New(options.JSON, options.OutputFile)
+	outputWriter, err := output.New(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create output writer")
 	}

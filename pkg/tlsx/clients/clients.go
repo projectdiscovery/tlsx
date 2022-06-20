@@ -41,6 +41,8 @@ type Options struct {
 	CertsOnly bool
 	// RespOnly displays TLS respones only in CLI output
 	RespOnly bool
+	// Silent enables silent output display
+	Silent bool
 	// NoColor disables coloring of CLI output
 	NoColor bool
 	// Timeout is the number of seconds to wait for connection
@@ -59,6 +61,25 @@ type Options struct {
 	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool
+
+	// Begin List of probes for tlsx
+
+	// SAN displays Subject Alternative Names
+	SAN bool
+	// CN displays Subject Common Name
+	CN bool
+	// SO displays Subject Organization Name
+	SO bool
+	// TLSVersion displays used TLS version
+	TLSVersion bool
+	// Cipher displays used cipher
+	Cipher bool
+	// Expired displays validity of TLS certificate
+	Expired bool
+	// SelfSigned displays if cert is self-signed
+	SelfSigned bool
+	// Hash is the hash to display for certificate
+	Hash string
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer

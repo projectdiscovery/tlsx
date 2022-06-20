@@ -61,9 +61,23 @@ func readFlags() error {
 		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto)"),
 	)
 
+	flagSet.CreateGroup("probes", "Probes",
+		flagSet.BoolVar(&options.SAN, "san", false, "display subject alternative names"),
+		flagSet.BoolVar(&options.CN, "cn", false, "display subject common names"),
+		flagSet.BoolVar(&options.SO, "so", false, "display subject organization name"),
+		flagSet.BoolVarP(&options.TLSVersion, "tls-version", "tv", false, "display used tls version"),
+		flagSet.BoolVar(&options.Cipher, "cipher", false, "display used cipher"),
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
+		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
+	)
+
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output to"),
 		flagSet.BoolVarP(&options.JSON, "json", "j", false, "display json format output"),
+		flagSet.BoolVarP(&options.RespOnly, "resp-only", "ro", false, "display tls response only"),
+		flagSet.BoolVar(&options.Silent, "silent", false, "display silent output"),
+		flagSet.BoolVarP(&options.NoColor, "no-color", "nc", false, "disable colors in cli output"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "display tls chain in json output"),
 		flagSet.BoolVarP(&options.Verbose, "verbose", "v", false, "display verbose output"),
 		flagSet.BoolVar(&options.Version, "version", false, "display project version"),

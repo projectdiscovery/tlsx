@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"os"
 	"regexp"
+	"strings"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
@@ -24,24 +26,29 @@ var decolorizerRegex = regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
 // StandardWriter is an standard output writer structure
 type StandardWriter struct {
 	json        bool
+	aurora      aurora.Aurora
 	outputFile  *fileWriter
 	outputMutex *sync.Mutex
+
+	options *clients.Options
 }
 
 // New returns a new output writer instance
-func New(json bool, file string) (Writer, error) {
+func New(options *clients.Options) (Writer, error) {
 	var outputFile *fileWriter
-	if file != "" {
-		output, err := newFileOutputWriter(file)
+	if options.OutputFile != "" {
+		output, err := newFileOutputWriter(options.OutputFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not create output file")
 		}
 		outputFile = output
 	}
 	writer := &StandardWriter{
-		json:        json,
+		json:        options.JSON,
+		aurora:      aurora.NewAurora(!options.NoColor),
 		outputFile:  outputFile,
 		outputMutex: &sync.Mutex{},
+		options:     options,
 	}
 	return writer, nil
 }
@@ -59,6 +66,8 @@ func (w *StandardWriter) Write(event *clients.Response) error {
 	if err != nil {
 		return errors.Wrap(err, "could not format output")
 	}
+	data = bytes.TrimSuffix(data, []byte("\n")) // remove last newline
+
 	w.outputMutex.Lock()
 	defer w.outputMutex.Unlock()
 
@@ -92,9 +101,97 @@ func (w *StandardWriter) formatJSON(output *clients.Response) ([]byte, error) {
 // formatStandard formats the output for standard client formatting
 func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error) {
 	builder := &bytes.Buffer{}
-	builder.WriteString(output.Host)
-	builder.WriteString(":")
-	builder.WriteString(output.Port)
+
+	if !w.options.RespOnly {
+		builder.WriteString(output.Host)
+		builder.WriteString(":")
+		builder.WriteString(output.Port)
+	}
+	outputPrefix := builder.String()
+	builder.Reset()
+
+	cert := output.CertificateResponse
+
+	var names []string
+	if w.options.SAN {
+		names = append(names, cert.SubjectAN...)
+	}
+	if w.options.CN {
+		names = append(names, cert.SubjectCN)
+	}
+	uniqueNames := uniqueNormalizeCertNames(names)
+	if len(uniqueNames) > 0 {
+		for _, name := range uniqueNames {
+			if w.options.RespOnly {
+				builder.WriteString(name)
+				builder.WriteString("\n")
+			} else {
+				builder.WriteString(outputPrefix)
+				builder.WriteString(" [")
+				builder.WriteString(name)
+				builder.WriteString("]\n")
+			}
+		}
+	}
+
+	if !w.options.SAN && !w.options.CN {
+		builder.WriteString(outputPrefix)
+	}
+	if w.options.SO && len(cert.SubjectOrg) > 0 {
+		builder.WriteString(" [")
+		builder.WriteString(strings.Join(cert.SubjectOrg, ","))
+		builder.WriteString("]")
+	}
+	if w.options.TLSVersion {
+		builder.WriteString(" [")
+		builder.WriteString(strings.ToUpper(output.Version))
+		builder.WriteString("]")
+	}
+	if w.options.Cipher {
+		builder.WriteString(" [")
+		builder.WriteString(output.Cipher)
+		builder.WriteString("]")
+	}
+	if w.options.Expired && cert.Expired {
+		builder.WriteString(" [")
+		builder.WriteString(aurora.Red("expired").String())
+		builder.WriteString("]")
+	}
+	if w.options.SelfSigned && cert.SelfSigned {
+		builder.WriteString(" [")
+		builder.WriteString(aurora.Green("self-signed").String())
+		builder.WriteString("]")
+	}
+	if w.options.Hash != "" {
+		builder.WriteString(" [")
+		switch w.options.Hash {
+		case "md5":
+			builder.WriteString(cert.FingerprintHash.MD5)
+		case "sha1":
+			builder.WriteString(cert.FingerprintHash.SHA1)
+		case "sha256":
+			builder.WriteString(cert.FingerprintHash.SHA256)
+		}
+		builder.WriteString("]")
+	}
+
 	outputdata := builder.Bytes()
 	return outputdata, nil
+}
+
+// uniqueNormalizeCertNames removes *. wildcards from cert alternative
+// names and uniques them returning a final list.
+func uniqueNormalizeCertNames(names []string) []string {
+	unique := make(map[string]struct{})
+	for _, value := range names {
+		replaced := strings.Replace(value, "*.", "", -1)
+		if _, ok := unique[replaced]; !ok {
+			unique[replaced] = struct{}{}
+		}
+	}
+	results := make([]string, 0, len(unique))
+	for v := range unique {
+		results = append(results, v)
+	}
+	return results
 }
