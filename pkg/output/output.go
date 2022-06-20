@@ -128,7 +128,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 			} else {
 				builder.WriteString(outputPrefix)
 				builder.WriteString(" [")
-				builder.WriteString(name)
+				builder.WriteString(w.aurora.Cyan(name).String())
 				builder.WriteString("]\n")
 			}
 		}
@@ -139,40 +139,46 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	}
 	if w.options.SO && len(cert.SubjectOrg) > 0 {
 		builder.WriteString(" [")
-		builder.WriteString(aurora.Cyan(strings.Join(cert.SubjectOrg, ",")).String())
+		builder.WriteString(w.aurora.BrightYellow(strings.Join(cert.SubjectOrg, ",")).String())
 		builder.WriteString("]")
 	}
 	if w.options.TLSVersion {
 		builder.WriteString(" [")
-		builder.WriteString(aurora.Blue(strings.ToUpper(output.Version)).String())
+		builder.WriteString(w.aurora.Blue(strings.ToUpper(output.Version)).String())
 		builder.WriteString("]")
 	}
 	if w.options.Cipher {
 		builder.WriteString(" [")
-		builder.WriteString(aurora.Green(output.Cipher).String())
+		builder.WriteString(w.aurora.Green(output.Cipher).String())
 		builder.WriteString("]")
 	}
 	if w.options.Expired && cert.Expired {
 		builder.WriteString(" [")
-		builder.WriteString(aurora.Red("expired").String())
+		builder.WriteString(w.aurora.Red("expired").String())
 		builder.WriteString("]")
 	}
 	if w.options.SelfSigned && cert.SelfSigned {
 		builder.WriteString(" [")
-		builder.WriteString(aurora.Yellow("self-signed").String())
+		builder.WriteString(w.aurora.Yellow("self-signed").String())
 		builder.WriteString("]")
 	}
 	if w.options.Hash != "" {
-		builder.WriteString(" [")
-		switch w.options.Hash {
-		case "md5":
-			builder.WriteString(cert.FingerprintHash.MD5)
-		case "sha1":
-			builder.WriteString(cert.FingerprintHash.SHA1)
-		case "sha256":
-			builder.WriteString(cert.FingerprintHash.SHA256)
+		hashOpts := strings.Split(w.options.Hash, ",")
+
+		for _, hash := range hashOpts {
+			var value string
+			builder.WriteString(" [")
+			switch hash {
+			case "md5":
+				value = cert.FingerprintHash.MD5
+			case "sha1":
+				value = cert.FingerprintHash.SHA1
+			case "sha256":
+				value = cert.FingerprintHash.SHA256
+			}
+			builder.WriteString(w.aurora.BrightMagenta(value).String())
+			builder.WriteString("]")
 		}
-		builder.WriteString("]")
 	}
 
 	outputdata := builder.Bytes()
