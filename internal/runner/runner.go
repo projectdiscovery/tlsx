@@ -7,8 +7,10 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/tlsx/pkg/output"
@@ -22,6 +24,7 @@ type Runner struct {
 	hasStdin     bool
 	outputWriter output.Writer
 	tlsxService  *tlsx.Service
+	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
 }
 
@@ -37,6 +40,20 @@ func New(options *clients.Options) (*Runner, error) {
 	if err := runner.validateOptions(); err != nil {
 		return nil, errors.Wrap(err, "could not validate options")
 	}
+
+	dialerOpts := fastdialer.DefaultOptions
+	dialerOpts.WithDialerHistory = true
+	dialerOpts.MaxRetries = 2
+	dialerOpts.DialerTimeout = time.Duration(options.Timeout) * time.Second
+	if len(options.Resolvers) > 0 {
+		dialerOpts.BaseResolvers = options.Resolvers
+	}
+	fastDialer, err := fastdialer.NewDialer(dialerOpts)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create dialer")
+	}
+	runner.fastDialer = fastDialer
+	runner.options.Fastdialer = fastDialer
 
 	outputWriter, err := output.New(options.JSON, options.OutputFile)
 	if err != nil {
@@ -54,7 +71,9 @@ func New(options *clients.Options) (*Runner, error) {
 
 // Close closes the runner releasing resources
 func (r *Runner) Close() error {
-	return r.outputWriter.Close()
+	_ = r.outputWriter.Close()
+	r.fastDialer.Close()
+	return nil
 }
 
 type taskInput struct {

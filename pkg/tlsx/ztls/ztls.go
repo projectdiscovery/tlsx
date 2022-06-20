@@ -3,12 +3,14 @@
 package ztls
 
 import (
+	"context"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
@@ -16,8 +18,9 @@ import (
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
-	dialer    *net.Dialer
+	dialer    *fastdialer.Dialer
 	tlsConfig *tls.Config
+	options   *clients.Options
 }
 
 // versionStringToTLSVersion converts tls version string to version
@@ -39,15 +42,14 @@ var versionToTLSVersionString = map[uint16]string{
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
 	c := &Client{
-		dialer: &net.Dialer{
-			Timeout: time.Duration(options.Timeout) * time.Second,
-		},
+		dialer: options.Fastdialer,
 		tlsConfig: &tls.Config{
 			CertsOnly:          options.CertsOnly,
 			MinVersion:         tls.VersionSSL30,
 			MaxVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: !options.VerifyServerCertificate,
 		},
+		options: options,
 	}
 	if options.ServerName != "" {
 		c.tlsConfig.ServerName = options.ServerName
@@ -80,7 +82,7 @@ func (timeoutError) Temporary() bool { return true }
 // Connect connects to a host and grabs the response data
 func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
-	timeout := c.dialer.Timeout
+	timeout := time.Duration(c.options.Timeout) * time.Second
 
 	var errChannel chan error
 	if timeout != 0 {
@@ -90,26 +92,23 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		})
 	}
 
-	conn, err := c.dialer.Dial("tcp", address)
+	conn, err := c.dialer.Dial(context.Background(), "tcp", address)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to address")
 	}
-	defer conn.Close()
-
-	colonPos := strings.LastIndex(address, ":")
-	if colonPos == -1 {
-		colonPos = len(address)
+	var resolvedIP string
+	if !iputil.IsIP(hostname) {
+		resolvedIP = c.dialer.GetDialedIP(hostname)
 	}
-	hostnameValue := address[:colonPos]
 
 	config := c.tlsConfig
 	if config.ServerName == "" {
 		c := *config
-		c.ServerName = hostnameValue
+		c.ServerName = hostname
 		config = &c
 	}
 
-	tlsConn := tls.Client(conn, c.tlsConfig)
+	tlsConn := tls.Client(conn, config)
 	if timeout == 0 {
 		err = tlsConn.Handshake()
 	} else {
@@ -122,20 +121,30 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		err = nil
 	}
 	if err != nil {
+		conn.Close()
 		return nil, errors.Wrap(err, "could not do tls handshake")
 	}
+	defer tlsConn.Close()
+
 	hl := tlsConn.GetHandshakeLog()
 
 	tlsVersion := versionToTLSVersionString[uint16(hl.ServerHello.Version)]
+	tlsCipher := hl.ServerHello.CipherSuite.String()
+
 	response := &clients.Response{
-		Host:          hostname,
-		Port:          port,
-		Version:       tlsVersion,
-		TLSConnection: "ztls",
-		Leaf:          convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		Timestamp:           time.Now(),
+		Host:                hostname,
+		IP:                  resolvedIP,
+		Port:                port,
+		Version:             tlsVersion,
+		Cipher:              tlsCipher,
+		TLSConnection:       "ztls",
+		CertificateResponse: convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 	}
-	for _, cert := range hl.ServerCertificates.Chain {
-		response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
+	if c.options.TLSChain {
+		for _, cert := range hl.ServerCertificates.Chain {
+			response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
+		}
 	}
 	return response, nil
 }
@@ -150,11 +159,21 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 		return clients.CertificateResponse{}
 	}
 	return clients.CertificateResponse{
-		DNSNames:            cert.DNSNames,
-		Emails:              cert.EmailAddresses,
-		IssuerCommonName:    cert.Issuer.CommonName,
-		IssuerOrganization:  cert.Issuer.Organization,
-		SubjectCommonName:   cert.Subject.CommonName,
-		SubjectOrganization: cert.Subject.Organization,
+		SubjectAN:  cert.DNSNames,
+		Emails:     cert.EmailAddresses,
+		NotBefore:  cert.NotAfter,
+		NotAfter:   cert.NotAfter,
+		Expired:    clients.IsExpired(cert.NotAfter),
+		IssuerDN:   cert.Issuer.String(),
+		IssuerCN:   cert.Issuer.CommonName,
+		IssuerOrg:  cert.Issuer.Organization,
+		SubjectDN:  cert.Subject.String(),
+		SubjectCN:  cert.Subject.CommonName,
+		SubjectOrg: cert.Subject.Organization,
+		FingerprintHash: clients.CertificateResponseFingerprintHash{
+			MD5:    clients.MD5Fingerprint(cert.Raw),
+			SHA1:   clients.SHA1Fingerprint(cert.Raw),
+			SHA256: clients.SHA256Fingerprint(cert.Raw),
+		},
 	}
 }
