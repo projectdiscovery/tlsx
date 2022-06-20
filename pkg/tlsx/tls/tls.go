@@ -80,20 +80,20 @@ func New(options *clients.Options) (*Client, error) {
 func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
 
-	rawConn, err := c.dialer.Dial(context.Background(), "tcp", address)
+	ctx := context.Background()
+	if c.options.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
+		defer cancel()
+	}
+
+	rawConn, err := c.dialer.Dial(ctx, "tcp", address)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not dial address")
 	}
 	var resolvedIP string
 	if !iputil.IsIP(hostname) {
 		resolvedIP = c.dialer.GetDialedIP(hostname)
-	}
-
-	ctx := context.Background()
-	if c.options.Timeout != 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
-		defer cancel()
 	}
 
 	config := c.tlsConfig

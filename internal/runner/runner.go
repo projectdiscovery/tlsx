@@ -52,7 +52,7 @@ func New(options *clients.Options) (*Runner, error) {
 
 	dialerOpts := fastdialer.DefaultOptions
 	dialerOpts.WithDialerHistory = true
-	dialerOpts.MaxRetries = 1
+	dialerOpts.MaxRetries = 3
 	dialerOpts.DialerTimeout = time.Duration(options.Timeout) * time.Second
 	if len(options.Resolvers) > 0 {
 		dialerOpts.BaseResolvers = options.Resolvers
@@ -129,7 +129,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 		response, err := r.tlsxService.Connect(task.host, task.port)
 		if err != nil {
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
-			return
+			continue
 		}
 		if response != nil {
 			if err := r.outputWriter.Write(response); err != nil {
