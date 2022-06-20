@@ -59,10 +59,10 @@ type Response struct {
 	Host string `json:"host"`
 	// Port is the port to make request to
 	Port string `json:"port"`
+	// Version is the tls version responded by the server
+	Version string `json:"tls-version"`
 	// Cipher is the cipher for the tls request
 	Cipher string `json:"cipher,omitempty"`
-	// Version is the tls version responded by the server
-	Version string `json:"version"`
 	// CertificateResponse is the leaf certificate embedded in json
 	CertificateResponse `json:",inline"`
 	// Chain is the chain of certificates
@@ -71,24 +71,24 @@ type Response struct {
 
 // CertificateResponse is the response for a certificate
 type CertificateResponse struct {
-	// SubjectAN is a list of Subject Alternative Names for the certificate
-	SubjectAN []string `json:"subject-an,omitempty"`
-	// Emails is a list of Emails for the certificate
-	Emails []string `json:"emails,omitempty"`
+	// Expired specifies whether the certificate has expired
+	Expired bool `json:"expired"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not-before,omitempty"`
 	// NotAfter is the not-after time for certificate
 	NotAfter time.Time `json:"not-after,omitempty"`
-	// Expired specifies whether the certificate has expired
-	Expired bool `json:"expired,omitempty"`
-	// IssuerDN is the distinguished name for cert
-	IssuerDN string `json:"issuer-dn,omitempty"`
 	// SubjectDN is the distinguished name for cert
 	SubjectDN string `json:"subject-dn,omitempty"`
-	// IssuerCN is the common name for cert
-	IssuerCN string `json:"issuer-cn,omitempty"`
 	// SubjectCN is the common name for cert
 	SubjectCN string `json:"subject-cn,omitempty"`
+	// SubjectAN is a list of Subject Alternative Names for the certificate
+	SubjectAN []string `json:"subject-an,omitempty"`
+	// IssuerDN is the distinguished name for cert
+	IssuerDN string `json:"issuer-dn,omitempty"`
+	// IssuerCN is the common name for cert
+	IssuerCN string `json:"issuer-cn,omitempty"`
+	// Emails is a list of Emails for the certificate
+	Emails []string `json:"emails,omitempty"`
 	// FingerprintHash is the hashes for certificate
 	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint-hash"`
 }
