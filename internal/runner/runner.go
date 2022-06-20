@@ -3,7 +3,9 @@ package runner
 import (
 	"bufio"
 	"net"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -156,8 +158,36 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 		}
 	} else {
 		// Normal input
-		for _, port := range r.options.Ports {
-			inputs <- taskInput{host: input, port: port}
+		host, customPort := r.getHostPortFromInput(input)
+		if customPort == "" {
+			for _, port := range r.options.Ports {
+				inputs <- taskInput{host: host, port: port}
+			}
+		} else {
+			inputs <- taskInput{host: host, port: customPort}
 		}
 	}
+}
+
+// getHostPortFromInput returns host and optionally port from input.
+// If no ports are found, port field is left blank and user specified ports
+// are used.
+func (r *Runner) getHostPortFromInput(input string) (string, string) {
+	host := input
+
+	if strings.Contains(input, "://") {
+		if parsed, err := url.Parse(input); err != nil {
+			return "", ""
+		} else {
+			host = parsed.Host
+		}
+	}
+	if strings.Contains(host, ":") {
+		if host, port, err := net.SplitHostPort(host); err != nil {
+			return "", ""
+		} else {
+			return host, port
+		}
+	}
+	return host, ""
 }
