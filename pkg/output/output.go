@@ -139,17 +139,17 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	}
 	if w.options.SO && len(cert.SubjectOrg) > 0 {
 		builder.WriteString(" [")
-		builder.WriteString(strings.Join(cert.SubjectOrg, ","))
+		builder.WriteString(aurora.Cyan(strings.Join(cert.SubjectOrg, ",")).String())
 		builder.WriteString("]")
 	}
 	if w.options.TLSVersion {
 		builder.WriteString(" [")
-		builder.WriteString(strings.ToUpper(output.Version))
+		builder.WriteString(aurora.Blue(strings.ToUpper(output.Version)).String())
 		builder.WriteString("]")
 	}
 	if w.options.Cipher {
 		builder.WriteString(" [")
-		builder.WriteString(output.Cipher)
+		builder.WriteString(aurora.Green(output.Cipher).String())
 		builder.WriteString("]")
 	}
 	if w.options.Expired && cert.Expired {
@@ -159,7 +159,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	}
 	if w.options.SelfSigned && cert.SelfSigned {
 		builder.WriteString(" [")
-		builder.WriteString(aurora.Green("self-signed").String())
+		builder.WriteString(aurora.Yellow("self-signed").String())
 		builder.WriteString("]")
 	}
 	if w.options.Hash != "" {
