@@ -16,6 +16,8 @@ type Options struct {
 	Inputs goflags.StringSlice
 	// InputList is the list of inputs to process
 	InputList string
+	// ServerName is the optional server-name for tls connection
+	ServerName string
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
