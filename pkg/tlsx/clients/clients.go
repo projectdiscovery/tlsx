@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
 )
 
@@ -47,10 +48,15 @@ type Options struct {
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
 	MaxVersion string
+	// Resolvers contains custom resolvers for the tlsx client
+	Resolvers goflags.StringSlice
 	// ScanMode is the tls connection mode to use
 	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool
+
+	// Fastdialer is a fastdialer dialer instance
+	Fastdialer *fastdialer.Dialer
 }
 
 // Response is the response returned for a TLS grab event
@@ -59,6 +65,8 @@ type Response struct {
 	Timestamp time.Time `json:"timestamp,omitempty"`
 	// Host is the host to make request to
 	Host string `json:"host"`
+	// IP is the IP address the request was made to
+	IP string `json:"ip"`
 	// Port is the port to make request to
 	Port string `json:"port"`
 	// Version is the tls version responded by the server

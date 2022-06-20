@@ -54,6 +54,7 @@ func (c *Client) isResponseInvalid(resp *clients.Response) bool {
 	if resp == nil {
 		return true
 	}
+	// case for invalid google resolving response
 	if strings.EqualFold(resp.CertificateResponse.IssuerCN, "invalid2.invalid") {
 		return true
 	}

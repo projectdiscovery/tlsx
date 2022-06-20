@@ -3,6 +3,7 @@
 package tls
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -10,12 +11,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
-	dialer    *net.Dialer
+	dialer    *fastdialer.Dialer
 	tlsConfig *tls.Config
 	options   *clients.Options
 }
@@ -39,9 +42,7 @@ var versionToTLSVersionString = map[uint16]string{
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
 	c := &Client{
-		dialer: &net.Dialer{
-			Timeout: time.Duration(options.Timeout) * time.Second,
-		},
+		dialer: options.Fastdialer,
 		tlsConfig: &tls.Config{
 			MinVersion:         tls.VersionTLS10,
 			MaxVersion:         tls.VersionTLS13,
@@ -49,6 +50,7 @@ func New(options *clients.Options) (*Client, error) {
 		},
 		options: options,
 	}
+
 	if options.ServerName != "" {
 		c.tlsConfig.ServerName = options.ServerName
 	}
@@ -75,9 +77,33 @@ func New(options *clients.Options) (*Client, error) {
 func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
 
-	conn, err := tls.DialWithDialer(c.dialer, "tcp", address, c.tlsConfig)
+	rawConn, err := c.dialer.Dial(context.Background(), "tcp", address)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not dial address")
+	}
+	var resolvedIP string
+	if !iputil.IsIP(hostname) {
+		resolvedIP = c.dialer.GetDialedIP(hostname)
+	}
+
+	ctx := context.Background()
+	if c.options.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
+		defer cancel()
+	}
+
+	config := c.tlsConfig
+	if config.ServerName == "" {
+		c := *config
+		c.ServerName = hostname
+		config = &c
+	}
+
+	conn := tls.Client(rawConn, c.tlsConfig)
+	if err := conn.HandshakeContext(ctx); err != nil {
+		rawConn.Close()
+		return nil, errors.Wrap(err, "could not do handshake")
 	}
 	defer conn.Close()
 
@@ -94,6 +120,7 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	response := &clients.Response{
 		Timestamp:           time.Now(),
 		Host:                hostname,
+		IP:                  resolvedIP,
 		Port:                port,
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
