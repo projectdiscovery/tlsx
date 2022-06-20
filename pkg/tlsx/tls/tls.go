@@ -14,6 +14,9 @@ import (
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+
+	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
+	zpkix "github.com/zmap/zcrypto/x509/pkix"
 )
 
 // Client is a TLS grabbing client using crypto/tls
@@ -136,15 +139,13 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 }
 
 func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateResponse {
-	return clients.CertificateResponse{
+	response := clients.CertificateResponse{
 		SubjectAN: cert.DNSNames,
 		Emails:    cert.EmailAddresses,
 		NotBefore: cert.NotAfter,
 		NotAfter:  cert.NotAfter,
 		Expired:   clients.IsExpired(cert.NotAfter),
-		IssuerDN:  cert.Issuer.String(),
 		IssuerCN:  cert.Issuer.CommonName,
-		SubjectDN: cert.Subject.String(),
 		SubjectCN: cert.Subject.CommonName,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
@@ -152,4 +153,31 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 			SHA256: clients.SHA256Fingerprint(cert.Raw),
 		},
 	}
+	if parsedIssuer := parseASN1DNSequenceWithZpkix(cert.RawIssuer); parsedIssuer != "" {
+		response.IssuerDN = parsedIssuer
+	} else {
+		response.IssuerDN = cert.Issuer.String()
+	}
+	if parsedSubject := parseASN1DNSequenceWithZpkix(cert.RawSubject); parsedSubject != "" {
+		response.SubjectDN = parsedSubject
+	} else {
+		response.SubjectDN = cert.Subject.String()
+	}
+	return response
+}
+
+// parseASN1DNSequenceWithZpkix tries to parse raw ASN1 of a TLS DN with zpkix and
+// zasn1 library which includes additional information not parsed by go standard
+// library which may be useful.
+//
+// If the parsing fails, a blank string is returned and the standard library data is used.
+func parseASN1DNSequenceWithZpkix(data []byte) string {
+	var rdnSequence zpkix.RDNSequence
+	var subject zpkix.Name
+	if _, err := zasn1.Unmarshal(data, &rdnSequence); err != nil {
+		return ""
+	}
+	subject.FillFromRDNSequence(&rdnSequence)
+	dnParsedString := subject.String()
+	return dnParsedString
 }
