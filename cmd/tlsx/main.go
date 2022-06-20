@@ -53,12 +53,13 @@ func readFlags() error {
 		flagSet.StringVar(&cfgFile, "config", "", "path to the tlsx configuration file"),
 		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
+		flagSet.StringVar(&options.ServerName, "sni", "", "tls sni hostname to use"),
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
-		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (tls10,tls11,tls12,tls13)"),
-		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (tls10,tls11,tls12,tls13)"),
+		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
+		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
 		flagSet.BoolVar(&options.VerifyServerCertificate, "verify-cert", false, "enable verification of server certificate"),
-		flagSet.BoolVar(&options.Zcrypto, "ztls", false, "use zmap/zcrypto instead of crypto/tls for tls connection"),
+		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto)"),
 	)
 
 	flagSet.CreateGroup("output", "Output",

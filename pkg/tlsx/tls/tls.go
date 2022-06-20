@@ -58,6 +58,9 @@ func New(options *clients.Options) (*Client, error) {
 		if !certPool.AppendCertsFromPEM(caCert) {
 			gologger.Error().Msgf("Could not append parsed ca-cert to config!")
 		}
+
+	if options.ServerName != "" {
+		c.tlsConfig.ServerName = options.ServerName
 	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
@@ -98,10 +101,11 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	certificateChain := connectionState.PeerCertificates[1:]
 
 	response := &clients.Response{
-		Host:    hostname,
-		Port:    port,
-		Version: tlsVersion,
-		Leaf:    convertCertificateToResponse(leafCertificate),
+		Host:          hostname,
+		Port:          port,
+		Version:       tlsVersion,
+		TLSConnection: "ctls",
+		Leaf:          convertCertificateToResponse(leafCertificate),
 	}
 	for _, cert := range certificateChain {
 		response.Chain = append(response.Chain, convertCertificateToResponse(cert))

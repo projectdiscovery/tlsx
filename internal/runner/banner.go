@@ -30,8 +30,8 @@ func (r *Runner) validateOptions() error {
 		// Append port 443 for default ports
 		r.options.Ports = append(r.options.Ports, "443")
 	}
-	if r.options.CertsOnly && !r.options.Zcrypto {
-		return errors.New("certs-only flag can only be used with ztls flag")
+	if r.options.CertsOnly && r.options.ScanMode != "ztls" {
+		r.options.ScanMode = "ztls" // force setting ztls when using certs-only
 	}
 	if r.options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
