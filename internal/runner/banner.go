@@ -27,8 +27,8 @@ func (r *Runner) validateOptions() error {
 	if r.options.RespOnly && probeSpecified {
 		return errors.New("resp-only flag can only be used with san and cn flags")
 	}
-	if r.options.SAN && probeSpecified {
-		return errors.New("san flag cannot be used with other probes")
+	if (r.options.SAN || r.options.CN) && probeSpecified {
+		return errors.New("san or cn flag cannot be used with other probes")
 	}
 	if !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
 		return errors.New("no input provided for enumeration")
