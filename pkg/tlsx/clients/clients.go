@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -38,6 +39,10 @@ type Options struct {
 	TLSChain bool
 	// CertsOnly enables early SSL termination using ztls flag
 	CertsOnly bool
+	// RespOnly displays TLS respones only in CLI output
+	RespOnly bool
+	// NoColor disables coloring of CLI output
+	NoColor bool
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
 	// Concurrency is the number of concurrent threads to process
@@ -85,7 +90,9 @@ type Response struct {
 // CertificateResponse is the response for a certificate
 type CertificateResponse struct {
 	// Expired specifies whether the certificate has expired
-	Expired bool `json:"expired"`
+	Expired bool `json:"expired,omitempty"`
+	// SelfSigned returns true if the certificate is self-signed
+	SelfSigned bool `json:"self-signed,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not-before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -124,11 +131,11 @@ type CertificateDistinguishedName struct {
 // CertificateResponseFingerprintHash is a response for fingerprint hash of cert
 type CertificateResponseFingerprintHash struct {
 	// MD5 is the md5 hash for certificate
-	MD5 string `json:"md5"`
+	MD5 string `json:"md5,omitempty"`
 	// SHA1 is the sha1 hash for certificate
-	SHA1 string `json:"sha1"`
+	SHA1 string `json:"sha1,omitempty"`
 	// SHA256 is the sha256 hash for certificate
-	SHA256 string `json:"sha256"`
+	SHA256 string `json:"sha256,omitempty"`
 }
 
 // MD5Fingerprint creates a fingerprint of data using the MD5 hash algorithm.
@@ -154,4 +161,14 @@ func SHA256Fingerprint(data []byte) string {
 func IsExpired(notAfter time.Time) bool {
 	remaining := math.Round(time.Since(notAfter).Seconds())
 	return remaining > 0
+}
+
+// IsSelfSigned returns true if the certificate is self-signed
+//
+// follows: https://security.stackexchange.com/a/162263/250973
+func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
+	if len(authorityKeyID) == 0 || bytes.Equal(authorityKeyID, subjectKeyID) {
+		return true
+	}
+	return false
 }

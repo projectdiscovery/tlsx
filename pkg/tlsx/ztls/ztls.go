@@ -164,6 +164,7 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 		NotBefore:  cert.NotAfter,
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
+		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
 		IssuerDN:   cert.Issuer.String(),
 		IssuerCN:   cert.Issuer.CommonName,
 		IssuerOrg:  cert.Issuer.Organization,
