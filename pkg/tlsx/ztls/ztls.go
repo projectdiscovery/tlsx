@@ -159,15 +159,17 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 		return clients.CertificateResponse{}
 	}
 	return clients.CertificateResponse{
-		SubjectAN: cert.DNSNames,
-		Emails:    cert.EmailAddresses,
-		NotBefore: cert.NotAfter,
-		NotAfter:  cert.NotAfter,
-		Expired:   clients.IsExpired(cert.NotAfter),
-		IssuerDN:  cert.Issuer.String(),
-		IssuerCN:  cert.Issuer.CommonName,
-		SubjectDN: cert.Subject.String(),
-		SubjectCN: cert.Subject.CommonName,
+		SubjectAN:  cert.DNSNames,
+		Emails:     cert.EmailAddresses,
+		NotBefore:  cert.NotAfter,
+		NotAfter:   cert.NotAfter,
+		Expired:    clients.IsExpired(cert.NotAfter),
+		IssuerDN:   cert.Issuer.String(),
+		IssuerCN:   cert.Issuer.CommonName,
+		IssuerOrg:  cert.Issuer.Organization,
+		SubjectDN:  cert.Subject.String(),
+		SubjectCN:  cert.Subject.CommonName,
+		SubjectOrg: cert.Subject.Organization,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),

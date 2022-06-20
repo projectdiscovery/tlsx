@@ -140,13 +140,15 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 
 func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateResponse {
 	response := clients.CertificateResponse{
-		SubjectAN: cert.DNSNames,
-		Emails:    cert.EmailAddresses,
-		NotBefore: cert.NotAfter,
-		NotAfter:  cert.NotAfter,
-		Expired:   clients.IsExpired(cert.NotAfter),
-		IssuerCN:  cert.Issuer.CommonName,
-		SubjectCN: cert.Subject.CommonName,
+		SubjectAN:  cert.DNSNames,
+		Emails:     cert.EmailAddresses,
+		NotBefore:  cert.NotAfter,
+		NotAfter:   cert.NotAfter,
+		Expired:    clients.IsExpired(cert.NotAfter),
+		IssuerCN:   cert.Issuer.CommonName,
+		IssuerOrg:  cert.Issuer.Organization,
+		SubjectCN:  cert.Subject.CommonName,
+		SubjectOrg: cert.Subject.Organization,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),

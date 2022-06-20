@@ -94,12 +94,16 @@ type CertificateResponse struct {
 	SubjectDN string `json:"subject-dn,omitempty"`
 	// SubjectCN is the common name for cert
 	SubjectCN string `json:"subject-cn,omitempty"`
+	// SubjectOrg is the organization for cert subject
+	SubjectOrg []string `json:"subject-org,omitempty"`
 	// SubjectAN is a list of Subject Alternative Names for the certificate
 	SubjectAN []string `json:"subject-an,omitempty"`
 	// IssuerDN is the distinguished name for cert
 	IssuerDN string `json:"issuer-dn,omitempty"`
 	// IssuerCN is the common name for cert
 	IssuerCN string `json:"issuer-cn,omitempty"`
+	// IssuerOrg is the organization for cert issuer
+	IssuerOrg []string `json:"issuer-org,omitempty"`
 	// Emails is a list of Emails for the certificate
 	Emails []string `json:"emails,omitempty"`
 	// FingerprintHash is the hashes for certificate
