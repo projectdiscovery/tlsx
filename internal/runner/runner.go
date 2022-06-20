@@ -52,7 +52,7 @@ func New(options *clients.Options) (*Runner, error) {
 
 	dialerOpts := fastdialer.DefaultOptions
 	dialerOpts.WithDialerHistory = true
-	dialerOpts.MaxRetries = 2
+	dialerOpts.MaxRetries = 1
 	dialerOpts.DialerTimeout = time.Duration(options.Timeout) * time.Second
 	if len(options.Resolvers) > 0 {
 		dialerOpts.BaseResolvers = options.Resolvers
