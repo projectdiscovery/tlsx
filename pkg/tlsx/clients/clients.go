@@ -66,7 +66,7 @@ type Response struct {
 	// Host is the host to make request to
 	Host string `json:"host"`
 	// IP is the IP address the request was made to
-	IP string `json:"ip"`
+	IP string `json:"ip,omitempty"`
 	// Port is the port to make request to
 	Port string `json:"port"`
 	// Version is the tls version responded by the server

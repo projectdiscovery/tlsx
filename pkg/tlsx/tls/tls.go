@@ -103,7 +103,7 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		config = &c
 	}
 
-	conn := tls.Client(rawConn, c.tlsConfig)
+	conn := tls.Client(rawConn, config)
 	if err := conn.HandshakeContext(ctx); err != nil {
 		rawConn.Close()
 		return nil, errors.Wrap(err, "could not do handshake")

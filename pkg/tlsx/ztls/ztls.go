@@ -108,7 +108,7 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		config = &c
 	}
 
-	tlsConn := tls.Client(conn, c.tlsConfig)
+	tlsConn := tls.Client(conn, config)
 	if timeout == 0 {
 		err = tlsConn.Handshake()
 	} else {
