@@ -53,6 +53,7 @@ func readFlags() error {
 		flagSet.StringVar(&cfgFile, "config", "", "path to the tlsx configuration file"),
 		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
+		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.ServerName, "sni", "", "tls sni hostname to use"),
 		flagSet.StringSliceVarP(&options.Resolvers, "resolvers", "r", nil, "list of resolvers to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),

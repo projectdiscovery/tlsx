@@ -57,6 +57,13 @@ func New(options *clients.Options) (*Client, error) {
 	if options.ServerName != "" {
 		c.tlsConfig.ServerName = options.ServerName
 	}
+	if len(options.Ciphers) > 0 {
+		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
+			return nil, errors.Wrap(err, "could not get ztls ciphers")
+		} else {
+			c.tlsConfig.CipherSuites = customCiphers
+		}
+	}
 	if options.CACertificate != "" {
 		caCert, err := ioutil.ReadFile(options.CACertificate)
 		if err != nil {
