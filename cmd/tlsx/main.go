@@ -52,6 +52,7 @@ func readFlags() error {
 	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.StringVar(&cfgFile, "config", "", "path to the tlsx configuration file"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
+		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (tls10,tls11,tls12,tls13)"),

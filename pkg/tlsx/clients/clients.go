@@ -30,6 +30,8 @@ type Options struct {
 	Concurrency int
 	// Port is the ports to make request to
 	Ports goflags.StringSlice
+	// Ciphers is a list of custom ciphers to use for connection
+	Ciphers goflags.StringSlice
 	// MinVersion is the minimum tls version that is acceptable
 	MinVersion string
 	// MaxVersion is the maximum tls version that is acceptable
