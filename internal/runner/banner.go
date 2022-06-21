@@ -30,7 +30,10 @@ func (r *Runner) validateOptions() error {
 		// Append port 443 for default ports
 		r.options.Ports = append(r.options.Ports, "443")
 	}
-	if r.options.CertsOnly && r.options.ScanMode != "ztls" {
+	if r.options.CertsOnly && !(r.options.ScanMode == "ztls" || r.options.ScanMode == "auto") {
+		return errors.New("scan-mode must be ztls or auto with certs-only option")
+	}
+	if r.options.CertsOnly {
 		r.options.ScanMode = "ztls" // force setting ztls when using certs-only
 	}
 	if r.options.Verbose {
