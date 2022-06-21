@@ -131,9 +131,9 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 
 	config := c.tlsConfig
 	if config.ServerName == "" {
-		c := *config
+		c := config.Clone()
 		c.ServerName = hostname
-		config = &c
+		config = c
 	}
 
 	tlsConn := tls.Client(conn, config)

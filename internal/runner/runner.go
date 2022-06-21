@@ -105,7 +105,9 @@ func (r *Runner) Execute() error {
 		go r.processInputElementWorker(inputs, wg)
 	}
 	// Queue inputs
-	r.normalizeAndQueueInputs(inputs)
+	if err := r.normalizeAndQueueInputs(inputs); err != nil {
+		gologger.Error().Msgf("Could not normalize queue inputs: %s", err)
+	}
 
 	close(inputs)
 	wg.Wait()
