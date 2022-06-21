@@ -3,13 +3,18 @@ package runner
 import (
 	"bufio"
 	"net"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/tlsx/pkg/output"
+	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
@@ -19,6 +24,7 @@ type Runner struct {
 	hasStdin     bool
 	outputWriter output.Writer
 	tlsxService  *tlsx.Service
+	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
 }
 
@@ -34,6 +40,20 @@ func New(options *clients.Options) (*Runner, error) {
 	if err := runner.validateOptions(); err != nil {
 		return nil, errors.Wrap(err, "could not validate options")
 	}
+
+	dialerOpts := fastdialer.DefaultOptions
+	dialerOpts.WithDialerHistory = true
+	dialerOpts.MaxRetries = 2
+	dialerOpts.DialerTimeout = time.Duration(options.Timeout) * time.Second
+	if len(options.Resolvers) > 0 {
+		dialerOpts.BaseResolvers = options.Resolvers
+	}
+	fastDialer, err := fastdialer.NewDialer(dialerOpts)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create dialer")
+	}
+	runner.fastDialer = fastDialer
+	runner.options.Fastdialer = fastDialer
 
 	outputWriter, err := output.New(options.JSON, options.OutputFile)
 	if err != nil {
@@ -51,7 +71,9 @@ func New(options *clients.Options) (*Runner, error) {
 
 // Close closes the runner releasing resources
 func (r *Runner) Close() error {
-	return r.outputWriter.Close()
+	_ = r.outputWriter.Close()
+	r.fastDialer.Close()
+	return nil
 }
 
 type taskInput struct {
@@ -78,6 +100,12 @@ func (r *Runner) Execute() error {
 
 	close(inputs)
 	wg.Wait()
+
+	// Print the stats if auto fallback mode is used
+	if r.options.ScanMode == "auto" {
+		gologger.Info().Msgf("Connections made using crypto/tls: %d", stats.LoadCryptoTLSConnections())
+		gologger.Info().Msgf("Connections made using zcrypto/tls: %d", stats.LoadZcryptoTLSConnections())
+	}
 	return nil
 }
 
@@ -149,8 +177,36 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 		}
 	} else {
 		// Normal input
-		for _, port := range r.options.Ports {
-			inputs <- taskInput{host: input, port: port}
+		host, customPort := r.getHostPortFromInput(input)
+		if customPort == "" {
+			for _, port := range r.options.Ports {
+				inputs <- taskInput{host: host, port: port}
+			}
+		} else {
+			inputs <- taskInput{host: host, port: customPort}
 		}
 	}
+}
+
+// getHostPortFromInput returns host and optionally port from input.
+// If no ports are found, port field is left blank and user specified ports
+// are used.
+func (r *Runner) getHostPortFromInput(input string) (string, string) {
+	host := input
+
+	if strings.Contains(input, "://") {
+		if parsed, err := url.Parse(input); err != nil {
+			return "", ""
+		} else {
+			host = parsed.Host
+		}
+	}
+	if strings.Contains(host, ":") {
+		if host, port, err := net.SplitHostPort(host); err != nil {
+			return "", ""
+		} else {
+			return host, port
+		}
+	}
+	return host, ""
 }
