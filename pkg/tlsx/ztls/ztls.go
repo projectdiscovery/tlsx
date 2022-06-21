@@ -66,7 +66,7 @@ func New(options *clients.Options) (*Client, error) {
 		if !certPool.AppendCertsFromPEM(caCert) {
 			gologger.Error().Msgf("Could not append parsed ca-cert to config!")
 		}
-		c.tlsConfig.ClientCAs = certPool
+		c.tlsConfig.RootCAs = certPool
 	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
