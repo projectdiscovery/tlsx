@@ -70,9 +70,6 @@ func New(options *clients.Options) (*Client, error) {
 		}
 		c.tlsConfig.ClientCAs = certPool
 	}
-	if options.ServerName != "" {
-		c.tlsConfig.ServerName = options.ServerName
-	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
 		if !ok {

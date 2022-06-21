@@ -53,6 +53,7 @@ func New(options *clients.Options) (*Client, error) {
 		},
 		options: options,
 	}
+
 	if options.ServerName != "" {
 		c.tlsConfig.ServerName = options.ServerName
 	}
@@ -66,10 +67,6 @@ func New(options *clients.Options) (*Client, error) {
 			gologger.Error().Msgf("Could not append parsed ca-cert to config!")
 		}
 		c.tlsConfig.ClientCAs = certPool
-	}
-
-	if options.ServerName != "" {
-		c.tlsConfig.ServerName = options.ServerName
 	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
