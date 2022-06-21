@@ -18,21 +18,25 @@
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
   <a href="#running-tlsx">Running tlsx</a> •
-  <a href="#-notes">Notes</a> •
   <a href="https://discord.gg/projectdiscovery">Join Discord</a>
 </p>
 
 
-A fast and configurable TLS grabber focused on TLS based data collection.
+A fast and configurable TLS grabber focused on TLS based **data collection and analysis**.
 
 
 # Features
 
- - Fast And fully configurable tls connection
- - Multiple mode for TLS Connection
- - Auto fallback connection for older TLS version
- - HOST, IP and CIDR range as input support
- - STD IN/OUT and TXT/JSON output support
+ - Fast And fully configurable TLS Connection
+ - Multiple **Modes for TLS Connection**
+ - Multiple **TLS probes**
+ - **Auto TLS Fallback** for older TLS version
+ - **Pre Handshake** TLS connection (early termination)
+ - Customizable **Cipher / SNI / TLS** selection
+ - **TLS Misconfigurations**
+ - **HOST, IP, URL** and **CIDR** input
+ - STD **IN/OUT** and **TXT/JSON** output
+
 
 ## Installation
 
@@ -44,7 +48,7 @@ go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest
 
 ## Usage
 
-```sh
+```console
 tlsx -h
 ```
 
@@ -58,40 +62,109 @@ Flags:
 INPUT:
    -u, -host string[]  target host to scan (-u INPUT1,INPUT2)
    -l, -list string    target list to scan (-l INPUT_FILE)
-   -p, -port string[]  target port to connect (default 443)
+   -p, -port string[]  target port to connect (-p INPUT1,INPUT2,INPUT_FILE) (default 443)
+
+SCAN-MODE:
+   -sm, -scan-mode string   tls connection mode to use (ctls, ztls, auto) (default ctls)
+   -ps, -pre-handshake      enable pre-handshake tls connection (early termination) using ztls
+
+PROBES:
+   -san               display subject alternative names
+   -cn                display subject common names
+   -so                display subject organization name
+   -tv, -tls-version  display used tls version
+   -cipher            display used cipher
+   -hash string       display certificate fingerprint hashes (md5,sha1,sha256)
+   -ex, -expired      display validity status of certificate
+   -ss, -self-signed  display status of self-signed certificate
 
 CONFIGURATIONS:
-   -config string        path to the tlsx configuration file
-   -timeout int          tls connection timeout in seconds (default 5)
-   -c, -concurrency int  number of concurrent threads to process (default 300)
-   -min-version string   minimum tls version to accept (tls10,tls11,tls12,tls13)
-   -max-version string   maximum tls version to accept (tls10,tls11,tls12,tls13)
-   -ps, -pre-handshake   enable pre-handshake tls connection (early termination) using ztls
-   -ztls                 use zmap/zcrypto instead of crypto/tls for tls connection
+   -config string           tlsx flag configuration file
+   -r, -resolvers string[]  list of resolvers to use
+   -sni string              tls sni hostname to use
+   -min-version string      minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
+   -max-version string      maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
+   -tc, -tls-chain          include certificate chain in json output
+
+OPTIMIZATIONS:
+   -c, -concurrency int     number of concurrent threads to process (default 300)
+   -timeout int             tls connection timeout in seconds (default 5)
 
 OUTPUT:
    -o, -output string  file to write output to
-   -j, -json           display json format output
+   -j, -json           display json line format output
+   -ro, -resp-only     display tls response only
+   -silent             display silent output
    -v, -verbose        display verbose output
    -version            display project version
+   -nc, -no-color      disable colors in cli output
 ```
 
 ## Running tlsx
 
-### TLS Probe
+### Input for tlsx
 
-This will run the tool against all the dns host and ip in `hosts.txt` and returns host/ip that accepts tls connection on port 443
+**Host Input:**
+
+**tlsx** requires **ip** to make TLS connection and accept multiple format as listed below:
+
+```bash
+173.0.84.0/24 # CIDR input
+93.184.216.34 # IP input
+example.com # DNS input
+example.com:443 # DNS input with port
+https://example.com:443 # URL input port
+```
+
+Input host can be provided using `-host / -u` flag, and multiple values can be provided using comma-separated input, similarly **file** input is supported using `-list / -l` flag.
+
+Example of comma-separated host input: 
+
+```console
+$ tlsx -u 93.184.216.34,example.com,example.com:443,https://example.com:443 -silent
+```
+
+Example of file based host input:
+
+```console
+$ tlsx -list host_list.txt
+```
+
+**Port Input:**
+
+**tlsx** connects on port **443** by default, which can be customized using `-port / -p` flag, single or multiple ports can be specified using comma sperated input or new line delimited file containing list of ports to connect. 
+
+
+Example of comma-separated port input: 
 
 ```
-echo 173.0.84.0/24 | ./tlsx 
+$ tlsx -u hackerone.com -p 443,8443
+```
+
+Example of file based port input: 
+
+```
+$ tlsx -u hackerone.com -p port_list.txt
+```
+
+**Note:**
+
+> When input host contains port in it, for example, `8.8.8.8:443` or `hackerone.com:8443`, port specified with host will be used to make TLS connection instead of default or one provided using `-port / -p` flag.
+
+### TLS Probe (default run)
+
+This will run the tool against the given CIDR range and returns hosts that accepts tls connection on port 443.
+
+```console
+$ echo 173.0.84.0/24 | tlsx 
   
 
   _____ _    _____  __
  |_   _| |  / __\ \/ /
    | | | |__\__ \>  < 
-   |_| |____|___/_/\_\	v0.0.1
+   |_| |____|___/_/\_\  v0.0.1
 
-		projectdiscovery.io
+    projectdiscovery.io
 
 [WRN] Use with caution. You are responsible for your actions.
 [WRN] Developers assume no liability and are not responsible for any misuse or damage.
@@ -105,17 +178,258 @@ echo 173.0.84.0/24 | ./tlsx
 173.0.84.72:443
 ```
 
+### SAN/CN Probe
+
+TLS certificate contains DNS names under **subject alternative name** and **common name** field that can be extracted using `-san`, `-cn` flag.
+
+```console
+$ echo 173.0.84.0/24 | tlsx -san -cn -silent
+
+173.0.84.104:443 [uptycspay.paypal.com]
+173.0.84.104:443 [api-3t.paypal.com]
+173.0.84.104:443 [api-m.paypal.com]
+173.0.84.104:443 [payflowpro.paypal.com]
+173.0.84.104:443 [pointofsale-s.paypal.com]
+173.0.84.104:443 [svcs.paypal.com]
+173.0.84.104:443 [uptycsven.paypal.com]
+173.0.84.104:443 [api-aa.paypal.com]
+173.0.84.104:443 [pilot-payflowpro.paypal.com]
+173.0.84.104:443 [pointofsale.paypal.com]
+173.0.84.104:443 [uptycshon.paypal.com]
+173.0.84.104:443 [api.paypal.com]
+173.0.84.104:443 [adjvendor.paypal.com]
+173.0.84.104:443 [zootapi.paypal.com]
+173.0.84.104:443 [api-aa-3t.paypal.com]
+173.0.84.104:443 [uptycsize.paypal.com]
+```
+
+For ease of automation, optionally `-resp-only` flag can be used to list only dns names in CLI output.
+
+```console
+$ tlsx -san -cn -silent -resp-only
+
+api-aa-3t.paypal.com
+pilot-payflowpro.paypal.com
+pointofsale-s.paypal.com
+uptycshon.paypal.com
+a.paypal.com
+adjvendor.paypal.com
+zootapi.paypal.com
+api-aa.paypal.com
+payflowpro.paypal.com
+pointofsale.paypal.com
+uptycspay.paypal.com
+api-3t.paypal.com
+uptycsize.paypal.com
+api.paypal.com
+api-m.paypal.com
+svcs.paypal.com
+uptycsven.paypal.com
+uptycsven.paypal.com
+a.paypal.com
+api.paypal.com
+pointofsale-s.paypal.com
+pilot-payflowpro.paypal.com
+```
+
+### TLS / Cipher Probe
+
+```console
+$ subfinder -d hackerone.com | tlsx -tls-version -cipher
+
+mta-sts.hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
+hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
+api.hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
+mta-sts.managed.hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
+mta-sts.forwarding.hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
+www.hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
+support.hackerone.com:443 [TLS1.2] [TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256]
+```
+
+### Expired / Self Signed Certificate
+
+A list of host can be provided to tlsx to detect **expired / self-signed** certificates.
+
+```console
+$ tlsx -u expired.badssl.com,self-signed.badssl.com -expired -self-signed
+  
+
+  _____ _    _____  __
+ |_   _| |  / __\ \/ /
+   | | | |__\__ \>  < 
+   |_| |____|___/_/\_\  v0.0.1
+
+    projectdiscovery.io
+
+[WRN] Use with caution. You are responsible for your actions.
+[WRN] Developers assume no liability and are not responsible for any misuse or damage.
+
+expired.badssl.com:443 [expired]
+self-signed.badssl.com:443 [self-signed]
+```
+
+### JSON Output
+
+**tlsx** does support multiple probe flags to query specific data, but all the information is always available in JSON format, for automation and post processing using `-json` output is most convenient option to use.
+
+```console
+echo example.com | tlsx -json -silent | jq .
+```
+
+```json
+{
+  "timestamp": "2022-06-21T17:03:22.148592+05:30",
+  "host": "example.com",
+  "ip": "93.184.216.34",
+  "port": "443",
+  "tls-version": "tls13",
+  "cipher": "TLS_AES_256_GCM_SHA384",
+  "expired": false,
+  "not-before": "2023-03-14T23:59:59Z",
+  "not-after": "2023-03-14T23:59:59Z",
+  "subject-dn": "CN=www.example.org, O=Internet Corporation for Assigned Names and Numbers, L=Los Angeles, ST=California, C=US",
+  "subject-cn": "www.example.org",
+  "subject-org": [
+    "Internet Corporation for Assigned Names and Numbers"
+  ],
+  "subject-an": [
+    "www.example.org",
+    "example.net",
+    "example.edu",
+    "example.com",
+    "example.org",
+    "www.example.com",
+    "www.example.edu",
+    "www.example.net"
+  ],
+  "issuer-dn": "CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US",
+  "issuer-cn": "DigiCert TLS RSA SHA256 2020 CA1",
+  "issuer-org": [
+    "DigiCert Inc"
+  ],
+  "fingerprint-hash": {
+    "md5": "c5208a47259d540a6e3404dddb85af91",
+    "sha1": "df81dfa6b61eafdffffe1a250240db5d2e6cee25",
+    "sha256": "7f2fe8d6b18e9a47839256cd97938daa70e8515750298ddba2f3f4b8440113fc"
+  },
+  "tls-connection": "ctls"
+}
+```
+
 ## Configuration
 
-### Minimum and Maximum TLS Versions
+### Scan Mode
 
-Minimum and maximum TLS versions can be specified using `-min-version` and `-max-version` flags. The acceptable values for TLS version is specified below.
+tlsx provides multiple options to make TLS connection, **[crypto/tls](https://pkg.go.dev/crypto/tls)** being default option which is standard crypto library in Go.
 
-- ssl30
-- tls10
-- tls11
-- tls12
+Available TLS Connection modes:
+
+- `ctls` (**crypto/tls**) - default
+- `ztls` (**zcrypto/tls**)
+- `auto` (**ctls** with **ztls** fallback support)
+
+Some pointers for the specific mode / library is highlighted in [linked discussions](https://github.com/projectdiscovery/tlsx/discussions/2), `auto` mode is supported to ensure the maximum coverage and scans for the hosts running older version of TLS by retrying the connection using `ztls` mode upon any connection error.
+
+An example of using `ztls` mode to scan website using old / outdated TLS version.
+
+```console
+$ echo tls-v1-0.badssl.com | tlsx -port 1010 -sm ztls
+  
+
+  _____ _    _____  __
+ |_   _| |  / __\ \/ /
+   | | | |__\__ \>  < 
+   |_| |____|___/_/\_\  v0.0.1
+
+    projectdiscovery.io
+
+[WRN] Use with caution. You are responsible for your actions.
+[WRN] Developers assume no liability and are not responsible for any misuse or damage.
+
+tls-v1-0.badssl.com:1010
+```
+
+### Pre-Handshake (Early Termination)
+
+**tlsx** supports terminating SSL connection early which leads to faster scanning and less connection request (disconnecting after TLS `serverhello` and certificate data is gathered).
+
+For more detail, please refer to [Hunting-Certificates-And-Servers](https://github.com/erbbysam/Hunting-Certificates-And-Servers/blob/master/Hunting%20Certificates%20%26%20Servers.pdf) by [@erbbysam](https://twitter.com/erbbysam)
+
+An example of using `-pre-handshake` mode:
+
+```console
+$ tlsx -u example.com -pre-handshake 
+  
+
+  _____ _    _____  __
+ |_   _| |  / __\ \/ /
+   | | | |__\__ \>  < 
+   |_| |____|___/_/\_\  v0.0.1
+
+    projectdiscovery.io
+
+[WRN] Use with caution. You are responsible for your actions.
+[WRN] Developers assume no liability and are not responsible for any misuse or damage.
+
+example.com:443
+```
+
+**Note:**
+
+> **pre-handshake** mode utilizes `ztls` (**zcrypto/tls**) which also means the support is limited till `TLS v1.2` as `TLS v1.3` is not supported by `ztls` library.
+
+### TLS Version
+
+**Minimum** and **Maximum** TLS versions can be specified using `-min-version` and `-max-version` flags, as default these value are set by underlying used library.
+
+The acceptable values for TLS version is specified below.
+
+- `ssl30`
+- `tls10`
+- `tls11`
+- `tls12`
+
+Here is an example using `max-version` to scan for hosts supporting an older version of TLS, i.e **TLS v1.0**
+
+```console
+$ tlsx -u example.com -max-version tls10
+  
+
+  _____ _    _____  __
+ |_   _| |  / __\ \/ /
+   | | | |__\__ \>  < 
+   |_| |____|___/_/\_\  v0.0.1
+
+    projectdiscovery.io
+
+[WRN] Use with caution. You are responsible for your actions.
+[WRN] Developers assume no liability and are not responsible for any misuse or damage.
+example.com:443
+```
+
+### Custom Cipher
+
+Supported custom cipher can provided using `-cipher-input / -ci` flag, supported cipher list for each mode is available at [wiki page](https://github.com/projectdiscovery/tlsx/wiki/Ciphers).
+
+```console
+$ tlsx -u example.com -ci TLS_AES_256_GCM_SHA384 -cipher
+```
+
+```console
+$ tlsx -u example.com -ci cipher_list.txt -cipher
+```
 
 ## Acknowledgements
 
 This program optionally uses the [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
+
+--------
+
+<div align="center">
+
+tlsx is made with ❤️ by the [projectdiscovery](https://projectdiscovery.io) team and distributed under [MIT License](LICENSE).
+
+
+<a href="https://discord.gg/projectdiscovery"><img src="https://raw.githubusercontent.com/projectdiscovery/nuclei-burp-plugin/main/static/join-discord.png" height="100" width="700" alt="Join Discord"></a>
+
+</div>
