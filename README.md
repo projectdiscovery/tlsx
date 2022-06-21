@@ -1,8 +1,7 @@
 <h1 align="center">
-  TLSX
-  <br>
+<img src="https://user-images.githubusercontent.com/8293321/174841003-01a62bad-2ecf-4874-89c4-efa53dd56884.png" width="200px">
+<br>
 </h1>
-
 
 
 <p align="center">
@@ -26,6 +25,8 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
 
 
 # Features
+
+![image](https://user-images.githubusercontent.com/8293321/174847743-0e229545-2431-4b4c-9029-878f218ad0bc.png)
 
  - Fast And fully configurable TLS Connection
  - Multiple **Modes for TLS Connection**
@@ -62,11 +63,11 @@ Flags:
 INPUT:
    -u, -host string[]  target host to scan (-u INPUT1,INPUT2)
    -l, -list string    target list to scan (-l INPUT_FILE)
-   -p, -port string[]  target port to connect (-p INPUT1,INPUT2,INPUT_FILE) (default 443)
+   -p, -port string[]  target port to connect (default 443)
 
 SCAN-MODE:
-   -sm, -scan-mode string   tls connection mode to use (ctls, ztls, auto) (default ctls)
-   -ps, -pre-handshake      enable pre-handshake tls connection (early termination) using ztls
+   -sm, -scan-mode string  tls connection mode to use (ctls, ztls, auto) (default ctls)
+   -ps, -pre-handshake     enable pre-handshake tls connection (early termination) using ztls
 
 PROBES:
    -san               display subject alternative names
@@ -74,37 +75,38 @@ PROBES:
    -so                display subject organization name
    -tv, -tls-version  display used tls version
    -cipher            display used cipher
-   -hash string       display certificate fingerprint hashes (md5,sha1,sha256)
    -ex, -expired      display validity status of certificate
    -ss, -self-signed  display status of self-signed certificate
+   -hash string       display certificate fingerprint hashes (md5,sha1,sha256)
 
 CONFIGURATIONS:
-   -config string           tlsx flag configuration file
-   -r, -resolvers string[]  list of resolvers to use
-   -sni string              tls sni hostname to use
-   -min-version string      minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
-   -max-version string      maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
-   -tc, -tls-chain          include certificate chain in json output
+   -config string               path to the tlsx configuration file
+   -r, -resolvers string[]      list of resolvers to use
+   -cc, -cacert string          client certificate authority file
+   -ci, -cipher-input string[]  ciphers to use with tls connection
+   -sni string                  tls sni hostname to use
+   -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
+   -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
+   -tc, -tls-chain              display tls chain in json output
+   -verify-cert                 enable verification of server certificate
 
 OPTIMIZATIONS:
-   -c, -concurrency int     number of concurrent threads to process (default 300)
-   -timeout int             tls connection timeout in seconds (default 5)
+   -c, -concurrency int  number of concurrent threads to process (default 300)
+   -timeout int          tls connection timeout in seconds (default 5)
 
 OUTPUT:
    -o, -output string  file to write output to
-   -j, -json           display json line format output
+   -j, -json           display json format output
    -ro, -resp-only     display tls response only
    -silent             display silent output
+   -nc, -no-color      disable colors in cli output
    -v, -verbose        display verbose output
    -version            display project version
-   -nc, -no-color      disable colors in cli output
 ```
 
 ## Running tlsx
 
 ### Input for tlsx
-
-**Host Input:**
 
 **tlsx** requires **ip** to make TLS connection and accept multiple format as listed below:
 
@@ -430,6 +432,6 @@ This program optionally uses the [zcrypto](https://github.com/zmap/zcrypto) libr
 tlsx is made with ❤️ by the [projectdiscovery](https://projectdiscovery.io) team and distributed under [MIT License](LICENSE).
 
 
-<a href="https://discord.gg/projectdiscovery"><img src="https://raw.githubusercontent.com/projectdiscovery/nuclei-burp-plugin/main/static/join-discord.png" height="100" width="700" alt="Join Discord"></a>
+<a href="https://discord.gg/projectdiscovery"><img src="https://raw.githubusercontent.com/projectdiscovery/nuclei-burp-plugin/main/static/join-discord.png" width="300" alt="Join Discord"></a>
 
 </div>
