@@ -51,6 +51,7 @@ func readFlags() error {
 
 	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.StringVar(&cfgFile, "config", "", "path to the tlsx configuration file"),
+		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
 		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.ServerName, "sni", "", "tls sni hostname to use"),
@@ -59,12 +60,27 @@ func readFlags() error {
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
+		flagSet.BoolVar(&options.VerifyServerCertificate, "verify-cert", false, "enable verification of server certificate"),
 		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto)"),
+	)
+
+	flagSet.CreateGroup("probes", "Probes",
+		flagSet.BoolVar(&options.SAN, "san", false, "display subject alternative names"),
+		flagSet.BoolVar(&options.CN, "cn", false, "display subject common names"),
+		flagSet.BoolVar(&options.SO, "so", false, "display subject organization name"),
+		flagSet.BoolVarP(&options.TLSVersion, "tls-version", "tv", false, "display used tls version"),
+		flagSet.BoolVar(&options.Cipher, "cipher", false, "display used cipher"),
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
+		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
 	)
 
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output to"),
 		flagSet.BoolVarP(&options.JSON, "json", "j", false, "display json format output"),
+		flagSet.BoolVarP(&options.RespOnly, "resp-only", "ro", false, "display tls response only"),
+		flagSet.BoolVar(&options.Silent, "silent", false, "display silent output"),
+		flagSet.BoolVarP(&options.NoColor, "no-color", "nc", false, "disable colors in cli output"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "display tls chain in json output"),
 		flagSet.BoolVarP(&options.Verbose, "verbose", "v", false, "display verbose output"),
 		flagSet.BoolVar(&options.Version, "version", false, "display project version"),

@@ -5,11 +5,13 @@ package ztls
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/zmap/zcrypto/tls"
@@ -51,6 +53,7 @@ func New(options *clients.Options) (*Client, error) {
 		},
 		options: options,
 	}
+
 	if options.ServerName != "" {
 		c.tlsConfig.ServerName = options.ServerName
 	}
@@ -60,6 +63,17 @@ func New(options *clients.Options) (*Client, error) {
 		} else {
 			c.tlsConfig.CipherSuites = customCiphers
 		}
+	}
+	if options.CACertificate != "" {
+		caCert, err := ioutil.ReadFile(options.CACertificate)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not read ca certificate")
+		}
+		certPool := x509.NewCertPool()
+		if !certPool.AppendCertsFromPEM(caCert) {
+			gologger.Error().Msgf("Could not append parsed ca-cert to config!")
+		}
+		c.tlsConfig.RootCAs = certPool
 	}
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
@@ -99,7 +113,14 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		})
 	}
 
-	conn, err := c.dialer.Dial(context.Background(), "tcp", address)
+	ctx := context.Background()
+	if c.options.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+
+	conn, err := c.dialer.Dial(ctx, "tcp", address)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to address")
 	}
@@ -171,6 +192,7 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 		NotBefore:  cert.NotAfter,
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
+		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
 		IssuerDN:   cert.Issuer.String(),
 		IssuerCN:   cert.Issuer.CommonName,
 		IssuerOrg:  cert.Issuer.Organization,
