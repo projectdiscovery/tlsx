@@ -16,6 +16,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/rs/xid"
 
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
@@ -119,7 +120,13 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	config := c.tlsConfig
 	if config.ServerName == "" {
 		c := config.Clone()
-		c.ServerName = hostname
+		if iputil.IsIP(hostname) {
+			// using a random sni will return the default server certificate
+			c.ServerName = xid.New().String()
+		} else {
+			c.ServerName = hostname
+		}
+
 		config = c
 	}
 
