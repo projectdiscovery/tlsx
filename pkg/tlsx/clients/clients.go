@@ -37,6 +37,8 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
+	// ErrorsInJSON enables writing of errors with json output
+	ErrorsInJSON bool
 	// CertsOnly enables early SSL termination using ztls flag
 	CertsOnly bool
 	// RespOnly displays TLS respones only in CLI output
@@ -92,24 +94,27 @@ type Options struct {
 // Response is the response returned for a TLS grab event
 type Response struct {
 	// Timestamp is the timestamp for certificate response
-	Timestamp time.Time `json:"timestamp,omitempty"`
+	Timestamp *time.Time `json:"timestamp,omitempty"`
 	// Host is the host to make request to
 	Host string `json:"host"`
 	// IP is the IP address the request was made to
 	IP string `json:"ip,omitempty"`
 	// Port is the port to make request to
 	Port string `json:"port"`
+	// Error is the optional error for tls request included
+	// with errors-json flag.
+	Error string `json:"error,omitempty"`
 	// Version is the tls version responded by the server
-	Version string `json:"tls-version"`
+	Version string `json:"tls-version,omitempty"`
 	// Cipher is the cipher for the tls request
 	Cipher string `json:"cipher,omitempty"`
 	// CertificateResponse is the leaf certificate embedded in json
-	CertificateResponse `json:",inline"`
+	*CertificateResponse `json:",inline"`
 	// TLSConnection is the client used for TLS connection
 	// when ran using scan-mode auto.
 	TLSConnection string `json:"tls-connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain []CertificateResponse `json:"chain,omitempty"`
+	Chain []*CertificateResponse `json:"chain,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
@@ -139,7 +144,7 @@ type CertificateResponse struct {
 	// Emails is a list of Emails for the certificate
 	Emails []string `json:"emails,omitempty"`
 	// FingerprintHash is the hashes for certificate
-	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint-hash"`
+	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint-hash,omitempty"`
 }
 
 // CertificateDistinguishedName is a distinguished certificate name

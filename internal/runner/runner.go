@@ -131,7 +131,6 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 		response, err := r.tlsxService.Connect(task.host, task.port)
 		if err != nil {
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
-			continue
 		}
 		if response != nil {
 			if err := r.outputWriter.Write(response); err != nil {

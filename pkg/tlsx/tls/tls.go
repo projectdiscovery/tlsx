@@ -147,8 +147,9 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	leafCertificate := connectionState.PeerCertificates[0]
 	certificateChain := connectionState.PeerCertificates[1:]
 
+	now := time.Now()
 	response := &clients.Response{
-		Timestamp:           time.Now(),
+		Timestamp:           &now,
 		Host:                hostname,
 		IP:                  resolvedIP,
 		Port:                port,
@@ -165,8 +166,8 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	return response, nil
 }
 
-func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateResponse {
-	response := clients.CertificateResponse{
+func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateResponse {
+	response := &clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
 		NotBefore:  cert.NotAfter,
