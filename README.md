@@ -41,7 +41,7 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
 
 ## Installation
 
-Installing tlsx is very easy, just run the below command.
+tlsx requires **Go 1.18** to install successfully. To install, just run the below command or download pre-compiled binary from [release page](https://github.com/projectdiscovery/tlsx/releases).
 
 ```console
 go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest
