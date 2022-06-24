@@ -208,7 +208,7 @@ $ echo 173.0.84.0/24 | tlsx -san -cn -silent
 For ease of automation, optionally `-resp-only` flag can be used to list only dns names in CLI output.
 
 ```console
-$ tlsx -san -cn -silent -resp-only
+$ echo 173.0.84.0/24 | tlsx -san -cn -silent -resp-only
 
 api-aa-3t.paypal.com
 pilot-payflowpro.paypal.com
@@ -233,6 +233,44 @@ api.paypal.com
 pointofsale-s.paypal.com
 pilot-payflowpro.paypal.com
 ```
+
+**subdomains** obtained from TLS certificates can be further piped to other PD tools for further inspection, here is an example piping tls subdomains to **[dnsx](https://github.com/projectdiscovery/dnsx)** to filter passive subdomains and passing to **[httpx](https://github.com/projectdiscovery/httpx)** to list hosts running active web services.
+
+```console
+$ echo 173.0.84.0/24 | tlsx -san -cn -silent -resp-only | dnsx -silent | httpx
+
+    __    __  __       _  __
+   / /_  / /_/ /_____ | |/ /
+  / __ \/ __/ __/ __ \|   /
+ / / / / /_/ /_/ /_/ /   |
+/_/ /_/\__/\__/ .___/_/|_|
+             /_/              v1.2.2
+
+    projectdiscovery.io
+
+Use with caution. You are responsible for your actions.
+Developers assume no liability and are not responsible for any misuse or damage.
+https://api-m.paypal.com
+https://uptycsize.paypal.com
+https://api.paypal.com
+https://uptycspay.paypal.com
+https://svcs.paypal.com
+https://adjvendor.paypal.com
+https://uptycshap.paypal.com
+https://uptycshon.paypal.com
+https://pilot-payflowpro.paypal.com
+https://slc-a-origin-pointofsale.paypal.com
+https://uptycsven.paypal.com
+https://api-aa.paypal.com
+https://api-aa-3t.paypal.com
+https://uptycsbrt.paypal.com
+https://payflowpro.paypal.com
+http://pointofsale-s.paypal.com
+http://slc-b-origin-pointofsale.paypal.com
+http://api-3t.paypal.com
+http://zootapi.paypal.com
+http://pointofsale.paypal.com
+````
 
 ### TLS / Cipher Probe
 
