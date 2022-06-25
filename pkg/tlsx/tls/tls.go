@@ -169,7 +169,7 @@ func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateRes
 	response := clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
-		NotBefore:  cert.NotAfter,
+		NotBefore:  cert.NotBefore,
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
 		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
