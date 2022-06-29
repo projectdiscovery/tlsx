@@ -37,6 +37,8 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
+	// ProbeStatus enables writing of errors with json output
+	ProbeStatus bool
 	// CertsOnly enables early SSL termination using ztls flag
 	CertsOnly bool
 	// RespOnly displays TLS respones only in CLI output
@@ -94,25 +96,30 @@ type Options struct {
 // Response is the response returned for a TLS grab event
 type Response struct {
 	// Timestamp is the timestamp for certificate response
-	Timestamp time.Time `json:"timestamp,omitempty"`
+	Timestamp *time.Time `json:"timestamp,omitempty"`
 	// Host is the host to make request to
 	Host string `json:"host"`
 	// IP is the IP address the request was made to
 	IP string `json:"ip,omitempty"`
 	// Port is the port to make request to
 	Port string `json:"port"`
+	// ProbeStatus is false if the tls probe failed
+	ProbeStatus bool `json:"probe_status"`
+	// Error is the optional error for tls request included
+	// with errors_json flag.
+	Error string `json:"error,omitempty"`
 	// Version is the tls version responded by the server
-	Version string `json:"tls-version"`
+	Version string `json:"tls_version,omitempty"`
 	// Cipher is the cipher for the tls request
 	Cipher string `json:"cipher,omitempty"`
 	// CertificateResponse is the leaf certificate embedded in json
-	CertificateResponse `json:",inline"`
+	*CertificateResponse `json:",inline"`
 	// TLSConnection is the client used for TLS connection
 	// when ran using scan-mode auto.
-	TLSConnection string `json:"tls-connection,omitempty"`
+	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain    []CertificateResponse `json:"chain,omitempty"`
-	JarmHash string                `json:"jarmhash,omitempty"`
+	Chain    []*CertificateResponse `json:"chain,omitempty"`
+	JarmHash string                 `json:"jarmhash,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
@@ -120,40 +127,40 @@ type CertificateResponse struct {
 	// Expired specifies whether the certificate has expired
 	Expired bool `json:"expired,omitempty"`
 	// SelfSigned returns true if the certificate is self-signed
-	SelfSigned bool `json:"self-signed,omitempty"`
+	SelfSigned bool `json:"self_signed,omitempty"`
 	// NotBefore is the not-before time for certificate
-	NotBefore time.Time `json:"not-before,omitempty"`
+	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
-	NotAfter time.Time `json:"not-after,omitempty"`
+	NotAfter time.Time `json:"not_after,omitempty"`
 	// SubjectDN is the distinguished name for cert
-	SubjectDN string `json:"subject-dn,omitempty"`
+	SubjectDN string `json:"subject_dn,omitempty"`
 	// SubjectCN is the common name for cert
-	SubjectCN string `json:"subject-cn,omitempty"`
+	SubjectCN string `json:"subject_cn,omitempty"`
 	// SubjectOrg is the organization for cert subject
-	SubjectOrg []string `json:"subject-org,omitempty"`
+	SubjectOrg []string `json:"subject_org,omitempty"`
 	// SubjectAN is a list of Subject Alternative Names for the certificate
-	SubjectAN []string `json:"subject-an,omitempty"`
+	SubjectAN []string `json:"subject_an,omitempty"`
 	// IssuerDN is the distinguished name for cert
-	IssuerDN string `json:"issuer-dn,omitempty"`
+	IssuerDN string `json:"issuer_dn,omitempty"`
 	// IssuerCN is the common name for cert
-	IssuerCN string `json:"issuer-cn,omitempty"`
+	IssuerCN string `json:"issuer_cn,omitempty"`
 	// IssuerOrg is the organization for cert issuer
-	IssuerOrg []string `json:"issuer-org,omitempty"`
+	IssuerOrg []string `json:"issuer_org,omitempty"`
 	// Emails is a list of Emails for the certificate
 	Emails []string `json:"emails,omitempty"`
 	// FingerprintHash is the hashes for certificate
-	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint-hash"`
+	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint_hash,omitempty"`
 }
 
 // CertificateDistinguishedName is a distinguished certificate name
 type CertificateDistinguishedName struct {
 	Country            []string `json:"country,omitempty"`
 	Organization       []string `json:"organization,omitempty"`
-	OrganizationalUnit []string `json:"organizational-unit,omitempty"`
+	OrganizationalUnit []string `json:"organizational_unit,omitempty"`
 	Locality           []string `json:"locality,omitempty"`
 	Province           []string `json:"province,omitempty"`
-	StreetAddress      []string `json:"street-address,omitempty"`
-	CommonName         string   `json:"common-name,omitempty"`
+	StreetAddress      []string `json:"street_address,omitempty"`
+	CommonName         string   `json:"common_name,omitempty"`
 }
 
 // CertificateResponseFingerprintHash is a response for fingerprint hash of cert
