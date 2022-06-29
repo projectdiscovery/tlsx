@@ -180,6 +180,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 			builder.WriteString("]")
 		}
 	}
+	if w.options.Jarm && output.JarmHash != "" {
+		builder.WriteString(" [")
+		builder.WriteString(output.JarmHash)
+		builder.WriteString("]")
+	}
 
 	outputdata := builder.Bytes()
 	return outputdata, nil
