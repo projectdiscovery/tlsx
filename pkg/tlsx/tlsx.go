@@ -42,7 +42,7 @@ func (s *Service) Connect(host, port string) (*clients.Response, error) {
 	resp, err := s.client.Connect(host, port)
 	if err != nil {
 		wrappedErr := errors.Wrap(err, "could not connect to host")
-		if s.options.ErrorsInJSON {
+		if s.options.ProbeStatus {
 			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false}, wrappedErr
 		}
 		return nil, wrappedErr

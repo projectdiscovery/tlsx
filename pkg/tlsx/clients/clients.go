@@ -37,8 +37,8 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
-	// ErrorsInJSON enables writing of errors with json output
-	ErrorsInJSON bool
+	// ProbeStatus enables writing of errors with json output
+	ProbeStatus bool
 	// CertsOnly enables early SSL termination using ztls flag
 	CertsOnly bool
 	// RespOnly displays TLS respones only in CLI output

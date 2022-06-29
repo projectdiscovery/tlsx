@@ -70,14 +70,15 @@ SCAN-MODE:
    -ps, -pre-handshake     enable pre-handshake tls connection (early termination) using ztls
 
 PROBES:
-   -san               display subject alternative names
-   -cn                display subject common names
-   -so                display subject organization name
-   -tv, -tls-version  display used tls version
-   -cipher            display used cipher
-   -ex, -expired      display validity status of certificate
-   -ss, -self-signed  display status of self-signed certificate
-   -hash string       display certificate fingerprint hashes (md5,sha1,sha256)
+   -san                 display subject alternative names
+   -cn                  display subject common names
+   -so                  display subject organization name
+   -tv, -tls-version    display used tls version
+   -cipher              display used cipher
+   -ex, -expired        display validity status of certificate
+   -ss, -self-signed    display status of self-signed certificate
+   -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
+   -tps, -probe-status  display tls probe status
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -88,7 +89,7 @@ CONFIGURATIONS:
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -tc, -tls-chain              display tls chain in json output
-   -verify-cert                 enable verification of server certificate
+   -vc, -verify-cert            enable verification of server certificate
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
