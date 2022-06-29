@@ -74,7 +74,7 @@ func readFlags() error {
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "display tls chain in json output"),
-		flagSet.BoolVar(&options.ErrorsInJSON, "errors-json", false, "display errors in json output"),
+		flagSet.BoolVar(&options.ErrorsInJSON, "probe-status", false, "display probe status and errors"),
 		flagSet.BoolVar(&options.VerifyServerCertificate, "verify-cert", false, "enable verification of server certificate"),
 	)
 

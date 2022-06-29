@@ -137,6 +137,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	if !w.options.SAN && !w.options.CN {
 		builder.WriteString(outputPrefix)
 	}
+	if !output.ProbeStatus {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Red("failed").String())
+		builder.WriteString("]")
+	}
 	if w.options.SO && len(cert.SubjectOrg) > 0 {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.BrightYellow(strings.Join(cert.SubjectOrg, ",")).String())

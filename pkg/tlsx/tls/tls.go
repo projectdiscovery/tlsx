@@ -152,6 +152,7 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		Timestamp:           &now,
 		Host:                hostname,
 		IP:                  resolvedIP,
+		ProbeStatus:         true,
 		Port:                port,
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
