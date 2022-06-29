@@ -159,10 +159,12 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	tlsVersion := versionToTLSVersionString[uint16(hl.ServerHello.Version)]
 	tlsCipher := hl.ServerHello.CipherSuite.String()
 
+	now := time.Now()
 	response := &clients.Response{
-		Timestamp:           time.Now(),
+		Timestamp:           &now,
 		Host:                hostname,
 		IP:                  resolvedIP,
+		ProbeStatus:         true,
 		Port:                port,
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
@@ -182,11 +184,11 @@ func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
 	return parsed
 }
 
-func convertCertificateToResponse(cert *x509.Certificate) clients.CertificateResponse {
+func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateResponse {
 	if cert == nil {
-		return clients.CertificateResponse{}
+		return nil
 	}
-	return clients.CertificateResponse{
+	return &clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
 		NotBefore:  cert.NotBefore,

@@ -63,6 +63,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
+		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -74,7 +75,7 @@ func readFlags() error {
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "display tls chain in json output"),
-		flagSet.BoolVar(&options.VerifyServerCertificate, "verify-cert", false, "enable verification of server certificate"),
+		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
 	)
 
 	flagSet.CreateGroup("optimizations", "OPTIMIZATIONS",
