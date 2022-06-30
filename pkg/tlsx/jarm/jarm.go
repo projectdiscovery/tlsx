@@ -27,13 +27,13 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, timeout ti
 		_, err = c.Write(gojarm.BuildProbe(probe))
 		if err != nil {
 			results = append(results, "")
-			c.Close()
+			_ = c.Close()
 			continue
 		}
 		_ = c.SetReadDeadline(time.Now().Add(timeout))
 		buff := make([]byte, 1484)
 		_, _ = c.Read(buff)
-		c.Close()
+		_ = c.Close()
 		ans, err := gojarm.ParseServerHello(buff, probe)
 		if err != nil {
 			results = append(results, "")
