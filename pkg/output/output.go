@@ -192,7 +192,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	}
 	if w.options.Jarm && output.JarmHash != "" {
 		builder.WriteString(" [")
-		builder.WriteString(output.JarmHash)
+		builder.WriteString(w.aurora.Magenta(output.JarmHash).String())
 		builder.WriteString("]")
 	}
 

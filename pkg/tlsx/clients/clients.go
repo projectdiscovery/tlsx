@@ -119,7 +119,7 @@ type Response struct {
 	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
 	Chain    []*CertificateResponse `json:"chain,omitempty"`
-	JarmHash string                 `json:"jarmhash,omitempty"`
+	JarmHash string                 `json:"jarm_hash,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
