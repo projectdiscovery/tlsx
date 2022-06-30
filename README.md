@@ -75,10 +75,13 @@ PROBES:
    -so                  display subject organization name
    -tv, -tls-version    display used tls version
    -cipher              display used cipher
-   -ex, -expired        display validity status of certificate
-   -ss, -self-signed    display status of self-signed certificate
    -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
+   -jarm                display jarm fingerprint hash
    -tps, -probe-status  display tls probe status
+
+MISCONFIGURATIONS:
+   -ex, -expired      display validity status of certificate
+   -ss, -self-signed  display status of self-signed certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -319,21 +322,21 @@ echo example.com | tlsx -json -silent | jq .
 
 ```json
 {
-  "timestamp": "2022-06-21T17:03:22.148592+05:30",
+  "timestamp": "2022-06-30T15:29:52.788129+05:30",
   "host": "example.com",
   "ip": "93.184.216.34",
   "port": "443",
-  "tls-version": "tls13",
+  "probe_status": true,
+  "tls_version": "tls13",
   "cipher": "TLS_AES_256_GCM_SHA384",
-  "expired": false,
-  "not-before": "2023-03-14T23:59:59Z",
-  "not-after": "2023-03-14T23:59:59Z",
-  "subject-dn": "CN=www.example.org, O=Internet Corporation for Assigned Names and Numbers, L=Los Angeles, ST=California, C=US",
-  "subject-cn": "www.example.org",
-  "subject-org": [
+  "not_before": "2022-03-14T00:00:00Z",
+  "not_after": "2023-03-14T23:59:59Z",
+  "subject_dn": "CN=www.example.org, O=Internet Corporation for Assigned Names and Numbers, L=Los Angeles, ST=California, C=US",
+  "subject_cn": "www.example.org",
+  "subject_org": [
     "Internet Corporation for Assigned Names and Numbers"
   ],
-  "subject-an": [
+  "subject_an": [
     "www.example.org",
     "example.net",
     "example.edu",
@@ -343,17 +346,17 @@ echo example.com | tlsx -json -silent | jq .
     "www.example.edu",
     "www.example.net"
   ],
-  "issuer-dn": "CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US",
-  "issuer-cn": "DigiCert TLS RSA SHA256 2020 CA1",
-  "issuer-org": [
+  "issuer_dn": "CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US",
+  "issuer_cn": "DigiCert TLS RSA SHA256 2020 CA1",
+  "issuer_org": [
     "DigiCert Inc"
   ],
-  "fingerprint-hash": {
+  "fingerprint_hash": {
     "md5": "c5208a47259d540a6e3404dddb85af91",
     "sha1": "df81dfa6b61eafdffffe1a250240db5d2e6cee25",
     "sha256": "7f2fe8d6b18e9a47839256cd97938daa70e8515750298ddba2f3f4b8440113fc"
   },
-  "tls-connection": "ctls"
+  "tls_connection": "ctls"
 }
 ```
 

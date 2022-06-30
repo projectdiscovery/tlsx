@@ -60,11 +60,14 @@ func readFlags() error {
 		flagSet.BoolVar(&options.SO, "so", false, "display subject organization name"),
 		flagSet.BoolVarP(&options.TLSVersion, "tls-version", "tv", false, "display used tls version"),
 		flagSet.BoolVar(&options.Cipher, "cipher", false, "display used cipher"),
-		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
-		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
 		flagSet.BoolVar(&options.Jarm, "jarm", false, "display jarm fingerprint hash"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
+	)
+
+	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
