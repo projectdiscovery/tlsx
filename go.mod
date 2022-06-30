@@ -3,6 +3,7 @@ module github.com/projectdiscovery/tlsx
 go 1.17
 
 require (
+	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/pkg/errors v0.9.1

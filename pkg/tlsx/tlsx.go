@@ -1,9 +1,13 @@
 package tlsx
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
 )
@@ -46,6 +50,15 @@ func (s *Service) Connect(host, port string) (*clients.Response, error) {
 			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false}, wrappedErr
 		}
 		return nil, wrappedErr
+	}
+	if s.options.Jarm {
+		port, _ := strconv.Atoi(port)
+		timeout := time.Duration(s.options.Timeout) * time.Second
+		jarmhash, err := jarm.HashWithDialer(s.options.Fastdialer, host, port, timeout)
+		if err != nil {
+			return resp, err
+		}
+		resp.JarmHash = jarmhash
 	}
 	return resp, nil
 }

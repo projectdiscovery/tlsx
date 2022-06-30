@@ -49,7 +49,7 @@ func readFlags() error {
 		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "target port to connect (default 443)", goflags.FileCommaSeparatedStringSliceOptions),
 	)
 
-	flagSet.CreateGroup("scan-mode", "SCAN-MODE",
+	flagSet.CreateGroup("scan-mode", "Scan-Mode",
 		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto) (default ctls)"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
 	)
@@ -63,6 +63,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
+		flagSet.BoolVar(&options.Jarm, "jarm", false, "display jarm fingerprint hash"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 	)
 
@@ -78,7 +79,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
 	)
 
-	flagSet.CreateGroup("optimizations", "OPTIMIZATIONS",
+	flagSet.CreateGroup("optimizations", "Optimizations",
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
 	)
