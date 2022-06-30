@@ -86,6 +86,8 @@ type Options struct {
 	SelfSigned bool
 	// Hash is the hash to display for certificate
 	Hash string
+	// Jarm calculate jarm fingerprinting with multiple probes
+	Jarm bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -116,7 +118,8 @@ type Response struct {
 	// when ran using scan-mode auto.
 	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain []*CertificateResponse `json:"chain,omitempty"`
+	Chain    []*CertificateResponse `json:"chain,omitempty"`
+	JarmHash string                 `json:"jarm_hash,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate

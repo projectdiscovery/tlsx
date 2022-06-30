@@ -17,13 +17,13 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-var version = "v0.0.2"
+var version = "v0.0.3"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
 	r.hasStdin = fileutil.HasStdin()
 
-	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != ""
+	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm
 	if r.options.RespOnly && probeSpecified {
 		return errors.New("resp-only flag can only be used with san and cn flags")
 	}
