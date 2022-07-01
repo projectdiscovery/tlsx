@@ -21,8 +21,8 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, timeout ti
 	if err != nil {
 		return "", err
 	}
-	defer pool.Close()
-	go pool.Run() //nolint
+	defer pool.Close() //nolint
+	go pool.Run()      //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
 		conn, err := pool.Acquire(context.Background())

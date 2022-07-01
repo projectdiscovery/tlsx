@@ -3,6 +3,8 @@ package connpool
 import (
 	"net"
 	"sync"
+
+	"go.uber.org/multierr"
 )
 
 type InFlightConns struct {
@@ -28,12 +30,18 @@ func (i *InFlightConns) Remove(conn net.Conn) {
 	delete(i.inflightConns, conn)
 }
 
-func (i *InFlightConns) Close() {
+func (i *InFlightConns) Close() error {
 	i.Lock()
 	defer i.Unlock()
 
+	var errs []error
+
 	for conn := range i.inflightConns {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			errs = append(errs, err)
+		}
 		delete(i.inflightConns, conn)
 	}
+
+	return multierr.Combine(errs...)
 }

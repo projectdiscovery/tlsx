@@ -60,7 +60,7 @@ func (p *OneTimePool) Run() error {
 	}
 }
 
-func (p *OneTimePool) Close() {
+func (p *OneTimePool) Close() error {
 	p.cancel()
-	p.InFlightConns.Close()
+	return p.InFlightConns.Close()
 }
