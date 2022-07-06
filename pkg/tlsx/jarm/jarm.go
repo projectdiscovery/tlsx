@@ -21,6 +21,8 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, timeout ti
 	if err != nil {
 		return "", err
 	}
+	pool.FastDialer = dialer
+
 	defer pool.Close() //nolint
 	go pool.Run()      //nolint
 

@@ -3,6 +3,8 @@ package connpool
 import (
 	"context"
 	"net"
+
+	"github.com/projectdiscovery/fastdialer/fastdialer"
 )
 
 // OneTimePool is a pool designed to create continous bare connections that are for one time only usage
@@ -12,6 +14,7 @@ type OneTimePool struct {
 	InFlightConns   *InFlightConns
 	ctx             context.Context
 	cancel          context.CancelFunc
+	FastDialer      *fastdialer.Dialer
 }
 
 func NewOneTimePool(ctx context.Context, address string, poolSize int) (*OneTimePool, error) {
@@ -51,7 +54,15 @@ func (p *OneTimePool) Run() error {
 		case <-p.ctx.Done():
 			return p.ctx.Err()
 		default:
-			conn, err := net.Dial("tcp", p.address)
+			var (
+				conn net.Conn
+				err  error
+			)
+			if p.FastDialer != nil {
+				conn, err = p.FastDialer.Dial(p.ctx, "tcp", p.address)
+			} else {
+				conn, err = net.Dial("tcp", p.address)
+			}
 			if err == nil {
 				p.InFlightConns.Add(conn)
 				p.idleConnections <- conn
