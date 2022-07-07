@@ -46,7 +46,7 @@ var versionToTLSVersionString = map[uint16]string{
 }
 
 // New creates a new grabbing client using crypto/tls
-func New(options *clients.Options) (*Client, error) {
+func New(options *clients.Options, sni string) (*Client, error) {
 	c := &Client{
 		dialer: options.Fastdialer,
 		tlsConfig: &tls.Config{
@@ -57,8 +57,8 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
-	if options.ServerName != "" {
-		c.tlsConfig.ServerName = options.ServerName
+	if sni != "" {
+		c.tlsConfig.ServerName = sni
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {

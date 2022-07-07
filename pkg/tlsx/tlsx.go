@@ -19,21 +19,21 @@ type Service struct {
 }
 
 // New creates a new tlsx service module
-func New(options *clients.Options) (*Service, error) {
+func New(options *clients.Options, sni string) (*Service, error) {
 	service := &Service{
 		options: options,
 	}
 	var err error
 	switch options.ScanMode {
 	case "ztls":
-		service.client, err = ztls.New(options)
+		service.client, err = ztls.New(options, sni)
 	case "ctls":
-		service.client, err = tls.New(options)
+		service.client, err = tls.New(options, sni)
 	case "auto":
-		service.client, err = auto.New(options)
+		service.client, err = auto.New(options, sni)
 	default:
 		// Default mode is TLS
-		service.client, err = tls.New(options)
+		service.client, err = tls.New(options, sni)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create tls service")

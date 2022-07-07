@@ -19,12 +19,12 @@ type Client struct {
 }
 
 // New creates a new grabbing client using auto fallback
-func New(options *clients.Options) (*Client, error) {
-	tlsClient, err := tls.New(options)
+func New(options *clients.Options, sni string) (*Client, error) {
+	tlsClient, err := tls.New(options, sni)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create tls client")
 	}
-	ztlsClient, err := ztls.New(options)
+	ztlsClient, err := ztls.New(options, sni)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create ztls client")
 	}

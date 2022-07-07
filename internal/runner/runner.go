@@ -25,9 +25,8 @@ import (
 type Runner struct {
 	hasStdin     bool
 	outputWriter output.Writer
-	tlsxService  *tlsx.Service
-	fastDialer   *fastdialer.Dialer
-	options      *clients.Options
+	fastDialer *fastdialer.Dialer
+	options    *clients.Options
 }
 
 // New creates a new runner from provided configuration options
@@ -70,11 +69,6 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	runner.outputWriter = outputWriter
 
-	tlsxService, err := tlsx.New(options)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create tlsx client")
-	}
-	runner.tlsxService = tlsxService
 	return runner, nil
 }
 
@@ -128,14 +122,29 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 		if r.options.Verbose {
 			gologger.Info().Msgf("Processing input %s:%s", task.host, task.port)
 		}
-		response, err := r.tlsxService.Connect(task.host, task.port)
-		if err != nil {
-			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
-		}
-		if response != nil {
-			if err := r.outputWriter.Write(response); err != nil {
-				gologger.Warning().Msgf("Could not write output %s: %s", task.Address(), err)
+		connect := func(sni string) {
+			tlsxService, err := tlsx.New(r.options, sni)
+			if err != nil {
+				gologger.Fatal().Msgf("could not create tlsx client: %s", err)
+				return
 			}
+			response, err := tlsxService.Connect(task.host, task.port)
+			if err != nil {
+				gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
+			}
+			if response != nil {
+				response.ServerName = sni
+				if err := r.outputWriter.Write(response); err != nil {
+					gologger.Warning().Msgf("Could not write output %s: %s", task.Address(), err)
+				}
+			}
+		}
+		if len(r.options.ServerName) > 0 {
+			for _, sni := range r.options.ServerName {
+				connect(sni)
+			}
+		} else {
+			connect("")
 		}
 	}
 }
