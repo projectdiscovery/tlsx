@@ -19,21 +19,21 @@ type Service struct {
 }
 
 // New creates a new tlsx service module
-func New(options *clients.Options, sni string) (*Service, error) {
+func New(options *clients.Options) (*Service, error) {
 	service := &Service{
 		options: options,
 	}
 	var err error
 	switch options.ScanMode {
 	case "ztls":
-		service.client, err = ztls.New(options, sni)
+		service.client, err = ztls.New(options)
 	case "ctls":
-		service.client, err = tls.New(options, sni)
+		service.client, err = tls.New(options)
 	case "auto":
-		service.client, err = auto.New(options, sni)
+		service.client, err = auto.New(options)
 	default:
 		// Default mode is TLS
-		service.client, err = tls.New(options, sni)
+		service.client, err = tls.New(options)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create tls service")
@@ -43,7 +43,12 @@ func New(options *clients.Options, sni string) (*Service, error) {
 
 // Connect connects to the input returning a response structure
 func (s *Service) Connect(host, port string) (*clients.Response, error) {
-	resp, err := s.client.Connect(host, port)
+	return s.ConnectWithOptions(host, port, clients.ConnectOptions{})
+}
+
+// Connect connects to the input with custom options
+func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectOptions) (*clients.Response, error) {
+	resp, err := s.client.ConnectWithOptions(host, port, options)
 	if err != nil {
 		wrappedErr := errors.Wrap(err, "could not connect to host")
 		if s.options.ProbeStatus {

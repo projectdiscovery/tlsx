@@ -19,12 +19,12 @@ type Client struct {
 }
 
 // New creates a new grabbing client using auto fallback
-func New(options *clients.Options, sni string) (*Client, error) {
-	tlsClient, err := tls.New(options, sni)
+func New(options *clients.Options) (*Client, error) {
+	tlsClient, err := tls.New(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create tls client")
 	}
-	ztlsClient, err := ztls.New(options, sni)
+	ztlsClient, err := ztls.New(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create ztls client")
 	}
@@ -32,11 +32,11 @@ func New(options *clients.Options, sni string) (*Client, error) {
 }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
-	response, err := c.tlsClient.Connect(hostname, port)
+func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
+	response, err := c.tlsClient.ConnectWithOptions(hostname, port, options)
 	isInvalidResponse := c.isResponseInvalid(response)
 	if err != nil || isInvalidResponse {
-		ztlsResponse, ztlsErr := c.ztlsClient.Connect(hostname, port)
+		ztlsResponse, ztlsErr := c.ztlsClient.ConnectWithOptions(hostname, port, options)
 		if ztlsErr != nil {
 			return nil, ztlsErr
 		}

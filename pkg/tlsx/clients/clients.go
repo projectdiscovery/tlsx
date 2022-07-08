@@ -16,7 +16,7 @@ import (
 // Implementation is an interface implemented by TLSX client
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
-	Connect(hostname, port string) (*Response, error)
+	ConnectWithOptions(hostname, port string, options ConnectOptions) (*Response, error)
 }
 
 // Options contains configuration options for tlsx client
@@ -207,4 +207,8 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
 		return true
 	}
 	return false
+}
+
+type ConnectOptions struct {
+	SNI string
 }
