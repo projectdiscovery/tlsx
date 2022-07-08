@@ -224,8 +224,13 @@ func uniqueNormalizeCertNames(names []string) []string {
 
 // mistmatchedCert returns if cert names does not contain host
 func mistmatchedCert(host string, names []string) bool {
+	builder := &bytes.Buffer{}
 	for _, name := range names {
-		pattern, err := regexp.Compile(strings.ReplaceAll(name, "*", "[^ ]*"))
+		builder.WriteString("^")
+		builder.WriteString(strings.ReplaceAll(name, "*.", "[^. ]*."))
+		builder.WriteString("$")
+		pattern, err := regexp.Compile(builder.String())
+		builder.Reset()
 		if err != nil {
 			continue
 		}
