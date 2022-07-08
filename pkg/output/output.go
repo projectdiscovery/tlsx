@@ -172,6 +172,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Yellow("self-signed").String())
 		builder.WriteString("]")
 	}
+	if w.options.MisMatched && mistmatchedCert(output.Host, append(cert.SubjectAN, cert.SubjectCN)) {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Red("mismatched").String())
+		builder.WriteString("]")
+	}
 	if w.options.Hash != "" {
 		hashOpts := strings.Split(w.options.Hash, ",")
 
@@ -215,4 +220,18 @@ func uniqueNormalizeCertNames(names []string) []string {
 		results = append(results, v)
 	}
 	return results
+}
+
+// mistmatchedCert returns if cert names does not contain host
+func mistmatchedCert(host string, names []string) bool {
+	for _, name := range names {
+		pattern, err := regexp.Compile(strings.ReplaceAll(name, "*", "[^ ]*"))
+		if err != nil {
+			continue
+		}
+		if pattern.MatchString(host) {
+			return false
+		}
+	}
+	return true
 }

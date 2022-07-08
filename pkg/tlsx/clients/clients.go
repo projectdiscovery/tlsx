@@ -84,6 +84,8 @@ type Options struct {
 	Expired bool
 	// SelfSigned displays if cert is self-signed
 	SelfSigned bool
+	// MisMatched displays if the cert is mismatched
+	MisMatched bool
 	// Hash is the hash to display for certificate
 	Hash string
 	// Jarm calculate jarm fingerprinting with multiple probes
