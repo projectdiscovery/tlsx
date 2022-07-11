@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -130,6 +131,8 @@ type CertificateResponse struct {
 	Expired bool `json:"expired,omitempty"`
 	// SelfSigned returns true if the certificate is self-signed
 	SelfSigned bool `json:"self_signed,omitempty"`
+	// MisMatched returns true if the certificate is mismatched
+	MisMatched bool `json:"mis_matched,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -208,4 +211,34 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
 		return true
 	}
 	return false
+}
+
+// IsMisMatchedCert returns true if cert names(subject common name + alternative names) does not contain host
+func IsMisMatchedCert(host string, names []string) bool {
+	hostTokens := strings.Split(host, ".")
+	for _, name := range names {
+		// if no wildcard, retrun false if name matches the host
+		if !strings.Contains(name, "*") {
+			if strings.EqualFold(name, host) {
+				return false
+			}
+		} else {
+			matched := false
+			nameTokens := strings.Split(name, ".")
+			if len(hostTokens) == len(nameTokens) {
+				for i, token := range nameTokens {
+					if strings.EqualFold(token, "*") || strings.EqualFold(token, hostTokens[i]) {
+						matched = true
+					} else {
+						matched = false
+						break
+					}
+				}
+				if matched {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }

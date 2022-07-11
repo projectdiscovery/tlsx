@@ -176,6 +176,9 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 			response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
 		}
 	}
+	if c.options.MisMatched {
+		response.CertificateResponse.MisMatched = clients.IsMisMatchedCert(hostname, append(response.CertificateResponse.SubjectAN, response.CertificateResponse.SubjectCN))
+	}
 	return response, nil
 }
 
