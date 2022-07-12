@@ -43,11 +43,16 @@ func New(options *clients.Options) (*Service, error) {
 
 // Connect connects to the input returning a response structure
 func (s *Service) Connect(host, port string) (*clients.Response, error) {
-	resp, err := s.client.Connect(host, port)
+	return s.ConnectWithOptions(host, port, clients.ConnectOptions{})
+}
+
+// Connect connects to the input with custom options
+func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectOptions) (*clients.Response, error) {
+	resp, err := s.client.ConnectWithOptions(host, port, options)
 	if err != nil {
 		wrappedErr := errors.Wrap(err, "could not connect to host")
 		if s.options.ProbeStatus {
-			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false}, wrappedErr
+			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false, ServerName: options.SNI}, wrappedErr
 		}
 		return nil, wrappedErr
 	}

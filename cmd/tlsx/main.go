@@ -75,7 +75,7 @@ func readFlags() error {
 		flagSet.StringSliceVarP(&options.Resolvers, "resolvers", "r", nil, "list of resolvers to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
-		flagSet.StringVar(&options.ServerName, "sni", "", "tls sni hostname to use"),
+		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "display tls chain in json output"),
