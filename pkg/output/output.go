@@ -174,7 +174,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	}
 	if w.options.MisMatched && cert.MisMatched {
 		builder.WriteString(" [")
-		builder.WriteString(w.aurora.Red("mismatched").String())
+		builder.WriteString(w.aurora.Yellow("mismatched").String())
 		builder.WriteString("]")
 	}
 	if w.options.Hash != "" {
