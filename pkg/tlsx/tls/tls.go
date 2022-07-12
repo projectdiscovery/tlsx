@@ -57,9 +57,6 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
-	if options.ServerName != "" {
-		c.tlsConfig.ServerName = options.ServerName
-	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {
 			return nil, errors.Wrap(err, "could not get tls ciphers")
@@ -98,7 +95,7 @@ func New(options *clients.Options) (*Client, error) {
 }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
+func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
 
 	ctx := context.Background()
@@ -120,7 +117,9 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	config := c.tlsConfig
 	if config.ServerName == "" {
 		c := config.Clone()
-		if iputil.IsIP(hostname) {
+		if options.SNI != "" {
+			c.ServerName = options.SNI
+		} else if iputil.IsIP(hostname) {
 			// using a random sni will return the default server certificate
 			c.ServerName = xid.New().String()
 		} else {
@@ -158,6 +157,7 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		Cipher:              tlsCipher,
 		TLSConnection:       "ctls",
 		CertificateResponse: convertCertificateToResponse(hostname, leafCertificate),
+		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {

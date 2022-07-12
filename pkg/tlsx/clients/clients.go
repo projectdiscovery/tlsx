@@ -18,7 +18,7 @@ import (
 // Implementation is an interface implemented by TLSX client
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
-	Connect(hostname, port string) (*Response, error)
+	ConnectWithOptions(hostname, port string, options ConnectOptions) (*Response, error)
 }
 
 // Options contains configuration options for tlsx client
@@ -30,7 +30,7 @@ type Options struct {
 	// InputList is the list of inputs to process
 	InputList string
 	// ServerName is the optional server-name for tls connection
-	ServerName string
+	ServerName goflags.StringSlice
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
@@ -122,8 +122,9 @@ type Response struct {
 	// when ran using scan-mode auto.
 	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain    []*CertificateResponse `json:"chain,omitempty"`
-	JarmHash string                 `json:"jarm_hash,omitempty"`
+	Chain      []*CertificateResponse `json:"chain,omitempty"`
+	JarmHash   string                 `json:"jarm_hash,omitempty"`
+	ServerName string                 `json:"sni,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
@@ -244,4 +245,8 @@ func IsMisMatchedCert(host string, names []string) bool {
 		}
 	}
 	return true
+}
+
+type ConnectOptions struct {
+	SNI string
 }
