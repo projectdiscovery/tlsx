@@ -80,8 +80,9 @@ PROBES:
    -tps, -probe-status  display tls probe status
 
 MISCONFIGURATIONS:
-   -ex, -expired      display validity status of certificate
-   -ss, -self-signed  display status of self-signed certificate
+   -ex, -expired      display expired certificate
+   -ss, -self-signed  display self-signed certificate
+   -mm, -mismatched   display mismatched certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -290,12 +291,14 @@ www.hackerone.com:443 [TLS1.3] [TLS_AES_128_GCM_SHA256]
 support.hackerone.com:443 [TLS1.2] [TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256]
 ```
 
-### Expired / Self Signed Certificate
+# TLS Misconfiguration
 
-A list of host can be provided to tlsx to detect **expired / self-signed** certificates.
+### Expired / Self Signed / Mismatched Certificate
+
+A list of host can be provided to tlsx to detect **expired / self-signed / mismatched** certificates.
 
 ```console
-$ tlsx -u expired.badssl.com,self-signed.badssl.com -expired -self-signed
+$ tlsx -l hosts.txt -expired -self-signed -mismatched
   
 
   _____ _    _____  __
@@ -308,8 +311,9 @@ $ tlsx -u expired.badssl.com,self-signed.badssl.com -expired -self-signed
 [WRN] Use with caution. You are responsible for your actions.
 [WRN] Developers assume no liability and are not responsible for any misuse or damage.
 
-expired.badssl.com:443 [expired]
+wrong.host.badssl.com:443 [mismatched]
 self-signed.badssl.com:443 [self-signed]
+expired.badssl.com:443 [expired]
 ```
 
 ### JSON Output

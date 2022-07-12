@@ -66,8 +66,9 @@ func readFlags() error {
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
-		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
-		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display expired certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display self-signed certificate"),
+		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display mismatched certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -75,7 +76,7 @@ func readFlags() error {
 		flagSet.StringSliceVarP(&options.Resolvers, "resolvers", "r", nil, "list of resolvers to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
-		flagSet.StringVar(&options.ServerName, "sni", "", "tls sni hostname to use"),
+		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "display tls chain in json output"),

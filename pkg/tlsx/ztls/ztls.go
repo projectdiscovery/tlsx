@@ -14,6 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
 )
@@ -54,9 +55,6 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
-	if options.ServerName != "" {
-		c.tlsConfig.ServerName = options.ServerName
-	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
 			return nil, errors.Wrap(err, "could not get ztls ciphers")
@@ -101,7 +99,7 @@ func (timeoutError) Timeout() bool   { return true }
 func (timeoutError) Temporary() bool { return true }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
+func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
 	timeout := time.Duration(c.options.Timeout) * time.Second
 
@@ -132,7 +130,14 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	config := c.tlsConfig
 	if config.ServerName == "" {
 		c := config.Clone()
-		c.ServerName = hostname
+		if options.SNI != "" {
+			c.ServerName = options.SNI
+		} else if iputil.IsIP(hostname) {
+			// using a random sni will return the default server certificate
+			c.ServerName = xid.New().String()
+		} else {
+			c.ServerName = hostname
+		}
 		config = c
 	}
 
@@ -169,11 +174,12 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ztls",
-		CertificateResponse: convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		CertificateResponse: convertCertificateToResponse(hostname, parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
+			response.Chain = append(response.Chain, convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
 		}
 	}
 	return response, nil
@@ -184,7 +190,7 @@ func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
 	return parsed
 }
 
-func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateResponse {
+func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	if cert == nil {
 		return nil
 	}
@@ -195,6 +201,7 @@ func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateRe
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
 		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerDN:   cert.Issuer.String(),
 		IssuerCN:   cert.Issuer.CommonName,
 		IssuerOrg:  cert.Issuer.Organization,

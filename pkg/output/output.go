@@ -70,7 +70,6 @@ func (w *StandardWriter) Write(event *clients.Response) error {
 
 	w.outputMutex.Lock()
 	defer w.outputMutex.Unlock()
-
 	_, _ = os.Stdout.Write(data)
 	_, _ = os.Stdout.Write([]byte("\n"))
 	if w.outputFile != nil {
@@ -147,7 +146,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Green("success").String())
 		builder.WriteString("]")
 	}
-	if w.options.SO && len(cert.SubjectOrg) > 0 {
+	if w.options.ServerName != nil {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Blue(output.ServerName).String())
+		builder.WriteString("]")
+	}
+	if w.options.SO  && len(cert.SubjectOrg) > 0 {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.BrightYellow(strings.Join(cert.SubjectOrg, ",")).String())
 		builder.WriteString("]")
@@ -170,6 +174,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	if w.options.SelfSigned && cert.SelfSigned {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.Yellow("self-signed").String())
+		builder.WriteString("]")
+	}
+	if w.options.MisMatched && cert.MisMatched {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Yellow("mismatched").String())
 		builder.WriteString("]")
 	}
 	if w.options.Hash != "" {
