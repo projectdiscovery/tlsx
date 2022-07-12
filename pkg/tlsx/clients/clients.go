@@ -12,6 +12,7 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
+	"github.com/projectdiscovery/stringsutil"
 )
 
 // Implementation is an interface implemented by TLSX client
@@ -132,7 +133,7 @@ type CertificateResponse struct {
 	// SelfSigned returns true if the certificate is self-signed
 	SelfSigned bool `json:"self_signed,omitempty"`
 	// MisMatched returns true if the certificate is mismatched
-	MisMatched bool `json:"mis_matched,omitempty"`
+	MisMatched bool `json:"mismatched,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -217,23 +218,25 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
 func IsMisMatchedCert(host string, names []string) bool {
 	hostTokens := strings.Split(host, ".")
 	for _, name := range names {
-		// if no wildcard, retrun false if name matches the host
+		// if not wildcard, return false if name matches the host
 		if !strings.Contains(name, "*") {
 			if strings.EqualFold(name, host) {
 				return false
 			}
 		} else {
-			matched := false
+			// try to match the wildcard name with host
 			nameTokens := strings.Split(name, ".")
 			if len(hostTokens) == len(nameTokens) {
+				matched := false
 				for i, token := range nameTokens {
-					if strings.EqualFold(token, "*") || strings.EqualFold(token, hostTokens[i]) {
+					if stringsutil.EqualFoldAny(token, "*", hostTokens[i]) {
 						matched = true
 					} else {
 						matched = false
 						break
 					}
 				}
+				// return false if all the name tokens matched the host tokens
 				if matched {
 					return false
 				}

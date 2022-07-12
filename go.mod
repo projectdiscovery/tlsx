@@ -13,6 +13,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/iputil v0.0.0-20220613112553-9b6873b2c619
 	github.com/projectdiscovery/mapcidr v1.0.0
+	github.com/projectdiscovery/stringsutil v0.0.0-20220422150559-b54fb5dc6833
 	github.com/rs/xid v1.4.0
 	github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c
 )
@@ -34,7 +35,6 @@ require (
 	github.com/projectdiscovery/networkpolicy v0.0.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.13-0.20210916165024-76c5b76fd59a // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
-	github.com/projectdiscovery/stringsutil v0.0.0-20220422150559-b54fb5dc6833 // indirect
 	github.com/stretchr/testify v1.7.3 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect

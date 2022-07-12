@@ -157,20 +157,17 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ctls",
-		CertificateResponse: convertCertificateToResponse(leafCertificate),
+		CertificateResponse: convertCertificateToResponse(hostname, leafCertificate),
 	}
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {
-			response.Chain = append(response.Chain, convertCertificateToResponse(cert))
+			response.Chain = append(response.Chain, convertCertificateToResponse(hostname, cert))
 		}
-	}
-	if c.options.MisMatched {
-		response.CertificateResponse.MisMatched = clients.IsMisMatchedCert(hostname, append(response.CertificateResponse.SubjectAN, response.CertificateResponse.SubjectCN))
 	}
 	return response, nil
 }
 
-func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateResponse {
+func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	response := &clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
@@ -178,6 +175,7 @@ func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateRe
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
 		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerCN:   cert.Issuer.CommonName,
 		IssuerOrg:  cert.Issuer.Organization,
 		SubjectCN:  cert.Subject.CommonName,
