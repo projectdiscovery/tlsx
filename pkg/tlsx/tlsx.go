@@ -52,7 +52,7 @@ func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectO
 	if err != nil {
 		wrappedErr := errors.Wrap(err, "could not connect to host")
 		if s.options.ProbeStatus {
-			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false}, wrappedErr
+			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false, ServerName: options.SNI}, wrappedErr
 		}
 		return nil, wrappedErr
 	}
