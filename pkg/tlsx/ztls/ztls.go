@@ -174,12 +174,12 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ztls",
-		CertificateResponse: convertCertificateToResponse(parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		CertificateResponse: convertCertificateToResponse(hostname, parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, convertCertificateToResponse(parseSimpleTLSCertificate(cert)))
+			response.Chain = append(response.Chain, convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
 		}
 	}
 	return response, nil
@@ -190,7 +190,7 @@ func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
 	return parsed
 }
 
-func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateResponse {
+func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	if cert == nil {
 		return nil
 	}
@@ -201,6 +201,7 @@ func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateRe
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
 		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerDN:   cert.Issuer.String(),
 		IssuerCN:   cert.Issuer.CommonName,
 		IssuerOrg:  cert.Issuer.Organization,

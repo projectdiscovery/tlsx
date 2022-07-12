@@ -80,8 +80,9 @@ PROBES:
    -tps, -probe-status  display tls probe status
 
 MISCONFIGURATIONS:
-   -ex, -expired      display validity status of certificate
-   -ss, -self-signed  display status of self-signed certificate
+   -ex, -expired      display expired certificate
+   -ss, -self-signed  display self-signed certificate
+   -mm, -mismatched   display mismatched certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file

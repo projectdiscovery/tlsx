@@ -66,8 +66,9 @@ func readFlags() error {
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
-		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display validity status of certificate"),
-		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display status of self-signed certificate"),
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display expired certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display self-signed certificate"),
+		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display mismatched certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",

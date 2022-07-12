@@ -176,6 +176,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Yellow("self-signed").String())
 		builder.WriteString("]")
 	}
+	if w.options.MisMatched && cert.MisMatched {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Yellow("mismatched").String())
+		builder.WriteString("]")
+	}
 	if w.options.Hash != "" {
 		hashOpts := strings.Split(w.options.Hash, ",")
 
