@@ -57,6 +57,9 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
+	if options.AllCiphers {
+		c.tlsConfig.CipherSuites = allCiphers
+	}
 	if options.ServerName != "" {
 		c.tlsConfig.ServerName = options.ServerName
 	}

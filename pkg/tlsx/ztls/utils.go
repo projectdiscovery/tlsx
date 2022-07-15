@@ -6,6 +6,14 @@ import (
 	"github.com/zmap/zcrypto/tls"
 )
 
+var allCiphers []uint16
+
+func init() {
+	for _, cipher := range ztlsCiphers {
+		allCiphers = append(allCiphers, cipher)
+	}
+}
+
 func toZTLSCiphers(items []string) ([]uint16, error) {
 	var convertedCiphers []uint16
 	for _, item := range items {
