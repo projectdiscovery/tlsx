@@ -23,6 +23,9 @@ var version = "v0.0.4"
 func (r *Runner) validateOptions() error {
 	r.hasStdin = fileutil.HasStdin()
 
+	if r.options.Retries == 0 {
+		r.options.Retries = 1
+	}
 	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm || r.options.MisMatched
 	if r.options.RespOnly && probeSpecified {
 		return errors.New("resp-only flag can only be used with san and cn flags")

@@ -51,6 +51,8 @@ type Options struct {
 	Silent bool
 	// NoColor disables coloring of CLI output
 	NoColor bool
+	// Retries is the number of times to retry TLS connection
+	Retries int
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
 	// Concurrency is the number of concurrent threads to process
