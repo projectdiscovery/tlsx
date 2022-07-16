@@ -5,6 +5,14 @@ import (
 	"fmt"
 )
 
+var allCiphers []uint16
+
+func init() {
+	for _, cipher := range tlsCiphers {
+		allCiphers = append(allCiphers, cipher)
+	}
+}
+
 func toTLSCiphers(items []string) ([]uint16, error) {
 	var convertedCiphers []uint16
 	for _, item := range items {

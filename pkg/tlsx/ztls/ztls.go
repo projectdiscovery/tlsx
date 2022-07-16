@@ -55,6 +55,9 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
+	if options.AllCiphers {
+		c.tlsConfig.CipherSuites = allCiphers
+	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
 			return nil, errors.Wrap(err, "could not get ztls ciphers")

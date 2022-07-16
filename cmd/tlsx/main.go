@@ -79,6 +79,7 @@ func readFlags() error {
 		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
+		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", false, "send all ciphers as accepted inputs"),
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
@@ -87,6 +88,7 @@ func readFlags() error {
 	flagSet.CreateGroup("optimizations", "Optimizations",
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
+		flagSet.IntVar(&options.Retries, "retries", 3, "number of retries to perform for failures"),
 	)
 
 	flagSet.CreateGroup("output", "Output",

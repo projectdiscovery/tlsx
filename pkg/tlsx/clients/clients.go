@@ -40,6 +40,8 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
+	// AllCiphers enables sending all ciphers as client
+	AllCiphers bool
 	// ProbeStatus enables writing of errors with json output
 	ProbeStatus bool
 	// CertsOnly enables early SSL termination using ztls flag
@@ -50,6 +52,8 @@ type Options struct {
 	Silent bool
 	// NoColor disables coloring of CLI output
 	NoColor bool
+	// Retries is the number of times to retry TLS connection
+	Retries int
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
 	// Concurrency is the number of concurrent threads to process

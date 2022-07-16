@@ -48,7 +48,18 @@ func (s *Service) Connect(host, port string) (*clients.Response, error) {
 
 // Connect connects to the input with custom options
 func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	resp, err := s.client.ConnectWithOptions(host, port, options)
+	var resp *clients.Response
+	var err error
+
+	for i := 0; i < s.options.Retries; i++ {
+		if resp, err = s.client.ConnectWithOptions(host, port, options); resp != nil {
+			err = nil
+			break
+		}
+	}
+	if resp == nil && err == nil {
+		return nil, errors.New("no response returned for connection")
+	}
 	if err != nil {
 		wrappedErr := errors.Wrap(err, "could not connect to host")
 		if s.options.ProbeStatus {
@@ -56,6 +67,7 @@ func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectO
 		}
 		return nil, wrappedErr
 	}
+
 	if s.options.Jarm {
 		port, _ := strconv.Atoi(port)
 		timeout := time.Duration(s.options.Timeout) * time.Second
