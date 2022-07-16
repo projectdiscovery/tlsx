@@ -159,18 +159,18 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ctls",
-		CertificateResponse: convertCertificateToResponse(hostname, leafCertificate),
+		CertificateResponse: c.convertCertificateToResponse(hostname, leafCertificate),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {
-			response.Chain = append(response.Chain, convertCertificateToResponse(hostname, cert))
+			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, cert))
 		}
 	}
 	return response, nil
 }
 
-func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
+func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	response := &clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
@@ -198,6 +198,9 @@ func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clie
 		response.SubjectDN = parsedSubject
 	} else {
 		response.SubjectDN = cert.Subject.String()
+	}
+	if c.options.Cert {
+		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
 }
