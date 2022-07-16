@@ -25,7 +25,6 @@ import (
 type Runner struct {
 	hasStdin     bool
 	outputWriter output.Writer
-	tlsxService  *tlsx.Service
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
 }
@@ -70,11 +69,6 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	runner.outputWriter = outputWriter
 
-	tlsxService, err := tlsx.New(options)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create tlsx client")
-	}
-	runner.tlsxService = tlsxService
 	return runner, nil
 }
 
@@ -88,6 +82,7 @@ func (r *Runner) Close() error {
 type taskInput struct {
 	host string
 	port string
+	sni  string
 }
 
 func (t taskInput) Address() string {
@@ -124,11 +119,18 @@ func (r *Runner) Execute() error {
 func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	tlsxService, err := tlsx.New(r.options)
+	if err != nil {
+		gologger.Fatal().Msgf("could not create tlsx client: %s", err)
+		return
+	}
+
 	for task := range inputs {
 		if r.options.Verbose {
 			gologger.Info().Msgf("Processing input %s:%s", task.host, task.port)
 		}
-		response, err := r.tlsxService.Connect(task.host, task.port)
+
+		response, err := tlsxService.ConnectWithOptions(task.host, task.port, clients.ConnectOptions{SNI: task.sni})
 		if err != nil {
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
 		}
@@ -185,7 +187,7 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 		}
 		for cidr := range cidrInputs {
 			for _, port := range r.options.Ports {
-				inputs <- taskInput{host: cidr, port: port}
+				r.processInputItemWithSni(taskInput{host: cidr, port: port}, inputs)
 			}
 		}
 	} else {
@@ -193,11 +195,22 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 		host, customPort := r.getHostPortFromInput(input)
 		if customPort == "" {
 			for _, port := range r.options.Ports {
-				inputs <- taskInput{host: host, port: port}
+				r.processInputItemWithSni(taskInput{host: host, port: port}, inputs)
 			}
 		} else {
-			inputs <- taskInput{host: host, port: customPort}
+			r.processInputItemWithSni(taskInput{host: host, port: customPort}, inputs)
 		}
+	}
+}
+
+func (r *Runner) processInputItemWithSni(task taskInput, inputs chan taskInput) {
+	if len(r.options.ServerName) > 0 {
+		for _, serverName := range r.options.ServerName {
+			task.sni = serverName
+			inputs <- task
+		}
+	} else {
+		inputs <- task
 	}
 }
 

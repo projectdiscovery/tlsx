@@ -7,16 +7,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
+	"github.com/projectdiscovery/stringsutil"
 )
 
 // Implementation is an interface implemented by TLSX client
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
-	Connect(hostname, port string) (*Response, error)
+	ConnectWithOptions(hostname, port string, options ConnectOptions) (*Response, error)
 }
 
 // Options contains configuration options for tlsx client
@@ -28,7 +30,7 @@ type Options struct {
 	// InputList is the list of inputs to process
 	InputList string
 	// ServerName is the optional server-name for tls connection
-	ServerName string
+	ServerName goflags.StringSlice
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
@@ -86,6 +88,8 @@ type Options struct {
 	Expired bool
 	// SelfSigned displays if cert is self-signed
 	SelfSigned bool
+	// MisMatched displays if the cert is mismatched
+	MisMatched bool
 	// Hash is the hash to display for certificate
 	Hash string
 	// Jarm calculate jarm fingerprinting with multiple probes
@@ -120,8 +124,9 @@ type Response struct {
 	// when ran using scan-mode auto.
 	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain    []*CertificateResponse `json:"chain,omitempty"`
-	JarmHash string                 `json:"jarm_hash,omitempty"`
+	Chain      []*CertificateResponse `json:"chain,omitempty"`
+	JarmHash   string                 `json:"jarm_hash,omitempty"`
+	ServerName string                 `json:"sni,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
@@ -130,6 +135,8 @@ type CertificateResponse struct {
 	Expired bool `json:"expired,omitempty"`
 	// SelfSigned returns true if the certificate is self-signed
 	SelfSigned bool `json:"self_signed,omitempty"`
+	// MisMatched returns true if the certificate is mismatched
+	MisMatched bool `json:"mismatched,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -208,4 +215,40 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
 		return true
 	}
 	return false
+}
+
+// IsMisMatchedCert returns true if cert names(subject common name + alternative names) does not contain host
+func IsMisMatchedCert(host string, names []string) bool {
+	hostTokens := strings.Split(host, ".")
+	for _, name := range names {
+		// if not wildcard, return false if name matches the host
+		if !strings.Contains(name, "*") {
+			if strings.EqualFold(name, host) {
+				return false
+			}
+		} else {
+			// try to match the wildcard name with host
+			nameTokens := strings.Split(name, ".")
+			if len(hostTokens) == len(nameTokens) {
+				matched := false
+				for i, token := range nameTokens {
+					if stringsutil.EqualFoldAny(token, "*", hostTokens[i]) {
+						matched = true
+					} else {
+						matched = false
+						break
+					}
+				}
+				// return false if all the name tokens matched the host tokens
+				if matched {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+type ConnectOptions struct {
+	SNI string
 }

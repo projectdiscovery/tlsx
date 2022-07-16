@@ -60,9 +60,6 @@ func New(options *clients.Options) (*Client, error) {
 	if options.AllCiphers {
 		c.tlsConfig.CipherSuites = allCiphers
 	}
-	if options.ServerName != "" {
-		c.tlsConfig.ServerName = options.ServerName
-	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {
 			return nil, errors.Wrap(err, "could not get tls ciphers")
@@ -101,7 +98,7 @@ func New(options *clients.Options) (*Client, error) {
 }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
+func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
 
 	ctx := context.Background()
@@ -123,7 +120,9 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 	config := c.tlsConfig
 	if config.ServerName == "" {
 		c := config.Clone()
-		if iputil.IsIP(hostname) {
+		if options.SNI != "" {
+			c.ServerName = options.SNI
+		} else if iputil.IsIP(hostname) {
 			// using a random sni will return the default server certificate
 			c.ServerName = xid.New().String()
 		} else {
@@ -160,17 +159,18 @@ func (c *Client) Connect(hostname, port string) (*clients.Response, error) {
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ctls",
-		CertificateResponse: convertCertificateToResponse(leafCertificate),
+		CertificateResponse: convertCertificateToResponse(hostname, leafCertificate),
+		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {
-			response.Chain = append(response.Chain, convertCertificateToResponse(cert))
+			response.Chain = append(response.Chain, convertCertificateToResponse(hostname, cert))
 		}
 	}
 	return response, nil
 }
 
-func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateResponse {
+func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	response := &clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
@@ -178,6 +178,7 @@ func convertCertificateToResponse(cert *x509.Certificate) *clients.CertificateRe
 		NotAfter:   cert.NotAfter,
 		Expired:    clients.IsExpired(cert.NotAfter),
 		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerCN:   cert.Issuer.CommonName,
 		IssuerOrg:  cert.Issuer.Organization,
 		SubjectCN:  cert.Subject.CommonName,
