@@ -54,6 +54,7 @@ func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectO
 	for i := 0; i < s.options.Retries; i++ {
 		if resp, err = s.client.ConnectWithOptions(host, port, options); resp != nil {
 			err = nil
+			break
 		}
 	}
 	if resp == nil && err == nil {
