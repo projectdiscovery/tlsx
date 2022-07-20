@@ -14,6 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/ja3"
 	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
@@ -184,6 +185,9 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 		for _, cert := range hl.ServerCertificates.Chain {
 			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
 		}
+	}
+	if c.options.Ja3 {
+		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
 	}
 	return response, nil
 }

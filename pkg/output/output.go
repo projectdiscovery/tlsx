@@ -151,7 +151,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Blue(output.ServerName).String())
 		builder.WriteString("]")
 	}
-	if w.options.SO  && len(cert.SubjectOrg) > 0 {
+	if w.options.SO && len(cert.SubjectOrg) > 0 {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.BrightYellow(strings.Join(cert.SubjectOrg, ",")).String())
 		builder.WriteString("]")
@@ -202,6 +202,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	if w.options.Jarm && output.JarmHash != "" {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.Magenta(output.JarmHash).String())
+		builder.WriteString("]")
+	}
+
+	if w.options.Ja3 && output.Ja3Hash != "" {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Magenta(output.Ja3Hash).String())
 		builder.WriteString("]")
 	}
 
