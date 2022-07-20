@@ -14,7 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
-	"github.com/projectdiscovery/tlsx/pkg/tlsx/ja3"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
 	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"

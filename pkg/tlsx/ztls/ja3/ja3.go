@@ -34,6 +34,7 @@ const (
 	extensionHeartbeat            uint16 = 15
 )
 
+// GetJa3SHash returns the JA3 fingerprint hash of the tls client hello.
 func GetJa3Hash(clientHello *tls.ClientHello) string {
 	byteString := make([]byte, 0)
 
@@ -112,9 +113,15 @@ func GetJa3Hash(clientHello *tls.ClientHello) string {
 			byteString = appendExtension(byteString, exType)
 		}
 	}
-	// Replace last dash with a comma
-	byteString[len(byteString)-1] = commaByte
+	// If dash found replace it with a comma
+	if byteString[len(byteString)-1] == dashByte {
+		byteString[len(byteString)-1] = commaByte
+	} else {
+		// else add a comma (no extension present)
+		byteString = append(byteString, commaByte)
+	}
 
+	// Suppported Elliptic Curves
 	if len(clientHello.SupportedCurves) > 0 {
 		for _, val := range clientHello.SupportedCurves {
 			byteString = strconv.AppendUint(byteString, uint64(val), 10)
@@ -126,6 +133,7 @@ func GetJa3Hash(clientHello *tls.ClientHello) string {
 		byteString = append(byteString, commaByte)
 	}
 
+	// Elliptic Curve Point Formats
 	if len(clientHello.SupportedPoints) > 0 {
 		for _, val := range clientHello.SupportedPoints {
 			byteString = strconv.AppendUint(byteString, uint64(val), 10)
