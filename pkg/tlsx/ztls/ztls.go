@@ -14,6 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
 	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
@@ -55,6 +56,9 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
+	if options.AllCiphers {
+		c.tlsConfig.CipherSuites = allCiphers
+	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
 			return nil, errors.Wrap(err, "could not get ztls ciphers")
@@ -174,13 +178,16 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ztls",
-		CertificateResponse: convertCertificateToResponse(hostname, parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		CertificateResponse: c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
+			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
 		}
+	}
+	if c.options.Ja3 {
+		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
 	}
 	return response, nil
 }
@@ -190,11 +197,11 @@ func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
 	return parsed
 }
 
-func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
+func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	if cert == nil {
 		return nil
 	}
-	return &clients.CertificateResponse{
+	response := &clients.CertificateResponse{
 		SubjectAN:  cert.DNSNames,
 		Emails:     cert.EmailAddresses,
 		NotBefore:  cert.NotBefore,
@@ -214,4 +221,8 @@ func convertCertificateToResponse(hostname string, cert *x509.Certificate) *clie
 			SHA256: clients.SHA256Fingerprint(cert.Raw),
 		},
 	}
+	if c.options.Cert {
+		response.Certificate = clients.PemEncode(cert.Raw)
+	}
+	return response
 }

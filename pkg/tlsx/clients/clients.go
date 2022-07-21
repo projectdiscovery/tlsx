@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/pem"
 	"math"
 	"strings"
 	"time"
@@ -39,6 +40,8 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
+	// AllCiphers enables sending all ciphers as client
+	AllCiphers bool
 	// ProbeStatus enables writing of errors with json output
 	ProbeStatus bool
 	// CertsOnly enables early SSL termination using ztls flag
@@ -49,6 +52,8 @@ type Options struct {
 	Silent bool
 	// NoColor disables coloring of CLI output
 	NoColor bool
+	// Retries is the number of times to retry TLS connection
+	Retries int
 	// Timeout is the number of seconds to wait for connection
 	Timeout int
 	// Concurrency is the number of concurrent threads to process
@@ -92,6 +97,10 @@ type Options struct {
 	Hash string
 	// Jarm calculate jarm fingerprinting with multiple probes
 	Jarm bool
+	// Cert displays certificate in pem format
+	Cert bool
+	// Ja3 displays ja3 fingerprint hash
+	Ja3 bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -124,6 +133,7 @@ type Response struct {
 	// Chain is the chain of certificates
 	Chain      []*CertificateResponse `json:"chain,omitempty"`
 	JarmHash   string                 `json:"jarm_hash,omitempty"`
+	Ja3Hash    string                 `json:"ja3_hash,omitempty"`
 	ServerName string                 `json:"sni,omitempty"`
 }
 
@@ -157,6 +167,8 @@ type CertificateResponse struct {
 	Emails []string `json:"emails,omitempty"`
 	// FingerprintHash is the hashes for certificate
 	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint_hash,omitempty"`
+	// Certificate is the raw certificate in PEM format
+	Certificate string `json:"certificate,omitempty"`
 }
 
 // CertificateDistinguishedName is a distinguished certificate name
@@ -245,6 +257,15 @@ func IsMisMatchedCert(host string, names []string) bool {
 		}
 	}
 	return true
+}
+
+// PemEncode encodes a raw certificate to PEM format.
+func PemEncode(cert []byte) string {
+	var buf bytes.Buffer
+	if err := pem.Encode(&buf, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
+		return ""
+	}
+	return buf.String()
 }
 
 type ConnectOptions struct {

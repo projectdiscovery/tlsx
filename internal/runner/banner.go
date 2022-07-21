@@ -17,12 +17,15 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-var version = "v0.0.4"
+var version = "v0.0.5"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
 	r.hasStdin = fileutil.HasStdin()
 
+	if r.options.Retries == 0 {
+		r.options.Retries = 1
+	}
 	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm || r.options.MisMatched
 	if r.options.RespOnly && probeSpecified {
 		return errors.New("resp-only flag can only be used with san and cn flags")
@@ -40,7 +43,7 @@ func (r *Runner) validateOptions() error {
 	if r.options.CertsOnly && !(r.options.ScanMode == "ztls" || r.options.ScanMode == "auto") {
 		return errors.New("scan-mode must be ztls or auto with certs-only option")
 	}
-	if r.options.CertsOnly {
+	if r.options.CertsOnly || r.options.Ja3 {
 		r.options.ScanMode = "ztls" // force setting ztls when using certs-only
 	}
 	if r.options.Verbose {
