@@ -62,7 +62,7 @@ func readFlags() error {
 		flagSet.BoolVar(&options.Cipher, "cipher", false, "display used cipher"),
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
 		flagSet.BoolVar(&options.Jarm, "jarm", false, "display jarm fingerprint hash"),
-		flagSet.BoolVar(&options.Ja3, "ja3", false, "display ja3 fingerprint hash (works only with ztls scan mode)"),
+		flagSet.BoolVar(&options.Ja3, "ja3", false, "display ja3 fingerprint hash (using ztls)"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 	)
 

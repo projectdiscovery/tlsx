@@ -34,6 +34,7 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
  - **Auto TLS Fallback** for older TLS version
  - **Pre Handshake** TLS connection (early termination)
  - Customizable **Cipher / SNI / TLS** selection
+ - **JARM/JA3** TLS Fingerprint
  - **TLS Misconfigurations**
  - **HOST, IP, URL** and **CIDR** input
  - STD **IN/OUT** and **TXT/JSON** output
@@ -77,6 +78,7 @@ PROBES:
    -cipher              display used cipher
    -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
    -jarm                display jarm fingerprint hash
+   -ja3                 display ja3 fingerprint hash (using ztls)
    -tps, -probe-status  display tls probe status
 
 MISCONFIGURATIONS:
@@ -89,15 +91,18 @@ CONFIGURATIONS:
    -r, -resolvers string[]      list of resolvers to use
    -cc, -cacert string          client certificate authority file
    -ci, -cipher-input string[]  ciphers to use with tls connection
-   -sni string                  tls sni hostname to use
+   -sni string[]                tls sni hostname to use
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
-   -tc, -tls-chain              display tls chain in json output
+   -ac, -all-ciphers            send all ciphers as accepted inputs
+   -cert, -certificate          include certificates in json output (PEM format)
+   -tc, -tls-chain              include certificates chain in json output
    -vc, -verify-cert            enable verification of server certificate
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
    -timeout int          tls connection timeout in seconds (default 5)
+   -retries int          number of retries to perform for failures (default 3)
 
 OUTPUT:
    -o, -output string  file to write output to
@@ -314,6 +319,22 @@ $ tlsx -l hosts.txt -expired -self-signed -mismatched
 wrong.host.badssl.com:443 [mismatched]
 self-signed.badssl.com:443 [self-signed]
 expired.badssl.com:443 [expired]
+```
+
+### [JARM](https://engineering.salesforce.com/easily-identify-malicious-servers-on-the-internet-with-jarm-e095edac525a/) TLS Fingerprint
+
+```console
+$ echo hackerone.com | tlsx -jarm -silent
+
+hackerone.com:443 [29d3dd00029d29d00042d43d00041d5de67cc9954cc85372523050f20b5007]
+```
+
+### [JA3](https://github.com/salesforce/ja3) TLS Fingerprint
+
+```console
+$ echo hackerone.com | tlsx -ja3 -silent
+
+hackerone.com:443 [20c9baf81bfe96ff89722899e75d0190]
 ```
 
 ### JSON Output
