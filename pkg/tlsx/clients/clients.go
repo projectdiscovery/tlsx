@@ -99,6 +99,8 @@ type Options struct {
 	Jarm bool
 	// Cert displays certificate in pem format
 	Cert bool
+	// Ja3 displays ja3 fingerprint hash
+	Ja3 bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -131,6 +133,7 @@ type Response struct {
 	// Chain is the chain of certificates
 	Chain      []*CertificateResponse `json:"chain,omitempty"`
 	JarmHash   string                 `json:"jarm_hash,omitempty"`
+	Ja3Hash    string                 `json:"ja3_hash,omitempty"`
 	ServerName string                 `json:"sni,omitempty"`
 }
 
