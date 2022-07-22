@@ -101,6 +101,10 @@ type Options struct {
 	Cert bool
 	// Ja3 displays ja3 fingerprint hash
 	Ja3 bool
+	// Scan all IP's
+	ScanAllIPs bool
+	// IP Version to use for scanning
+	IPVersion goflags.StringSlice
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer

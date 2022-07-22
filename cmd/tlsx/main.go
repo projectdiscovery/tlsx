@@ -52,6 +52,8 @@ func readFlags() error {
 	flagSet.CreateGroup("scan-mode", "Scan-Mode",
 		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto) (default ctls)"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
+		flagSet.BoolVarP(&options.ScanAllIPs, "scan-all-ips", "sa", false, "display ja3 fingerprint hash (works only with ztls scan mode)"),
+		flagSet.StringSliceVarP(&options.IPVersion, "ip-version", "iv", []string{}, "ip version to use (4, 6) (default 4)", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("probes", "Probes",
