@@ -19,7 +19,7 @@ import (
 // Implementation is an interface implemented by TLSX client
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
-	ConnectWithOptions(hostname, port string, options ConnectOptions) (*Response, error)
+	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
 }
 
 // Options contains configuration options for tlsx client

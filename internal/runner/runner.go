@@ -32,7 +32,6 @@ type Runner struct {
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
 	dnsclient    *dnsx.DNSX
-	// ipranger     *ipranger.IPRanger
 }
 
 // New creates a new runner from provided configuration options
@@ -99,6 +98,7 @@ func (r *Runner) Close() error {
 
 type taskInput struct {
 	host string
+	ip   string
 	port string
 	sni  string
 }
@@ -148,7 +148,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			gologger.Info().Msgf("Processing input %s:%s", task.host, task.port)
 		}
 
-		response, err := tlsxService.ConnectWithOptions(task.host, task.port, clients.ConnectOptions{SNI: task.sni})
+		response, err := tlsxService.ConnectWithOptions(task.host, task.ip, task.port, clients.ConnectOptions{SNI: task.sni})
 		if err != nil {
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
 		}
@@ -235,7 +235,7 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 				r.processInputItemWithSni(taskInput{host: cidr, port: port}, inputs)
 			}
 		}
-	} else if r.options.ScanAllIPs {
+	} else if r.options.ScanAllIPs || len(r.options.IPVersion) > 0 {
 		host, customPort := r.getHostPortFromInput(input)
 		// If the host is a Domain, then perform resolution and discover all IP's
 		ipList, err := r.resolveFQDN(host)
@@ -246,10 +246,10 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 		for _, ip := range ipList {
 			if customPort == "" {
 				for _, port := range r.options.Ports {
-					r.processInputItemWithSni(taskInput{host: ip, port: port}, inputs)
+					r.processInputItemWithSni(taskInput{host: host, ip: ip, port: port}, inputs)
 				}
 			} else {
-				r.processInputItemWithSni(taskInput{host: ip, port: customPort}, inputs)
+				r.processInputItemWithSni(taskInput{host: host, ip: ip, port: customPort}, inputs)
 			}
 		}
 	} else {

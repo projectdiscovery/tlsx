@@ -32,11 +32,11 @@ func New(options *clients.Options) (*Client, error) {
 }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	response, err := c.tlsClient.ConnectWithOptions(hostname, port, options)
+func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
+	response, err := c.tlsClient.ConnectWithOptions(hostname, ip, port, options)
 	isInvalidResponse := c.isResponseInvalid(response)
 	if err != nil || isInvalidResponse {
-		ztlsResponse, ztlsErr := c.ztlsClient.ConnectWithOptions(hostname, port, options)
+		ztlsResponse, ztlsErr := c.ztlsClient.ConnectWithOptions(hostname, ip, port, options)
 		if ztlsErr != nil {
 			return nil, ztlsErr
 		}
