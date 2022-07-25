@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/fastdialer v0.0.16-0.20220620143737-2ba20b53770a
 	github.com/projectdiscovery/fileutil v0.0.0-20220609150212-453ac591c36c
-	github.com/projectdiscovery/goflags v0.0.8
+	github.com/projectdiscovery/goflags v0.0.9
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/iputil v0.0.0-20220613112553-9b6873b2c619
 	github.com/projectdiscovery/mapcidr v1.0.1
