@@ -42,17 +42,17 @@ func New(options *clients.Options) (*Service, error) {
 }
 
 // Connect connects to the input returning a response structure
-func (s *Service) Connect(host, port string) (*clients.Response, error) {
-	return s.ConnectWithOptions(host, port, clients.ConnectOptions{})
+func (s *Service) Connect(host, ip, port string) (*clients.Response, error) {
+	return s.ConnectWithOptions(host, ip, port, clients.ConnectOptions{})
 }
 
 // Connect connects to the input with custom options
-func (s *Service) ConnectWithOptions(host, port string, options clients.ConnectOptions) (*clients.Response, error) {
+func (s *Service) ConnectWithOptions(host, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	var resp *clients.Response
 	var err error
 
 	for i := 0; i < s.options.Retries; i++ {
-		if resp, err = s.client.ConnectWithOptions(host, port, options); resp != nil {
+		if resp, err = s.client.ConnectWithOptions(host, ip, port, options); resp != nil {
 			err = nil
 			break
 		}

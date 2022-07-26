@@ -19,7 +19,7 @@ import (
 // Implementation is an interface implemented by TLSX client
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
-	ConnectWithOptions(hostname, port string, options ConnectOptions) (*Response, error)
+	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
 }
 
 // Options contains configuration options for tlsx client
@@ -101,6 +101,10 @@ type Options struct {
 	Cert bool
 	// Ja3 displays ja3 fingerprint hash
 	Ja3 bool
+	// Scan all IP's
+	ScanAllIPs bool
+	// IP Version to use for scanning
+	IPVersion goflags.StringSlice
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer

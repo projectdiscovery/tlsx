@@ -103,8 +103,11 @@ func (timeoutError) Timeout() bool   { return true }
 func (timeoutError) Temporary() bool { return true }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
+func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
+	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
+		address = net.JoinHostPort(ip, port)
+	}
 	timeout := time.Duration(c.options.Timeout) * time.Second
 
 	var errChannel chan error
@@ -129,6 +132,9 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 	var resolvedIP string
 	if !iputil.IsIP(hostname) {
 		resolvedIP = c.dialer.GetDialedIP(hostname)
+		if resolvedIP == "" {
+			resolvedIP = ip
+		}
 	}
 
 	config := c.tlsConfig

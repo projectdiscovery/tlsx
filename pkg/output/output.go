@@ -105,6 +105,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(output.Host)
 		builder.WriteString(":")
 		builder.WriteString(output.Port)
+		if (w.options.ScanAllIPs || len(w.options.IPVersion) > 0) && output.IP != "" {
+			builder.WriteString(" (")
+			builder.WriteString(output.IP)
+			builder.WriteString(")")
+		}
 	}
 	outputPrefix := builder.String()
 	builder.Reset()
