@@ -8,6 +8,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
 )
@@ -29,6 +30,8 @@ func New(options *clients.Options) (*Service, error) {
 		service.client, err = ztls.New(options)
 	case "ctls":
 		service.client, err = tls.New(options)
+	case "openssl":
+		service.client, err = openssl.New(options)
 	case "auto":
 		service.client, err = auto.New(options)
 	default:
