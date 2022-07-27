@@ -1,3 +1,5 @@
+//go:build (linux || darwin) && openssl
+
 // Package openssl implements a tls grabbing implementation using openssl
 package openssl
 
