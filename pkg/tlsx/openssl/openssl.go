@@ -4,12 +4,13 @@
 package openssl
 
 import (
-	"crypto/x509"
 	"encoding/pem"
 	"io/ioutil"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/zmap/zcrypto/x509"
 
 	"github.com/pkg/errors"
 
