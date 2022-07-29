@@ -36,26 +36,7 @@ func New(options *clients.Options) (*Client, error) {
 		dialer:  options.Fastdialer,
 		options: options,
 	}
-
-	if !options.VerifyServerCertificate {
-		c.openSSLDialFlags = append(c.openSSLDialFlags, openssl.InsecureSkipHostVerification)
-	}
-
 	return c, nil
-}
-
-func (c *Client) OpenSSLDialFlags() openssl.DialFlags {
-	if len(c.openSSLDialFlags) == 0 {
-		return 0
-	}
-	initialFlag := c.openSSLDialFlags[0]
-	allDialFlags := initialFlag
-	for _, dialFlag := range c.openSSLDialFlags {
-		if dialFlag != initialFlag {
-			allDialFlags = allDialFlags & dialFlag
-		}
-	}
-	return allDialFlags
 }
 
 // Connect connects to a host and grabs the response data

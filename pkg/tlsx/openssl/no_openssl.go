@@ -4,15 +4,11 @@
 package openssl
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct{}
-
-var ErrNotSupported = errors.New("openssl not supported")
 
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
