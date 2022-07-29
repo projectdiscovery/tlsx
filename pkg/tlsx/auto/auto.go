@@ -29,7 +29,7 @@ func New(options *clients.Options) (*Client, error) {
 		return nil, errors.Wrap(err, "could not create ztls client")
 	}
 	opensslClient, err := openssl.New(options)
-	if err != nil {
+	if err != nil && err != openssl.ErrNotSupported {
 		return nil, errors.Wrap(err, "could not create ztls client")
 	}
 	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient}, nil

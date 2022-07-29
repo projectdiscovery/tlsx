@@ -12,12 +12,14 @@ import (
 // Client is a TLS grabbing client using crypto/tls
 type Client struct{}
 
+var ErrNotSupported = errors.New("openssl not supported")
+
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
-	return nil, errors.New("openssl not supported")
+	return nil, ErrNotSupported
 }
 
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	return nil, errors.New("not supported")
+	return nil, ErrNotSupported
 }

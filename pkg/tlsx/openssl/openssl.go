@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/x509"
 
 	"github.com/pkg/errors"
@@ -121,9 +122,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	defer conn.Close()
 
 	if options.SNI != "" {
-		if err := conn.SetTlsExtHostName(options.SNI); err != nil {
-			return nil, errors.New("could not set custom SNI")
-		}
+		err = conn.SetTlsExtHostName(options.SNI)
+	} else if iputil.IsIP(hostname) {
+		// using a random sni will return the default server certificate
+		err = conn.SetTlsExtHostName(xid.New().String())
+	} else {
+		err = conn.SetTlsExtHostName(hostname)
+	}
+	if err != nil {
+		return nil, errors.New("could not set custom SNI")
 	}
 
 	// ignoring handshake errors
