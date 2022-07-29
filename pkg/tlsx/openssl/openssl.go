@@ -69,6 +69,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, err
 	}
+	opensslCtx.SetVerifyMode(openssl.VerifyNone)
 
 	if c.options.Timeout > 0 {
 		opensslCtx.SetTimeout(time.Duration(c.options.Timeout) * time.Second)
