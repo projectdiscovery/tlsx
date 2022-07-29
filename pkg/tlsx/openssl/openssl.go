@@ -4,6 +4,7 @@
 package openssl
 
 import (
+	"context"
 	"encoding/pem"
 	"io/ioutil"
 	"net"
@@ -17,10 +18,8 @@ import (
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
 	"github.com/spacemonkeygo/openssl"
-
-	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
-	zpkix "github.com/zmap/zcrypto/x509/pkix"
 )
 
 // Client is a TLS grabbing client using crypto/tls
@@ -93,22 +92,32 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		}
 	}
 
-	conn, err := openssl.Dial("tcp", address, opensslCtx, c.OpenSSLDialFlags())
-	if err != nil {
-		return nil, err
+	ctx := context.Background()
+	if c.options.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
+		defer cancel()
 	}
-	defer conn.Close()
+
+	rawConn, err := c.dialer.Dial(ctx, "tcp", address)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not dial address")
+	}
+	defer rawConn.Close()
 
 	var resolvedIP string
 	if !iputil.IsIP(hostname) {
-		remoteAddr := conn.RemoteAddr().String()
-		if IP, _, err := net.SplitHostPort(remoteAddr); err == nil {
-			resolvedIP = IP
-		}
+		resolvedIP = c.dialer.GetDialedIP(hostname)
 		if resolvedIP == "" {
 			resolvedIP = ip
 		}
 	}
+
+	conn, err := openssl.Client(rawConn, opensslCtx)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not wrap raw conn")
+	}
+	defer conn.Close()
 
 	if options.SNI != "" {
 		if err := conn.SetTlsExtHostName(options.SNI); err != nil {
@@ -116,9 +125,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		}
 	}
 
-	if err := conn.Handshake(); err != nil {
-		return nil, errors.Wrap(err, "could not do handshake")
-	}
+	// ignoring handshake errors
+	_ = conn.Handshake()
 
 	peerCertificates, err := conn.PeerCertificateChain()
 	if err != nil {
@@ -152,7 +160,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Port:                port,
 		Cipher:              tlsCipher,
 		TLSConnection:       "openssl",
-		CertificateResponse: c.convertCertificateToResponse(hostname, x509LeafCertificate),
+		CertificateResponse: ztls.ConvertCertificateToResponse(c.options, hostname, x509LeafCertificate),
 		ServerName:          serverName,
 	}
 	if c.options.TLSChain {
@@ -161,7 +169,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			if err != nil {
 				return nil, errors.Wrap(err, "could not convert openssl chain certificate")
 			}
-			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, x509Cert))
+			response.Chain = append(response.Chain, ztls.ConvertCertificateToResponse(c.options, hostname, x509Cert))
 		}
 	}
 	return response, nil
@@ -185,55 +193,4 @@ func (c *Client) convertOpenSSLToX509Certificate(opensslCert *openssl.Certificat
 	}
 
 	return x509Certificate, nil
-}
-
-func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
-	response := &clients.CertificateResponse{
-		SubjectAN:  cert.DNSNames,
-		Emails:     cert.EmailAddresses,
-		NotBefore:  cert.NotBefore,
-		NotAfter:   cert.NotAfter,
-		Expired:    clients.IsExpired(cert.NotAfter),
-		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerCN:   cert.Issuer.CommonName,
-		IssuerOrg:  cert.Issuer.Organization,
-		SubjectCN:  cert.Subject.CommonName,
-		SubjectOrg: cert.Subject.Organization,
-		FingerprintHash: clients.CertificateResponseFingerprintHash{
-			MD5:    clients.MD5Fingerprint(cert.Raw),
-			SHA1:   clients.SHA1Fingerprint(cert.Raw),
-			SHA256: clients.SHA256Fingerprint(cert.Raw),
-		},
-	}
-	if parsedIssuer := parseASN1DNSequenceWithZpkix(cert.RawIssuer); parsedIssuer != "" {
-		response.IssuerDN = parsedIssuer
-	} else {
-		response.IssuerDN = cert.Issuer.String()
-	}
-	if parsedSubject := parseASN1DNSequenceWithZpkix(cert.RawSubject); parsedSubject != "" {
-		response.SubjectDN = parsedSubject
-	} else {
-		response.SubjectDN = cert.Subject.String()
-	}
-	if c.options.Cert {
-		response.Certificate = clients.PemEncode(cert.Raw)
-	}
-	return response
-}
-
-// parseASN1DNSequenceWithZpkix tries to parse raw ASN1 of a TLS DN with zpkix and
-// zasn1 library which includes additional information not parsed by go standard
-// library which may be useful.
-//
-// If the parsing fails, a blank string is returned and the standard library data is used.
-func parseASN1DNSequenceWithZpkix(data []byte) string {
-	var rdnSequence zpkix.RDNSequence
-	var subject zpkix.Name
-	if _, err := zasn1.Unmarshal(data, &rdnSequence); err != nil {
-		return ""
-	}
-	subject.FillFromRDNSequence(&rdnSequence)
-	dnParsedString := subject.String()
-	return dnParsedString
 }

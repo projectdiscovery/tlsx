@@ -17,9 +17,6 @@ import (
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/rs/xid"
-
-	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
-	zpkix "github.com/zmap/zcrypto/x509/pkix"
 )
 
 // Client is a TLS grabbing client using crypto/tls
@@ -196,34 +193,10 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 			SHA256: clients.SHA256Fingerprint(cert.Raw),
 		},
 	}
-	if parsedIssuer := parseASN1DNSequenceWithZpkix(cert.RawIssuer); parsedIssuer != "" {
-		response.IssuerDN = parsedIssuer
-	} else {
-		response.IssuerDN = cert.Issuer.String()
-	}
-	if parsedSubject := parseASN1DNSequenceWithZpkix(cert.RawSubject); parsedSubject != "" {
-		response.SubjectDN = parsedSubject
-	} else {
-		response.SubjectDN = cert.Subject.String()
-	}
+	response.IssuerDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawIssuer, cert.Issuer.String())
+	response.SubjectDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawSubject, cert.Subject.String())
 	if c.options.Cert {
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
-}
-
-// parseASN1DNSequenceWithZpkix tries to parse raw ASN1 of a TLS DN with zpkix and
-// zasn1 library which includes additional information not parsed by go standard
-// library which may be useful.
-//
-// If the parsing fails, a blank string is returned and the standard library data is used.
-func parseASN1DNSequenceWithZpkix(data []byte) string {
-	var rdnSequence zpkix.RDNSequence
-	var subject zpkix.Name
-	if _, err := zasn1.Unmarshal(data, &rdnSequence); err != nil {
-		return ""
-	}
-	subject.FillFromRDNSequence(&rdnSequence)
-	dnParsedString := subject.String()
-	return dnParsedString
 }
