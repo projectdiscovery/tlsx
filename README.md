@@ -488,6 +488,30 @@ $ tlsx -u example.com -ci TLS_AES_256_GCM_SHA384 -cipher
 $ tlsx -u example.com -ci cipher_list.txt -cipher
 ```
 
+### OpenSSL
+`tlsx` can be built with support for `OpenSSL` for osx and linux systems. The library must be installed with the following commands:
+
+- OSx: `brew install openssl`
+- Linux: `apt install openssl`
+
+On some linux systems the default configuration is restrictive, and in order to allow more tls coverage the enclosed `assets/openssl.include` should be copied onto the system and the following snippet added to `/etc/ssl/openssl.cnf`:
+
+```
+.include /path/to/openssl.include
+```
+
+Finally the binary must be built with the `openssl` tag:
+
+```console
+go build -tags openssl .
+```
+
+At this point the engine can be used with:
+
+```console
+tlsx -sm openssl -json
+```
+
 ## Acknowledgements
 
 This program optionally uses the [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
