@@ -65,6 +65,7 @@ func readFlags() error {
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
 		flagSet.BoolVar(&options.Jarm, "jarm", false, "display jarm fingerprint hash"),
 		flagSet.BoolVar(&options.Ja3, "ja3", false, "display ja3 fingerprint hash (using ztls)"),
+		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert", "wc", false, "display if wildcard certificate found"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 	)
 
@@ -86,7 +87,6 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
-		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert","wc" ,false, "check if there is a wildcard certificate"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",

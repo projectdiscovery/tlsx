@@ -270,7 +270,7 @@ func IsMisMatchedCert(host string, names []string) bool {
 // IsWildCardCert returns true if the certificate is a wildcard certificate
 func IsWildCardCert(names []string) bool {
 	for _, name := range names {
-		if strings.Contains(name, "*") {
+		if strings.Contains(name, "*.") {
 			return true
 		}
 	}

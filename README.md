@@ -67,8 +67,10 @@ INPUT:
    -p, -port string[]  target port to connect (default 443)
 
 SCAN-MODE:
-   -sm, -scan-mode string  tls connection mode to use (ctls, ztls, auto) (default ctls)
-   -ps, -pre-handshake     enable pre-handshake tls connection (early termination) using ztls
+   -sm, -scan-mode string     tls connection mode to use (ctls, ztls, auto) (default ctls)
+   -ps, -pre-handshake        enable pre-handshake tls connection (early termination) using ztls
+   -sa, -scan-all-ips         scan all ips for a host (default false)
+   -iv, -ip-version string[]  ip version to use (4, 6) (default 4)
 
 PROBES:
    -san                 display subject alternative names
@@ -79,6 +81,7 @@ PROBES:
    -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
    -jarm                display jarm fingerprint hash
    -ja3                 display ja3 fingerprint hash (using ztls)
+   -wc, -wildcard-cert  display if wildcard certificate found
    -tps, -probe-status  display tls probe status
 
 MISCONFIGURATIONS:
