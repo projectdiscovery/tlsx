@@ -86,6 +86,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
+		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert","wc" ,false, "check if there is a wildcard certificate"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",
