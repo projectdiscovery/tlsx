@@ -105,6 +105,8 @@ type Options struct {
 	ScanAllIPs bool
 	// IP Version to use for scanning
 	IPVersion goflags.StringSlice
+	// WildcardCertCheck enables wildcard certificate check
+	WildcardCertCheck bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -173,6 +175,8 @@ type CertificateResponse struct {
 	FingerprintHash CertificateResponseFingerprintHash `json:"fingerprint_hash,omitempty"`
 	// Certificate is the raw certificate in PEM format
 	Certificate string `json:"certificate,omitempty"`
+	// WildCardCert is true if tls certificate is a wildcard certificate
+	WildCardCert bool `json:"wildcard_certificate,omitempty"`
 }
 
 // CertificateDistinguishedName is a distinguished certificate name
@@ -261,6 +265,16 @@ func IsMisMatchedCert(host string, names []string) bool {
 		}
 	}
 	return true
+}
+
+// IsWildCardCert returns true if the certificate is a wildcard certificate
+func IsWildCardCert(names []string) bool {
+	for _, name := range names {
+		if strings.Contains(name, "*.") {
+			return true
+		}
+	}
+	return false
 }
 
 // PemEncode encodes a raw certificate to PEM format.
