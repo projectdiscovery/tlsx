@@ -65,14 +65,14 @@ func readFlags() error {
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
 		flagSet.BoolVar(&options.Jarm, "jarm", false, "display jarm fingerprint hash"),
 		flagSet.BoolVar(&options.Ja3, "ja3", false, "display ja3 fingerprint hash (using ztls)"),
-		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert", "wc", false, "display if wildcard certificate found"),
+		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert", "wc", false, "display host with wildcard ssl certificate"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
-		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display expired certificate"),
-		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display self-signed certificate"),
-		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display mismatched certificate"),
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display host with host expired certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),
+		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display host with mismatched certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",

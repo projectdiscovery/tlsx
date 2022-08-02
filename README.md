@@ -81,13 +81,13 @@ PROBES:
    -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
    -jarm                display jarm fingerprint hash
    -ja3                 display ja3 fingerprint hash (using ztls)
-   -wc, -wildcard-cert  display if wildcard certificate found
+   -wc, -wildcard-cert  display host with wildcard ssl certificate
    -tps, -probe-status  display tls probe status
 
 MISCONFIGURATIONS:
-   -ex, -expired      display expired certificate
-   -ss, -self-signed  display self-signed certificate
-   -mm, -mismatched   display mismatched certificate
+   -ex, -expired      display host with host expired certificate
+   -ss, -self-signed  display host with self-signed certificate
+   -mm, -mismatched   display host with mismatched certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
