@@ -23,6 +23,9 @@ import (
 	"github.com/spacemonkeygo/openssl"
 )
 
+// Enabled reports if the tool was compiled with openssl support
+const Enabled = true
+
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
 	dialer           *fastdialer.Dialer

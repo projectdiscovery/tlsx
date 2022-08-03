@@ -7,6 +7,9 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
 
+// Enabled reports if the tool was compiled with openssl support
+const Enabled = false
+
 // Client is a TLS grabbing client using crypto/tls
 type Client struct{}
 

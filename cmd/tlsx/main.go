@@ -1,11 +1,14 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 )
 
 var (
@@ -50,8 +53,14 @@ func readFlags() error {
 		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "target port to connect (default 443)", goflags.FileCommaSeparatedStringSliceOptions),
 	)
 
+	availableScanModes := []string{"ctls", "ztls"}
+	if openssl.Enabled {
+		availableScanModes = append(availableScanModes, "openssl")
+	}
+	availableScanModes = append(availableScanModes, "auto")
+
 	flagSet.CreateGroup("scan-mode", "Scan-Mode",
-		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, openssl, auto) (default ctls)"),
+		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use ("+strings.Join(availableScanModes, ", ")+") (default ctls)"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
 		flagSet.BoolVarP(&options.ScanAllIPs, "scan-all-ips", "sa", false, "scan all ips for a host (default false)"),
 		flagSet.StringSliceVarP(&options.IPVersion, "ip-version", "iv", nil, "ip version to use (4, 6) (default 4)", goflags.NormalizedStringSliceOptions),
