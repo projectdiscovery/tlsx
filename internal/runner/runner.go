@@ -129,6 +129,7 @@ func (r *Runner) Execute() error {
 	if r.options.ScanMode == "auto" {
 		gologger.Info().Msgf("Connections made using crypto/tls: %d", stats.LoadCryptoTLSConnections())
 		gologger.Info().Msgf("Connections made using zcrypto/tls: %d", stats.LoadZcryptoTLSConnections())
+		gologger.Info().Msgf("Connections made using openssl: %d", stats.LoadOpensslTLSConnections())
 	}
 	return nil
 }

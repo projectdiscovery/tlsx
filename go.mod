@@ -18,6 +18,7 @@ require (
 	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6
 	github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3
 	github.com/rs/xid v1.4.0
+	github.com/spacemonkeygo/openssl v0.0.0-20181017203307-c2dcc5cca94a
 	github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c
 	go.uber.org/multierr v1.8.0
 )
@@ -53,12 +54,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20210903102120-5a9d2412d21d // indirect
 	github.com/projectdiscovery/cryptoutil v0.0.0-20210805184155-b5d2512f9345 // indirect
-	github.com/projectdiscovery/hmap v0.0.2-0.20220308104318-929a45d8e775 // indirect
+	github.com/projectdiscovery/hmap v0.0.2 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.13 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
+	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect
 	github.com/weppos/publicsuffix-go v0.15.1-0.20220329081811-9a40b608a236 // indirect
