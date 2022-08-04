@@ -27,6 +27,9 @@ type Client struct {
 	options   *clients.Options
 }
 
+// supportedTlsVersions contains the list of supported TLS versions (avoids allocations)
+var supportedTlsVersions = []string{"ssl30", "tls10", "tls11", "tls12"}
+
 // versionStringToTLSVersion converts tls version string to version
 var versionStringToTLSVersion = map[string]uint16{
 	"ssl30": tls.VersionSSL30,
@@ -151,6 +154,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		config = c
 	}
 
+	if options.VersionTLS != "" {
+		version, ok := versionStringToTLSVersion[options.VersionTLS]
+		if !ok {
+			return nil, fmt.Errorf("invalid tls version specified: %s", options.VersionTLS)
+		}
+		config.MinVersion = version
+		config.MaxVersion = version
+	}
+
 	tlsConn := tls.Client(conn, config)
 	if timeout == 0 {
 		err = tlsConn.Handshake()
@@ -208,20 +220,20 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 		return nil
 	}
 	response := &clients.CertificateResponse{
-		SubjectAN:  cert.DNSNames,
-		Emails:     cert.EmailAddresses,
-		NotBefore:  cert.NotBefore,
-		NotAfter:   cert.NotAfter,
-		Expired:    clients.IsExpired(cert.NotAfter),
-		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		SubjectAN:    cert.DNSNames,
+		Emails:       cert.EmailAddresses,
+		NotBefore:    cert.NotBefore,
+		NotAfter:     cert.NotAfter,
+		Expired:      clients.IsExpired(cert.NotAfter),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerDN:   cert.Issuer.String(),
-		IssuerCN:   cert.Issuer.CommonName,
-		IssuerOrg:  cert.Issuer.Organization,
-		SubjectDN:  cert.Subject.String(),
-		SubjectCN:  cert.Subject.CommonName,
-		SubjectOrg: cert.Subject.Organization,
+		IssuerDN:     cert.Issuer.String(),
+		IssuerCN:     cert.Issuer.CommonName,
+		IssuerOrg:    cert.Issuer.Organization,
+		SubjectDN:    cert.Subject.String(),
+		SubjectCN:    cert.Subject.CommonName,
+		SubjectOrg:   cert.Subject.Organization,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),
@@ -232,4 +244,9 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
+}
+
+// SupportedTLSVersions returns the list of standard tls library supported tls versions
+func (c *Client) SupportedTLSVersions() ([]string, error) {
+	return supportedTlsVersions, nil
 }

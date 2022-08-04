@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
@@ -77,5 +78,28 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 		resp.JarmHash = jarmhash
 	}
+
+	supportedTlsVersions := []string{resp.Version}
+	if s.options.TlsVersionsEnum {
+		enumeratedTlsVersions, _ := s.enumTlsVersions(host, ip, port, options)
+		supportedTlsVersions = append(supportedTlsVersions, enumeratedTlsVersions...)
+	}
+	resp.VersionEnum = sliceutil.Dedupe(supportedTlsVersions)
+
 	return resp, nil
+}
+
+func (s *Service) enumTlsVersions(host, ip, port string, options clients.ConnectOptions) ([]string, error) {
+	var enumeratedTlsVersions []string
+	clientSupportedTlsVersions, err := s.client.SupportedTLSVersions()
+	if err != nil {
+		return nil, err
+	}
+	for _, tlsVersion := range clientSupportedTlsVersions {
+		options.VersionTLS = tlsVersion
+		if resp, err := s.client.ConnectWithOptions(host, ip, port, options); err == nil && resp != nil && resp.Version == tlsVersion {
+			enumeratedTlsVersions = append(enumeratedTlsVersions, tlsVersion)
+		}
+	}
+	return enumeratedTlsVersions, nil
 }

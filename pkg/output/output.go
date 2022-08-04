@@ -221,6 +221,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString("]")
 	}
 
+	if w.options.TlsVersionsEnum {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Magenta(strings.Join(output.VersionEnum, ",")).String())
+		builder.WriteString("]")
+	}
+
 	outputdata := builder.Bytes()
 	return outputdata, nil
 }

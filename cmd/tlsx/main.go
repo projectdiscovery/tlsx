@@ -44,7 +44,7 @@ func readFlags() error {
 	flagSet.SetDescription(`TLSX is a tls data gathering and analysis toolkit.`)
 
 	flagSet.CreateGroup("input", "Input",
-		flagSet.StringSliceVarP(&options.Inputs, "host", "u", []string{}, "target host to scan (-u INPUT1,INPUT2)", goflags.CommaSeparatedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.Inputs, "host", "u", nil, "target host to scan (-u INPUT1,INPUT2)", goflags.CommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.InputList, "list", "l", "", "target list to scan (-l INPUT_FILE)"),
 		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "target port to connect (default 443)", goflags.FileCommaSeparatedStringSliceOptions),
 	)
@@ -53,7 +53,7 @@ func readFlags() error {
 		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto) (default ctls)"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
 		flagSet.BoolVarP(&options.ScanAllIPs, "scan-all-ips", "sa", false, "scan all ips for a host (default false)"),
-		flagSet.StringSliceVarP(&options.IPVersion, "ip-version", "iv", []string{}, "ip version to use (4, 6) (default 4)", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.IPVersion, "ip-version", "iv", nil, "ip version to use (4, 6) (default 4)", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("probes", "Probes",
@@ -67,6 +67,7 @@ func readFlags() error {
 		flagSet.BoolVar(&options.Ja3, "ja3", false, "display ja3 fingerprint hash (using ztls)"),
 		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert", "wc", false, "display host with wildcard ssl certificate"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
+		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
