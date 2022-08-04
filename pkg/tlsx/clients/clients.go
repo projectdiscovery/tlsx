@@ -22,6 +22,8 @@ type Implementation interface {
 	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
 	// SupportedTLSVersions returns the list of supported tls versions
 	SupportedTLSVersions() ([]string, error)
+	// SupportedTLSCiphers returns the list of supported tls ciphers
+	SupportedTLSCiphers() ([]string, error)
 }
 
 // Options contains configuration options for tlsx client
@@ -111,6 +113,8 @@ type Options struct {
 	WildcardCertCheck bool
 	// TlsVersionsEnum enumerates supported tls versions
 	TlsVersionsEnum bool
+	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
+	TlsCiphersEnum bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -146,6 +150,12 @@ type Response struct {
 	Ja3Hash     string                 `json:"ja3_hash,omitempty"`
 	ServerName  string                 `json:"sni,omitempty"`
 	VersionEnum []string               `json:"version-enum,omitempty"`
+	TlsCiphers  []TlsCiphers           `json:"cipher-enum,omitempty"`
+}
+
+type TlsCiphers struct {
+	Version string   `json:"version,omitempty"`
+	Ciphers []string `json:"ciphers,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
@@ -294,4 +304,5 @@ func PemEncode(cert []byte) string {
 type ConnectOptions struct {
 	SNI        string
 	VersionTLS string
+	Ciphers    []string
 }

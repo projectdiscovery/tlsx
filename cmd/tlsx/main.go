@@ -68,6 +68,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert", "wc", false, "display host with wildcard ssl certificate"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
+		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",

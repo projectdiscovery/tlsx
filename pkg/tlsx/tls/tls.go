@@ -29,9 +29,6 @@ type Client struct {
 	options   *clients.Options
 }
 
-// supportedTlsVersions contains the list of supported TLS versions (avoids allocations)
-var supportedTlsVersions = []string{"tls10", "tls11", "tls12", "tls13"}
-
 // versionStringToTLSVersion converts tls version string to version
 var versionStringToTLSVersion = map[string]uint16{
 	"tls10": tls.VersionTLS10,
@@ -151,6 +148,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		config.MaxVersion = version
 	}
 
+	if len(options.Ciphers) > 0 {
+		customCiphers, err := toTLSCiphers(options.Ciphers)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get tls ciphers")
+		}
+		c.tlsConfig.CipherSuites = customCiphers
+	}
+
 	conn := tls.Client(rawConn, config)
 	if err := conn.HandshakeContext(ctx); err != nil {
 		rawConn.Close()
@@ -244,4 +249,9 @@ func parseASN1DNSequenceWithZpkix(data []byte) string {
 // SupportedTLSVersions returns the list of standard tls library supported tls versions
 func (c *Client) SupportedTLSVersions() ([]string, error) {
 	return supportedTlsVersions, nil
+}
+
+// SupportedTLSVersions returns the list of standard tls library supported ciphers
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return allCiphersNames, nil
 }

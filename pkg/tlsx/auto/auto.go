@@ -54,6 +54,11 @@ func (c *Client) SupportedTLSVersions() ([]string, error) {
 	return nil, errors.New("not implemented in auto mode")
 }
 
+// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return nil, errors.New("not implemented in auto mode")
+}
+
 // isResponseInvalid handles invalid response
 func (c *Client) isResponseInvalid(resp *clients.Response) bool {
 	if resp == nil {

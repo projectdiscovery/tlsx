@@ -79,12 +79,23 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		resp.JarmHash = jarmhash
 	}
 
-	supportedTlsVersions := []string{resp.Version}
 	if s.options.TlsVersionsEnum {
+		supportedTlsVersions := []string{resp.Version}
 		enumeratedTlsVersions, _ := s.enumTlsVersions(host, ip, port, options)
 		supportedTlsVersions = append(supportedTlsVersions, enumeratedTlsVersions...)
+		resp.VersionEnum = sliceutil.Dedupe(supportedTlsVersions)
 	}
-	resp.VersionEnum = sliceutil.Dedupe(supportedTlsVersions)
+
+	var supportedTlsCiphers []clients.TlsCiphers
+	if s.options.TlsCiphersEnum {
+		for _, supportedTlsVersion := range resp.VersionEnum {
+			options.VersionTLS = supportedTlsVersion
+			enumeratedTlsVersions, _ := s.enumTlsCiphers(host, ip, port, options)
+			enumeratedTlsVersions = sliceutil.Dedupe(enumeratedTlsVersions)
+			supportedTlsCiphers = append(supportedTlsCiphers, clients.TlsCiphers{Version: supportedTlsVersion, Ciphers: enumeratedTlsVersions})
+		}
+		resp.TlsCiphers = supportedTlsCiphers
+	}
 
 	return resp, nil
 }
@@ -102,4 +113,19 @@ func (s *Service) enumTlsVersions(host, ip, port string, options clients.Connect
 		}
 	}
 	return enumeratedTlsVersions, nil
+}
+
+func (s *Service) enumTlsCiphers(host, ip, port string, options clients.ConnectOptions) ([]string, error) {
+	var enumeratedTlsCiphers []string
+	clientSupportedCiphers, err := s.client.SupportedTLSCiphers()
+	if err != nil {
+		return nil, err
+	}
+	for _, cipher := range clientSupportedCiphers {
+		options.Ciphers = []string{cipher}
+		if resp, err := s.client.ConnectWithOptions(host, ip, port, options); err == nil && resp != nil {
+			enumeratedTlsCiphers = append(enumeratedTlsCiphers, cipher)
+		}
+	}
+	return enumeratedTlsCiphers, nil
 }
