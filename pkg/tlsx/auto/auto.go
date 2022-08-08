@@ -8,14 +8,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
 )
 
 // Client is a TLS grabbing client using auto fallback
 type Client struct {
-	tlsClient  *tls.Client
-	ztlsClient *ztls.Client
+	tlsClient     *tls.Client
+	ztlsClient    *ztls.Client
+	opensslClient *openssl.Client
 }
 
 // New creates a new grabbing client using auto fallback
@@ -28,17 +30,26 @@ func New(options *clients.Options) (*Client, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create ztls client")
 	}
-	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient}, nil
+	opensslClient, err := openssl.New(options)
+	if err != nil && err != openssl.ErrNotSupported {
+		return nil, errors.Wrap(err, "could not create ztls client")
+	}
+	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient}, nil
 }
 
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	response, err := c.tlsClient.ConnectWithOptions(hostname, ip, port, options)
-	isInvalidResponse := c.isResponseInvalid(response)
-	if err != nil || isInvalidResponse {
+	if err != nil {
 		ztlsResponse, ztlsErr := c.ztlsClient.ConnectWithOptions(hostname, ip, port, options)
 		if ztlsErr != nil {
-			return nil, ztlsErr
+			opensslResponse, opensslError := c.opensslClient.ConnectWithOptions(hostname, ip, port, options)
+			if opensslError != nil {
+				return nil, opensslError
+			}
+			opensslResponse.TLSConnection = "openssl"
+			stats.IncrementOpensslTLSConnections()
+			return opensslResponse, nil
 		}
 		ztlsResponse.TLSConnection = "ztls"
 		stats.IncrementZcryptoTLSConnections()

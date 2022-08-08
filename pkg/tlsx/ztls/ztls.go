@@ -201,12 +201,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ztls",
-		CertificateResponse: c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		CertificateResponse: ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
+			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
 		}
 	}
 	if c.options.Ja3 {
@@ -215,12 +215,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	return response, nil
 }
 
-func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
+// ParseSimpleTLSCertificate using zcrypto x509
+func ParseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
 	parsed, _ := x509.ParseCertificate(cert.Raw)
 	return parsed
 }
 
-func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
+// ConvertCertificateToResponse using zcrypto x509
+func ConvertCertificateToResponse(options *clients.Options, hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	if cert == nil {
 		return nil
 	}
@@ -245,7 +247,7 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 			SHA256: clients.SHA256Fingerprint(cert.Raw),
 		},
 	}
-	if c.options.Cert {
+	if options.Cert {
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
