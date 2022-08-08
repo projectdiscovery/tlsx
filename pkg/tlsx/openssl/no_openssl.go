@@ -4,6 +4,7 @@
 package openssl
 
 import (
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
 
@@ -21,4 +22,14 @@ func New(options *clients.Options) (*Client, error) {
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	return nil, ErrNotSupported
+}
+
+// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+func (c *Client) SupportedTLSVersions() ([]string, error) {
+	return nil, errors.New("not implemented in auto mode")
+}
+
+// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return nil, errors.New("not implemented in auto mode")
 }

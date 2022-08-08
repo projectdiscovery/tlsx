@@ -186,3 +186,13 @@ func (c *Client) convertOpenSSLToX509Certificate(opensslCert *openssl.Certificat
 
 	return x509Certificate, nil
 }
+
+// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+func (c *Client) SupportedTLSVersions() ([]string, error) {
+	return nil, errors.New("not implemented in openssl mode")
+}
+
+// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return nil, errors.New("not implemented in openssl mode")
+}
