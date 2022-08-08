@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -65,7 +65,7 @@ func New(options *clients.Options) (*Client, error) {
 		}
 	}
 	if options.CACertificate != "" {
-		caCert, err := ioutil.ReadFile(options.CACertificate)
+		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not read ca certificate")
 		}

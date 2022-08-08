@@ -3,8 +3,6 @@
 package auto
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
@@ -68,16 +66,4 @@ func (c *Client) SupportedTLSVersions() ([]string, error) {
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
 	return nil, errors.New("not implemented in auto mode")
-}
-
-// isResponseInvalid handles invalid response
-func (c *Client) isResponseInvalid(resp *clients.Response) bool {
-	if resp == nil {
-		return true
-	}
-	// case for invalid google resolving response
-	if strings.EqualFold(resp.CertificateResponse.IssuerCN, "invalid2.invalid") {
-		return true
-	}
-	return false
 }
