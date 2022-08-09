@@ -151,8 +151,8 @@ type Response struct {
 	JarmHash    string                 `json:"jarm_hash,omitempty"`
 	Ja3Hash     string                 `json:"ja3_hash,omitempty"`
 	ServerName  string                 `json:"sni,omitempty"`
-	VersionEnum []string               `json:"version-enum,omitempty"`
-	TlsCiphers  []TlsCiphers           `json:"cipher-enum,omitempty"`
+	VersionEnum []string               `json:"version_enum,omitempty"`
+	TlsCiphers  []TlsCiphers           `json:"cipher_enum,omitempty"`
 }
 
 type TlsCiphers struct {
