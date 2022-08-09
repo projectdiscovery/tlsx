@@ -30,7 +30,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 	opensslClient, err := openssl.New(options)
 	if err != nil && err != openssl.ErrNotSupported {
-		return nil, errors.Wrap(err, "could not create ztls client")
+		return nil, errors.Wrap(err, "could not create openssl client")
 	}
 	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient}, nil
 }
@@ -58,12 +58,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	return response, nil
 }
 
-// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+// SupportedTLSVersions returns the list of supported tls versions by all engines
 func (c *Client) SupportedTLSVersions() ([]string, error) {
-	return nil, errors.New("not implemented in auto mode")
+	return supportedTlsVersions, nil
 }
 
-// SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
+// SupportedTLSCiphers returns the list of supported ciphers by all engines
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
-	return nil, errors.New("not implemented in auto mode")
+	return allCiphersNames, nil
 }

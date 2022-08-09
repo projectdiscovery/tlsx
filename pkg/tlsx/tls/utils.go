@@ -6,18 +6,18 @@ import (
 )
 
 var (
-	allCiphers           []uint16
-	allCiphersNames      []string
-	supportedTlsVersions []string
+	AllCiphers           []uint16
+	AllCiphersNames      []string
+	SupportedTlsVersions []string
 )
 
 func init() {
 	for name, cipher := range tlsCiphers {
-		allCiphersNames = append(allCiphersNames, name)
-		allCiphers = append(allCiphers, cipher)
+		AllCiphersNames = append(AllCiphersNames, name)
+		AllCiphers = append(AllCiphers, cipher)
 	}
 	for name := range versionStringToTLSVersion {
-		supportedTlsVersions = append(supportedTlsVersions, name)
+		SupportedTlsVersions = append(SupportedTlsVersions, name)
 	}
 }
 

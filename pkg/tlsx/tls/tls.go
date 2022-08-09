@@ -55,7 +55,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 
 	if options.AllCiphers {
-		c.tlsConfig.CipherSuites = allCiphers
+		c.tlsConfig.CipherSuites = AllCiphers
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {
@@ -221,10 +221,10 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 
 // SupportedTLSVersions returns the list of standard tls library supported tls versions
 func (c *Client) SupportedTLSVersions() ([]string, error) {
-	return supportedTlsVersions, nil
+	return SupportedTlsVersions, nil
 }
 
-// SupportedTLSVersions returns the list of standard tls library supported ciphers
+// SupportedTLSCiphers returns the list of standard tls library supported ciphers
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
-	return allCiphersNames, nil
+	return AllCiphersNames, nil
 }
