@@ -5,11 +5,19 @@ import (
 	"fmt"
 )
 
-var allCiphers []uint16
+var (
+	AllCiphers           []uint16
+	AllCiphersNames      []string
+	SupportedTlsVersions []string
+)
 
 func init() {
-	for _, cipher := range tlsCiphers {
-		allCiphers = append(allCiphers, cipher)
+	for name, cipher := range tlsCiphers {
+		AllCiphersNames = append(AllCiphersNames, name)
+		AllCiphers = append(AllCiphers, cipher)
+	}
+	for name := range versionStringToTLSVersion {
+		SupportedTlsVersions = append(SupportedTlsVersions, name)
 	}
 }
 

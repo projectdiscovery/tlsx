@@ -5,8 +5,8 @@ package ztls
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -57,7 +57,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 
 	if options.AllCiphers {
-		c.tlsConfig.CipherSuites = allCiphers
+		c.tlsConfig.CipherSuites = AllCiphers
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
@@ -67,7 +67,7 @@ func New(options *clients.Options) (*Client, error) {
 		}
 	}
 	if options.CACertificate != "" {
-		caCert, err := ioutil.ReadFile(options.CACertificate)
+		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not read ca certificate")
 		}
@@ -151,6 +151,23 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		config = c
 	}
 
+	if options.VersionTLS != "" {
+		version, ok := versionStringToTLSVersion[options.VersionTLS]
+		if !ok {
+			return nil, fmt.Errorf("invalid tls version specified: %s", options.VersionTLS)
+		}
+		config.MinVersion = version
+		config.MaxVersion = version
+	}
+
+	if len(options.Ciphers) > 0 {
+		customCiphers, err := toZTLSCiphers(options.Ciphers)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get tls ciphers")
+		}
+		c.tlsConfig.CipherSuites = customCiphers
+	}
+
 	tlsConn := tls.Client(conn, config)
 	if timeout == 0 {
 		err = tlsConn.Handshake()
@@ -210,20 +227,20 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 		return nil
 	}
 	response := &clients.CertificateResponse{
-		SubjectAN:  cert.DNSNames,
-		Emails:     cert.EmailAddresses,
-		NotBefore:  cert.NotBefore,
-		NotAfter:   cert.NotAfter,
-		Expired:    clients.IsExpired(cert.NotAfter),
-		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		SubjectAN:    cert.DNSNames,
+		Emails:       cert.EmailAddresses,
+		NotBefore:    cert.NotBefore,
+		NotAfter:     cert.NotAfter,
+		Expired:      clients.IsExpired(cert.NotAfter),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerDN:   cert.Issuer.String(),
-		IssuerCN:   cert.Issuer.CommonName,
-		IssuerOrg:  cert.Issuer.Organization,
-		SubjectDN:  cert.Subject.String(),
-		SubjectCN:  cert.Subject.CommonName,
-		SubjectOrg: cert.Subject.Organization,
+		IssuerDN:     cert.Issuer.String(),
+		IssuerCN:     cert.Issuer.CommonName,
+		IssuerOrg:    cert.Issuer.Organization,
+		SubjectDN:    cert.Subject.String(),
+		SubjectCN:    cert.Subject.CommonName,
+		SubjectOrg:   cert.Subject.Organization,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),
@@ -234,4 +251,14 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
+}
+
+// SupportedTLSVersions returns the list of ztls library supported tls versions
+func (c *Client) SupportedTLSVersions() ([]string, error) {
+	return SupportedTlsVersions, nil
+}
+
+// SupportedTLSCiphers returns the list of ztls library supported ciphers
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return AllCiphersNames, nil
 }

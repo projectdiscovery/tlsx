@@ -6,11 +6,19 @@ import (
 	"github.com/zmap/zcrypto/tls"
 )
 
-var allCiphers []uint16
+var (
+	AllCiphers           []uint16
+	AllCiphersNames      []string
+	SupportedTlsVersions []string
+)
 
 func init() {
-	for _, cipher := range ztlsCiphers {
-		allCiphers = append(allCiphers, cipher)
+	for name, cipher := range ztlsCiphers {
+		AllCiphersNames = append(AllCiphersNames, name)
+		AllCiphers = append(AllCiphers, cipher)
+	}
+	for name := range versionStringToTLSVersion {
+		SupportedTlsVersions = append(SupportedTlsVersions, name)
 	}
 }
 

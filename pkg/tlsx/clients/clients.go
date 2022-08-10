@@ -22,6 +22,10 @@ import (
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
 	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
+	// SupportedTLSVersions returns the list of supported tls versions
+	SupportedTLSVersions() ([]string, error)
+	// SupportedTLSCiphers returns the list of supported tls ciphers
+	SupportedTLSCiphers() ([]string, error)
 }
 
 // Options contains configuration options for tlsx client
@@ -109,6 +113,10 @@ type Options struct {
 	IPVersion goflags.StringSlice
 	// WildcardCertCheck enables wildcard certificate check
 	WildcardCertCheck bool
+	// TlsVersionsEnum enumerates supported tls versions
+	TlsVersionsEnum bool
+	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
+	TlsCiphersEnum bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -139,10 +147,17 @@ type Response struct {
 	// when ran using scan-mode auto.
 	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain      []*CertificateResponse `json:"chain,omitempty"`
-	JarmHash   string                 `json:"jarm_hash,omitempty"`
-	Ja3Hash    string                 `json:"ja3_hash,omitempty"`
-	ServerName string                 `json:"sni,omitempty"`
+	Chain       []*CertificateResponse `json:"chain,omitempty"`
+	JarmHash    string                 `json:"jarm_hash,omitempty"`
+	Ja3Hash     string                 `json:"ja3_hash,omitempty"`
+	ServerName  string                 `json:"sni,omitempty"`
+	VersionEnum []string               `json:"version_enum,omitempty"`
+	TlsCiphers  []TlsCiphers           `json:"cipher_enum,omitempty"`
+}
+
+type TlsCiphers struct {
+	Version string   `json:"version,omitempty"`
+	Ciphers []string `json:"ciphers,omitempty"`
 }
 
 // CertificateResponse is the response for a certificate
@@ -289,7 +304,9 @@ func PemEncode(cert []byte) string {
 }
 
 type ConnectOptions struct {
-	SNI string
+	SNI        string
+	VersionTLS string
+	Ciphers    []string
 }
 
 // ParseASN1DNSequenceWithZpkixOrDefault return the parsed value of ASN1DNSequence or a default string value

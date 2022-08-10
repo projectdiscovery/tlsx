@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -55,7 +55,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 
 	if options.AllCiphers {
-		c.tlsConfig.CipherSuites = allCiphers
+		c.tlsConfig.CipherSuites = AllCiphers
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {
@@ -65,7 +65,7 @@ func New(options *clients.Options) (*Client, error) {
 		}
 	}
 	if options.CACertificate != "" {
-		caCert, err := ioutil.ReadFile(options.CACertificate)
+		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not read ca certificate")
 		}
@@ -136,6 +136,23 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		config = c
 	}
 
+	if options.VersionTLS != "" {
+		version, ok := versionStringToTLSVersion[options.VersionTLS]
+		if !ok {
+			return nil, fmt.Errorf("invalid tls version specified: %s", options.VersionTLS)
+		}
+		config.MinVersion = version
+		config.MaxVersion = version
+	}
+
+	if len(options.Ciphers) > 0 {
+		customCiphers, err := toTLSCiphers(options.Ciphers)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get tls ciphers")
+		}
+		c.tlsConfig.CipherSuites = customCiphers
+	}
+
 	conn := tls.Client(rawConn, config)
 	if err := conn.HandshakeContext(ctx); err != nil {
 		rawConn.Close()
@@ -200,4 +217,14 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
+}
+
+// SupportedTLSVersions returns the list of standard tls library supported tls versions
+func (c *Client) SupportedTLSVersions() ([]string, error) {
+	return SupportedTlsVersions, nil
+}
+
+// SupportedTLSCiphers returns the list of standard tls library supported ciphers
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return AllCiphersNames, nil
 }
