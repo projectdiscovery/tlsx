@@ -113,6 +113,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, errors.Wrap(err, "could not dial address")
 	}
+	if rawConn == nil {
+		return nil, fmt.Errorf("could not connect to %s", address)
+	}
 	var resolvedIP string
 	if !iputil.IsIP(hostname) {
 		resolvedIP = c.dialer.GetDialedIP(hostname)
