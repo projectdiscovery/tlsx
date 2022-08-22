@@ -127,9 +127,7 @@ func (r *Runner) Execute() error {
 
 	// Print the stats if auto fallback mode is used
 	if r.options.ScanMode == "auto" {
-		gologger.Info().Msgf("Connections made using crypto/tls: %d", stats.LoadCryptoTLSConnections())
-		gologger.Info().Msgf("Connections made using zcrypto/tls: %d", stats.LoadZcryptoTLSConnections())
-		gologger.Info().Msgf("Connections made using openssl: %d", stats.LoadOpensslTLSConnections())
+		gologger.Info().Msgf("Connections made using crypto/tls: %d, zcrypto/tls: %d, openssl: %d", stats.LoadCryptoTLSConnections(), stats.LoadZcryptoTLSConnections(), stats.LoadOpensslTLSConnections())
 	}
 	return nil
 }

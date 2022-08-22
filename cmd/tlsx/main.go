@@ -60,7 +60,7 @@ func readFlags() error {
 	availableScanModes = append(availableScanModes, "auto")
 
 	flagSet.CreateGroup("scan-mode", "Scan-Mode",
-		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use ("+strings.Join(availableScanModes, ", ")+") (default ctls)"),
+		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "auto", "tls connection mode to use ("+strings.Join(availableScanModes, ", ")+")"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
 		flagSet.BoolVarP(&options.ScanAllIPs, "scan-all-ips", "sa", false, "scan all ips for a host (default false)"),
 		flagSet.StringSliceVarP(&options.IPVersion, "ip-version", "iv", nil, "ip version to use (4, 6) (default 4)", goflags.NormalizedStringSliceOptions),
@@ -95,7 +95,7 @@ func readFlags() error {
 		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
-		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", false, "send all ciphers as accepted inputs"),
+		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", true, "send all ciphers as accepted inputs"),
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
