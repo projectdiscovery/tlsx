@@ -42,6 +42,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		ztlsResponse, ztlsErr := c.ztlsClient.ConnectWithOptions(hostname, ip, port, options)
 		if ztlsErr != nil {
 			opensslResponse, opensslError := c.opensslClient.ConnectWithOptions(hostname, ip, port, options)
+			if errors.Is(opensslError, openssl.ErrNotSupported) {
+				return nil, ztlsErr
+			}
 			if opensslError != nil {
 				return nil, opensslError
 			}
