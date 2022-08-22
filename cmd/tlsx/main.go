@@ -1,11 +1,14 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 )
 
 var (
@@ -14,6 +17,7 @@ var (
 )
 
 func main() {
+
 	if err := process(); err != nil {
 		gologger.Fatal().Msgf("Could not process: %s", err)
 	}
@@ -44,14 +48,22 @@ func readFlags() error {
 	flagSet.SetDescription(`TLSX is a tls data gathering and analysis toolkit.`)
 
 	flagSet.CreateGroup("input", "Input",
-		flagSet.StringSliceVarP(&options.Inputs, "host", "u", []string{}, "target host to scan (-u INPUT1,INPUT2)", goflags.CommaSeparatedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.Inputs, "host", "u", nil, "target host to scan (-u INPUT1,INPUT2)", goflags.CommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.InputList, "list", "l", "", "target list to scan (-l INPUT_FILE)"),
 		flagSet.StringSliceVarP(&options.Ports, "port", "p", nil, "target port to connect (default 443)", goflags.FileCommaSeparatedStringSliceOptions),
 	)
 
+	availableScanModes := []string{"ctls", "ztls"}
+	if openssl.Enabled {
+		availableScanModes = append(availableScanModes, "openssl")
+	}
+	availableScanModes = append(availableScanModes, "auto")
+
 	flagSet.CreateGroup("scan-mode", "Scan-Mode",
-		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "", "tls connection mode to use (ctls, ztls, auto) (default ctls)"),
+		flagSet.StringVarP(&options.ScanMode, "scan-mode", "sm", "auto", "tls connection mode to use ("+strings.Join(availableScanModes, ", ")+")"),
 		flagSet.BoolVarP(&options.CertsOnly, "pre-handshake", "ps", false, "enable pre-handshake tls connection (early termination) using ztls"),
+		flagSet.BoolVarP(&options.ScanAllIPs, "scan-all-ips", "sa", false, "scan all ips for a host (default false)"),
+		flagSet.StringSliceVarP(&options.IPVersion, "ip-version", "iv", nil, "ip version to use (4, 6) (default 4)", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("probes", "Probes",
@@ -63,13 +75,16 @@ func readFlags() error {
 		flagSet.StringVar(&options.Hash, "hash", "", "display certificate fingerprint hashes (md5,sha1,sha256)"),
 		flagSet.BoolVar(&options.Jarm, "jarm", false, "display jarm fingerprint hash"),
 		flagSet.BoolVar(&options.Ja3, "ja3", false, "display ja3 fingerprint hash (using ztls)"),
+		flagSet.BoolVarP(&options.WildcardCertCheck, "wildcard-cert", "wc", false, "display host with wildcard ssl certificate"),
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
+		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
+		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
-		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display expired certificate"),
-		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display self-signed certificate"),
-		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display mismatched certificate"),
+		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display host with host expired certificate"),
+		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),
+		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display host with mismatched certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -80,7 +95,7 @@ func readFlags() error {
 		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
-		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", false, "send all ciphers as accepted inputs"),
+		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", true, "send all ciphers as accepted inputs"),
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),

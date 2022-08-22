@@ -67,8 +67,10 @@ INPUT:
    -p, -port string[]  target port to connect (default 443)
 
 SCAN-MODE:
-   -sm, -scan-mode string  tls connection mode to use (ctls, ztls, auto) (default ctls)
-   -ps, -pre-handshake     enable pre-handshake tls connection (early termination) using ztls
+   -sm, -scan-mode string     tls connection mode to use (ctls, ztls, auto) (default "auto")
+   -ps, -pre-handshake        enable pre-handshake tls connection (early termination) using ztls
+   -sa, -scan-all-ips         scan all ips for a host (default false)
+   -iv, -ip-version string[]  ip version to use (4, 6) (default 4)
 
 PROBES:
    -san                 display subject alternative names
@@ -79,12 +81,15 @@ PROBES:
    -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
    -jarm                display jarm fingerprint hash
    -ja3                 display ja3 fingerprint hash (using ztls)
+   -wc, -wildcard-cert  display host with wildcard ssl certificate
    -tps, -probe-status  display tls probe status
+   -ve, -version-enum   enumerate and display supported tls versions
+   -ce, -cipher-enum    enumerate and display supported cipher
 
 MISCONFIGURATIONS:
-   -ex, -expired      display expired certificate
-   -ss, -self-signed  display self-signed certificate
-   -mm, -mismatched   display mismatched certificate
+   -ex, -expired      display host with host expired certificate
+   -ss, -self-signed  display host with self-signed certificate
+   -mm, -mismatched   display host with mismatched certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -94,7 +99,7 @@ CONFIGURATIONS:
    -sni string[]                tls sni hostname to use
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
-   -ac, -all-ciphers            send all ciphers as accepted inputs
+   -ac, -all-ciphers            send all ciphers as accepted inputs (default true)
    -cert, -certificate          include certificates in json output (PEM format)
    -tc, -tls-chain              include certificates chain in json output
    -vc, -verify-cert            enable verification of server certificate
@@ -347,7 +352,7 @@ echo example.com | tlsx -json -silent | jq .
 
 ```json
 {
-  "timestamp": "2022-06-30T15:29:52.788129+05:30",
+  "timestamp": "2022-08-22T21:22:59.799053+05:30",
   "host": "example.com",
   "ip": "93.184.216.34",
   "port": "443",
@@ -381,7 +386,8 @@ echo example.com | tlsx -json -silent | jq .
     "sha1": "df81dfa6b61eafdffffe1a250240db5d2e6cee25",
     "sha256": "7f2fe8d6b18e9a47839256cd97938daa70e8515750298ddba2f3f4b8440113fc"
   },
-  "tls_connection": "ctls"
+  "tls_connection": "ctls",
+  "sni": "example.com"
 }
 ```
 
@@ -389,13 +395,12 @@ echo example.com | tlsx -json -silent | jq .
 
 ### Scan Mode
 
-tlsx provides multiple options to make TLS connection, **[crypto/tls](https://pkg.go.dev/crypto/tls)** being default option which is standard crypto library in Go.
+tlsx provides multiple modes to make TLS Connection -
 
-Available TLS Connection modes:
-
-- `ctls` (**crypto/tls**) - default
+- `auto` (with fallback support) - default
+- `ctls` (**crypto/tls**)
 - `ztls` (**zcrypto/tls**)
-- `auto` (**ctls** with **ztls** fallback support)
+- `openssl` (conditional build)
 
 Some pointers for the specific mode / library is highlighted in [linked discussions](https://github.com/projectdiscovery/tlsx/discussions/2), `auto` mode is supported to ensure the maximum coverage and scans for the hosts running older version of TLS by retrying the connection using `ztls` mode upon any connection error.
 
@@ -417,6 +422,63 @@ $ echo tls-v1-0.badssl.com | tlsx -port 1010 -sm ztls
 
 tls-v1-0.badssl.com:1010
 ```
+
+<table>
+<tr>
+<td>
+
+### OpenSSL
+
+`tlsx` can be built with support for `OpenSSL` for osx and linux systems. The library must be installed with the following commands:
+
+
+**OSX**:
+
+```console
+brew install openssl
+```
+
+**OSX Arm**:
+
+```console
+brew install openssl
+```
+
+```console
+export CGO_LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
+export CGO_CPPFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
+```
+
+```console
+go build -tags openssl .
+```
+
+**Linux**:
+
+```console
+apt install openssl
+```
+
+On some linux systems the default configuration is restrictive, and in order to allow more tls coverage the enclosed `assets/openssl.include` should be copied onto the system and the following snippet added to `/etc/ssl/openssl.cnf`:
+
+```
+.include /path/to/openssl.include
+```
+
+Finally the binary must be built with the `openssl` tag:
+
+```console
+go build -tags openssl .
+```
+
+At this point the engine can be used with:
+
+```console
+tlsx -sm openssl -json
+```
+</td>
+</tr>
+</table>
 
 ### Pre-Handshake (Early Termination)
 
@@ -490,7 +552,10 @@ $ tlsx -u example.com -ci cipher_list.txt -cipher
 
 ## Acknowledgements
 
-This program optionally uses the [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
+This program optionally uses:
+
+- [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
+- [spacelog](https://github.com/spacemonkeygo/spacelog) for openssl cgo bindings.
 
 --------
 

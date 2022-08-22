@@ -105,6 +105,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(output.Host)
 		builder.WriteString(":")
 		builder.WriteString(output.Port)
+		if (w.options.ScanAllIPs || len(w.options.IPVersion) > 0) && output.IP != "" {
+			builder.WriteString(" (")
+			builder.WriteString(output.IP)
+			builder.WriteString(")")
+		}
 	}
 	outputPrefix := builder.String()
 	builder.Reset()
@@ -181,6 +186,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Yellow("mismatched").String())
 		builder.WriteString("]")
 	}
+	if w.options.WildcardCertCheck && cert.WildCardCert {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Yellow("wildcard").String())
+		builder.WriteString("]")
+	}
 	if w.options.Hash != "" {
 		hashOpts := strings.Split(w.options.Hash, ",")
 
@@ -208,6 +218,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	if w.options.Ja3 && output.Ja3Hash != "" {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.Magenta(output.Ja3Hash).String())
+		builder.WriteString("]")
+	}
+
+	if w.options.TlsVersionsEnum {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Magenta(strings.Join(output.VersionEnum, ",")).String())
 		builder.WriteString("]")
 	}
 

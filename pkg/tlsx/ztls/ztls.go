@@ -5,8 +5,8 @@ package ztls
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -57,7 +57,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 
 	if options.AllCiphers {
-		c.tlsConfig.CipherSuites = allCiphers
+		c.tlsConfig.CipherSuites = AllCiphers
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
@@ -67,7 +67,7 @@ func New(options *clients.Options) (*Client, error) {
 		}
 	}
 	if options.CACertificate != "" {
-		caCert, err := ioutil.ReadFile(options.CACertificate)
+		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not read ca certificate")
 		}
@@ -103,8 +103,11 @@ func (timeoutError) Timeout() bool   { return true }
 func (timeoutError) Temporary() bool { return true }
 
 // Connect connects to a host and grabs the response data
-func (c *Client) ConnectWithOptions(hostname, port string, options clients.ConnectOptions) (*clients.Response, error) {
+func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	address := net.JoinHostPort(hostname, port)
+	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
+		address = net.JoinHostPort(ip, port)
+	}
 	timeout := time.Duration(c.options.Timeout) * time.Second
 
 	var errChannel chan error
@@ -126,9 +129,15 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to address")
 	}
+	if conn == nil {
+		return nil, fmt.Errorf("could not connect to %s", address)
+	}
 	var resolvedIP string
 	if !iputil.IsIP(hostname) {
 		resolvedIP = c.dialer.GetDialedIP(hostname)
+		if resolvedIP == "" {
+			resolvedIP = ip
+		}
 	}
 
 	config := c.tlsConfig
@@ -143,6 +152,23 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 			c.ServerName = hostname
 		}
 		config = c
+	}
+
+	if options.VersionTLS != "" {
+		version, ok := versionStringToTLSVersion[options.VersionTLS]
+		if !ok {
+			return nil, fmt.Errorf("invalid tls version specified: %s", options.VersionTLS)
+		}
+		config.MinVersion = version
+		config.MaxVersion = version
+	}
+
+	if len(options.Ciphers) > 0 {
+		customCiphers, err := toZTLSCiphers(options.Ciphers)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get tls ciphers")
+		}
+		c.tlsConfig.CipherSuites = customCiphers
 	}
 
 	tlsConn := tls.Client(conn, config)
@@ -178,12 +204,12 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ztls",
-		CertificateResponse: c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		CertificateResponse: ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, parseSimpleTLSCertificate(cert)))
+			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
 		}
 	}
 	if c.options.Ja3 {
@@ -192,37 +218,50 @@ func (c *Client) ConnectWithOptions(hostname, port string, options clients.Conne
 	return response, nil
 }
 
-func parseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
+// ParseSimpleTLSCertificate using zcrypto x509
+func ParseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
 	parsed, _ := x509.ParseCertificate(cert.Raw)
 	return parsed
 }
 
-func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
+// ConvertCertificateToResponse using zcrypto x509
+func ConvertCertificateToResponse(options *clients.Options, hostname string, cert *x509.Certificate) *clients.CertificateResponse {
 	if cert == nil {
 		return nil
 	}
 	response := &clients.CertificateResponse{
-		SubjectAN:  cert.DNSNames,
-		Emails:     cert.EmailAddresses,
-		NotBefore:  cert.NotBefore,
-		NotAfter:   cert.NotAfter,
-		Expired:    clients.IsExpired(cert.NotAfter),
-		SelfSigned: clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched: clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerDN:   cert.Issuer.String(),
-		IssuerCN:   cert.Issuer.CommonName,
-		IssuerOrg:  cert.Issuer.Organization,
-		SubjectDN:  cert.Subject.String(),
-		SubjectCN:  cert.Subject.CommonName,
-		SubjectOrg: cert.Subject.Organization,
+		SubjectAN:    cert.DNSNames,
+		Emails:       cert.EmailAddresses,
+		NotBefore:    cert.NotBefore,
+		NotAfter:     cert.NotAfter,
+		Expired:      clients.IsExpired(cert.NotAfter),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
+		IssuerDN:     cert.Issuer.String(),
+		IssuerCN:     cert.Issuer.CommonName,
+		IssuerOrg:    cert.Issuer.Organization,
+		SubjectDN:    cert.Subject.String(),
+		SubjectCN:    cert.Subject.CommonName,
+		SubjectOrg:   cert.Subject.Organization,
 		FingerprintHash: clients.CertificateResponseFingerprintHash{
 			MD5:    clients.MD5Fingerprint(cert.Raw),
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),
 			SHA256: clients.SHA256Fingerprint(cert.Raw),
 		},
 	}
-	if c.options.Cert {
+	if options.Cert {
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
 	return response
+}
+
+// SupportedTLSVersions returns the list of ztls library supported tls versions
+func (c *Client) SupportedTLSVersions() ([]string, error) {
+	return SupportedTlsVersions, nil
+}
+
+// SupportedTLSCiphers returns the list of ztls library supported ciphers
+func (c *Client) SupportedTLSCiphers() ([]string, error) {
+	return AllCiphersNames, nil
 }

@@ -17,7 +17,7 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-var version = "v0.0.5"
+var version = "v0.0.6"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
@@ -26,7 +26,7 @@ func (r *Runner) validateOptions() error {
 	if r.options.Retries == 0 {
 		r.options.Retries = 1
 	}
-	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm || r.options.MisMatched
+	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm || r.options.MisMatched || r.options.WildcardCertCheck
 	if r.options.RespOnly && probeSpecified {
 		return errors.New("resp-only flag can only be used with san and cn flags")
 	}

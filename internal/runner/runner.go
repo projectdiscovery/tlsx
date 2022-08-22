@@ -9,12 +9,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
+	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/tlsx/pkg/output"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
@@ -27,6 +31,7 @@ type Runner struct {
 	outputWriter output.Writer
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
+	dnsclient    *dnsx.DNSX
 }
 
 // New creates a new runner from provided configuration options
@@ -63,6 +68,18 @@ func New(options *clients.Options) (*Runner, error) {
 	runner.fastDialer = fastDialer
 	runner.options.Fastdialer = fastDialer
 
+	dnsOptions := dnsx.DefaultOptions
+	dnsOptions.MaxRetries = runner.options.Retries
+	dnsOptions.Hostsfile = true
+	if sliceutil.Contains(options.IPVersion, "6") {
+		dnsOptions.QuestionTypes = append(dnsOptions.QuestionTypes, dns.TypeAAAA)
+	}
+	dnsclient, err := dnsx.New(dnsOptions)
+	if err != nil {
+		return nil, err
+	}
+	runner.dnsclient = dnsclient
+
 	outputWriter, err := output.New(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create output writer")
@@ -81,6 +98,7 @@ func (r *Runner) Close() error {
 
 type taskInput struct {
 	host string
+	ip   string
 	port string
 	sni  string
 }
@@ -109,8 +127,7 @@ func (r *Runner) Execute() error {
 
 	// Print the stats if auto fallback mode is used
 	if r.options.ScanMode == "auto" {
-		gologger.Info().Msgf("Connections made using crypto/tls: %d", stats.LoadCryptoTLSConnections())
-		gologger.Info().Msgf("Connections made using zcrypto/tls: %d", stats.LoadZcryptoTLSConnections())
+		gologger.Info().Msgf("Connections made using crypto/tls: %d, zcrypto/tls: %d, openssl: %d", stats.LoadCryptoTLSConnections(), stats.LoadZcryptoTLSConnections(), stats.LoadOpensslTLSConnections())
 	}
 	return nil
 }
@@ -130,7 +147,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			gologger.Info().Msgf("Processing input %s:%s", task.host, task.port)
 		}
 
-		response, err := tlsxService.ConnectWithOptions(task.host, task.port, clients.ConnectOptions{SNI: task.sni})
+		response, err := tlsxService.ConnectWithOptions(task.host, task.ip, task.port, clients.ConnectOptions{SNI: task.sni})
 		if err != nil {
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
 		}
@@ -176,6 +193,33 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	return nil
 }
 
+// resolveFQDN resolves a FQDN and returns the IP addresses
+func (r *Runner) resolveFQDN(target string) ([]string, error) {
+	// If the host is a Domain, then perform resolution and discover all IP
+	// addresses for a given host. Else use that host
+	var hostIPs []string
+	if !iputil.IsIP(target) {
+		dnsData, err := r.dnsclient.QueryMultiple(target)
+		if err != nil || dnsData == nil {
+			gologger.Warning().Msgf("Could not get IP for host: %s\n", target)
+			return nil, err
+		}
+		if len(r.options.IPVersion) > 0 {
+			if sliceutil.Contains(r.options.IPVersion, "4") {
+				hostIPs = append(hostIPs, dnsData.A...)
+			}
+			if sliceutil.Contains(r.options.IPVersion, "6") {
+				hostIPs = append(hostIPs, dnsData.AAAA...)
+			}
+		} else {
+			hostIPs = append(hostIPs, dnsData.A...)
+		}
+	} else {
+		hostIPs = append(hostIPs, target)
+	}
+	return hostIPs, nil
+}
+
 // processInputItem processes a single input item
 func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 	// CIDR input
@@ -188,6 +232,23 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 		for cidr := range cidrInputs {
 			for _, port := range r.options.Ports {
 				r.processInputItemWithSni(taskInput{host: cidr, port: port}, inputs)
+			}
+		}
+	} else if r.options.ScanAllIPs || len(r.options.IPVersion) > 0 {
+		host, customPort := r.getHostPortFromInput(input)
+		// If the host is a Domain, then perform resolution and discover all IP's
+		ipList, err := r.resolveFQDN(host)
+		if err != nil {
+			gologger.Warning().Msgf("Could not resolve %s: %s", host, err)
+			return
+		}
+		for _, ip := range ipList {
+			if customPort == "" {
+				for _, port := range r.options.Ports {
+					r.processInputItemWithSni(taskInput{host: host, ip: ip, port: port}, inputs)
+				}
+			} else {
+				r.processInputItemWithSni(taskInput{host: host, ip: ip, port: customPort}, inputs)
 			}
 		}
 	} else {
