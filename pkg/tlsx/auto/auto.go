@@ -9,6 +9,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	"go.uber.org/multierr"
 )
 
 // Client is a TLS grabbing client using auto fallback
@@ -20,45 +21,44 @@ type Client struct {
 
 // New creates a new grabbing client using auto fallback
 func New(options *clients.Options) (*Client, error) {
-	tlsClient, err := tls.New(options)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create tls client")
-	}
-	ztlsClient, err := ztls.New(options)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create ztls client")
-	}
-	opensslClient, err := openssl.New(options)
-	if err != nil && err != openssl.ErrNotSupported {
-		return nil, errors.Wrap(err, "could not create openssl client")
+	tlsClient, tlsErr := tls.New(options)
+	ztlsClient, ztlsErr := ztls.New(options)
+	opensslClient, opensslErr := openssl.New(options)
+	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && opensslErr != openssl.ErrNotSupported) {
+		return nil, multierr.Combine(tlsErr, ztlsErr, opensslErr)
 	}
 	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient}, nil
 }
 
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	response, err := c.tlsClient.ConnectWithOptions(hostname, ip, port, options)
-	if err != nil {
-		ztlsResponse, ztlsErr := c.ztlsClient.ConnectWithOptions(hostname, ip, port, options)
-		if ztlsErr != nil {
-			opensslResponse, opensslError := c.opensslClient.ConnectWithOptions(hostname, ip, port, options)
-			if errors.Is(opensslError, openssl.ErrNotSupported) {
-				return nil, ztlsErr
-			}
-			if opensslError != nil {
-				return nil, opensslError
-			}
-			opensslResponse.TLSConnection = "openssl"
-			stats.IncrementOpensslTLSConnections()
-			return opensslResponse, nil
+	var response *clients.Response
+	var err, ztlsErr, opensslErr error
+	if c.tlsClient != nil {
+		if response, err = c.tlsClient.ConnectWithOptions(hostname, ip, port, options); err == nil {
+			response.TLSConnection = "ctls"
+			stats.IncrementCryptoTLSConnections()
+			return response, nil
 		}
-		ztlsResponse.TLSConnection = "ztls"
-		stats.IncrementZcryptoTLSConnections()
-		return ztlsResponse, nil
 	}
-	response.TLSConnection = "ctls"
-	stats.IncrementCryptoTLSConnections()
-	return response, nil
+	if c.ztlsClient != nil {
+		if response, ztlsErr = c.ztlsClient.ConnectWithOptions(hostname, ip, port, options); ztlsErr == nil {
+			response.TLSConnection = "ztls"
+			stats.IncrementZcryptoTLSConnections()
+			return response, nil
+		}
+	}
+	if c.opensslClient != nil {
+		if response, opensslErr = c.opensslClient.ConnectWithOptions(hostname, ip, port, options); opensslErr == nil {
+			response.TLSConnection = "openssl"
+			stats.IncrementOpensslTLSConnections()
+			return response, nil
+		}
+		if errors.Is(opensslErr, openssl.ErrNotSupported) {
+			opensslErr = nil
+		}
+	}
+	return nil, multierr.Combine(err, ztlsErr, opensslErr)
 }
 
 // SupportedTLSVersions returns the list of supported tls versions by all engines
