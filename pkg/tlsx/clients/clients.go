@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
+	zpkix "github.com/zmap/zcrypto/x509/pkix"
+
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/stringsutil"
-	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
-	zpkix "github.com/zmap/zcrypto/x509/pkix"
 )
 
 // Implementation is an interface implemented by TLSX client
@@ -253,17 +254,17 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
 }
 
 // IsMisMatchedCert returns true if cert names(subject common name + alternative names) does not contain host
-func IsMisMatchedCert(host string, names []string) bool {
+func IsMisMatchedCert(host string, alternativeNames []string) bool {
 	hostTokens := strings.Split(host, ".")
-	for _, name := range names {
+	for _, alternativeName := range alternativeNames {
 		// if not wildcard, return false if name matches the host
-		if !strings.Contains(name, "*") {
-			if strings.EqualFold(name, host) {
+		if !strings.Contains(alternativeName, "*") {
+			if strings.EqualFold(alternativeName, host) {
 				return false
 			}
 		} else {
 			// try to match the wildcard name with host
-			nameTokens := strings.Split(name, ".")
+			nameTokens := strings.Split(alternativeName, ".")
 			if len(hostTokens) == len(nameTokens) {
 				matched := false
 				for i, token := range nameTokens {
