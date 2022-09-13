@@ -10,13 +10,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/dnsx v1.1.0
 	github.com/projectdiscovery/fastdialer v0.0.16-0.20220620143737-2ba20b53770a
-	github.com/projectdiscovery/fileutil v0.0.0-20220609150212-453ac591c36c
-	github.com/projectdiscovery/goflags v0.0.9
+	github.com/projectdiscovery/fileutil v0.0.0-20220705195237-01becc2a8963
+	github.com/projectdiscovery/goflags v0.1.0
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/iputil v0.0.0-20220613112553-9b6873b2c619
 	github.com/projectdiscovery/mapcidr v1.0.1
 	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6
-	github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3
+	github.com/projectdiscovery/stringsutil v0.0.1
 	github.com/rs/xid v1.4.0
 	github.com/spacemonkeygo/openssl v0.0.0-20181017203307-c2dcc5cca94a
 	github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c
@@ -49,7 +49,7 @@ require (
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20210903102120-5a9d2412d21d // indirect
@@ -71,8 +71,8 @@ require (
 	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392 // indirect
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
