@@ -268,11 +268,22 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 			if len(hostTokens) == len(nameTokens) {
 				matched := false
 				for i, token := range nameTokens {
-					if stringsutil.EqualFoldAny(token, "*", hostTokens[i]) {
-						matched = true
+					if i == 0 {
+						// match leftmost token
+						if matchWildCardToken(token, hostTokens[i]) {
+							matched = true
+						} else {
+							matched = false
+							break
+						}
 					} else {
-						matched = false
-						break
+						// match all other tokens
+						if stringsutil.EqualFoldAny(token, hostTokens[i]) {
+							matched = true
+						} else {
+							matched = false
+							break
+						}
 					}
 				}
 				// return false if all the name tokens matched the host tokens
@@ -283,6 +294,21 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 		}
 	}
 	return true
+}
+
+// matchWildCardToken matches the wildcardName token and host token
+func matchWildCardToken(name, host string) bool {
+	if strings.Contains(name, "*") {
+		if strings.HasPrefix(name, "*") {
+			return strings.HasSuffix(host, strings.Split(name, "*")[1])
+		} else if strings.HasSuffix(name, "*") {
+			return strings.HasPrefix(host, strings.Split(name, "*")[0])
+		} else {
+			return strings.HasPrefix(host, strings.Split(name, "*")[0]) &&
+				strings.HasSuffix(host, strings.Split(name, "*")[1])
+		}
+	}
+	return strings.EqualFold(name, host)
 }
 
 // IsWildCardCert returns true if the certificate is a wildcard certificate
