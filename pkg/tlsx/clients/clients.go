@@ -270,19 +270,15 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 				for i, token := range nameTokens {
 					if i == 0 {
 						// match leftmost token
-						if matchWildCardToken(token, hostTokens[i]) {
-							matched = true
-						} else {
-							matched = false
-							break
+						matched = matchWildCardToken(token, hostTokens[i])
+						if !matched {
+							return true
 						}
 					} else {
 						// match all other tokens
-						if stringsutil.EqualFoldAny(token, hostTokens[i]) {
-							matched = true
-						} else {
-							matched = false
-							break
+						matched = stringsutil.EqualFoldAny(token, hostTokens[i])
+						if !matched {
+							return true
 						}
 					}
 				}
@@ -299,13 +295,14 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 // matchWildCardToken matches the wildcardName token and host token
 func matchWildCardToken(name, host string) bool {
 	if strings.Contains(name, "*") {
+		nameSubTokens := strings.Split(name, "*")
 		if strings.HasPrefix(name, "*") {
-			return strings.HasSuffix(host, strings.Split(name, "*")[1])
+			return strings.HasSuffix(host, nameSubTokens[1])
 		} else if strings.HasSuffix(name, "*") {
-			return strings.HasPrefix(host, strings.Split(name, "*")[0])
+			return strings.HasPrefix(host, nameSubTokens[0])
 		} else {
-			return strings.HasPrefix(host, strings.Split(name, "*")[0]) &&
-				strings.HasSuffix(host, strings.Split(name, "*")[1])
+			return strings.HasPrefix(host, nameSubTokens[0]) &&
+				strings.HasSuffix(host, nameSubTokens[1])
 		}
 	}
 	return strings.EqualFold(name, host)
