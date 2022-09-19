@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsMisMatchedCert(t *testing.T) {
@@ -41,9 +43,8 @@ func TestIsMisMatchedCert(t *testing.T) {
 	for _, test := range tests {
 		testName := fmt.Sprintf("(%s vs [%s])", test.args.host, strings.Join(test.args.names, ","))
 		t.Run(testName, func(t *testing.T) {
-			if got := IsMisMatchedCert(test.args.host, test.args.names); got != test.want {
-				t.Errorf("IsMisMatchedCert() = %v, want %v", got, test.want)
-			}
+			got := IsMisMatchedCert(test.args.host, test.args.names)
+			assert.Equal(t, test.want, got)
 		})
 	}
 }
@@ -59,19 +60,19 @@ func Test_matchWildCardToken(t *testing.T) {
 		want bool
 	}{
 
-		{name: "wildcard00", args: args{nameToken: "b*z", hostToken: "buzz"}, want: true},
-		{name: "wildcard01", args: args{nameToken: "*buzz", hostToken: "foobuzz"}, want: true},
-		{name: "wildcard02", args: args{nameToken: "foo*", hostToken: "foobuzz"}, want: true},
-		{name: "wildcard03", args: args{nameToken: "foo*", hostToken: "buzz"}, want: false},
-		{name: "wildcard04", args: args{nameToken: "*buzz", hostToken: "foo"}, want: false},
-		{name: "wildcard05", args: args{nameToken: "*", hostToken: "foo"}, want: true},
-		{name: "wildcard06", args: args{nameToken: "subdomain", hostToken: "subdomain"}, want: true},
+		{args: args{nameToken: "b*z", hostToken: "buzz"}, want: true},
+		{args: args{nameToken: "*buzz", hostToken: "foobuzz"}, want: true},
+		{args: args{nameToken: "foo*", hostToken: "foobuzz"}, want: true},
+		{args: args{nameToken: "foo*", hostToken: "buzz"}, want: false},
+		{args: args{nameToken: "*buzz", hostToken: "foo"}, want: false},
+		{args: args{nameToken: "*", hostToken: "foo"}, want: true},
+		{args: args{nameToken: "subdomain", hostToken: "subdomain"}, want: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := matchWildCardToken(tt.args.nameToken, tt.args.hostToken); got != tt.want {
-				t.Errorf("matchWildCardToken() = %v, want %v", got, tt.want)
-			}
+	for i, tt := range tests {
+		testName := fmt.Sprintf("wildcard%d", i)
+		t.Run(testName, func(t *testing.T) {
+			got := matchWildCardToken(tt.args.nameToken, tt.args.hostToken)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
