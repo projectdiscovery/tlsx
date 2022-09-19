@@ -50,29 +50,23 @@ func TestIsMisMatchedCert(t *testing.T) {
 }
 
 func Test_matchWildCardToken(t *testing.T) {
-	type args struct {
+	tests := []struct {
 		nameToken string
 		hostToken string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
+		want      bool
 	}{
-
-		{args: args{nameToken: "b*z", hostToken: "buzz"}, want: true},
-		{args: args{nameToken: "*buzz", hostToken: "foobuzz"}, want: true},
-		{args: args{nameToken: "foo*", hostToken: "foobuzz"}, want: true},
-		{args: args{nameToken: "foo*", hostToken: "buzz"}, want: false},
-		{args: args{nameToken: "*buzz", hostToken: "foo"}, want: false},
-		{args: args{nameToken: "*", hostToken: "foo"}, want: true},
-		{args: args{nameToken: "subdomain", hostToken: "subdomain"}, want: true},
+		{"b*z", "buzz", true},
+		{"*buzz", "foobuzz", true},
+		{"foo*", "foobuzz", true},
+		{"*", "foo", true},
+		{"subdomain", "subdomain", true},
+		{"foo*", "buzz", false},
+		{"*buzz", "foo", false},
 	}
-	for i, tt := range tests {
-		testName := fmt.Sprintf("wildcard%d", i)
+	for _, test := range tests {
+		testName := fmt.Sprintf("'%s' -> '%s'", test.nameToken, test.hostToken)
 		t.Run(testName, func(t *testing.T) {
-			got := matchWildCardToken(tt.args.nameToken, tt.args.hostToken)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, test.want, matchWildCardToken(test.nameToken, test.hostToken))
 		})
 	}
 }
