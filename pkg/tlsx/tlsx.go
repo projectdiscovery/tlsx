@@ -2,7 +2,6 @@ package tlsx
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/sliceutil"
@@ -74,8 +73,7 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 
 	if s.options.Jarm {
 		port, _ := strconv.Atoi(port)
-		timeout := time.Duration(s.options.Timeout) * time.Second
-		jarmhash, err := jarm.HashWithDialer(s.options.Fastdialer, host, port, timeout)
+		jarmhash, err := jarm.HashWithDialer(s.options.Fastdialer, host, port, s.options.Timeout)
 		if err != nil {
 			return resp, err
 		}
