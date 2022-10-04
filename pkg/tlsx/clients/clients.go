@@ -65,6 +65,8 @@ type Options struct {
 	Timeout int
 	// Concurrency is the number of concurrent threads to process
 	Concurrency int
+	// Delay is the number of milliseconds to wait between requests in each thread
+	Delay int
 	// Port is the ports to make request to
 	Ports goflags.StringSlice
 	// Ciphers is a list of custom ciphers to use for connection
