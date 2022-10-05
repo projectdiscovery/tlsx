@@ -12,12 +12,19 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/connpool"
 )
 
+const poolCount = 3
+
 // fingerprint probes a single host/port
-func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, timeout time.Duration) (string, error) {
+func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration int) (string, error) {
 	results := []string{}
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
+
+	timeout := time.Duration(duration) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), (time.Duration(duration*poolCount) * time.Second))
+	defer cancel()
+
 	// using connection pool as we need multiple probes
-	pool, err := connpool.NewOneTimePool(context.Background(), addr, 3)
+	pool, err := connpool.NewOneTimePool(ctx, addr, poolCount)
 	if err != nil {
 		return "", err
 	}
@@ -27,7 +34,7 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, timeout ti
 	go pool.Run()      //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
-		conn, err := pool.Acquire(context.Background())
+		conn, err := pool.Acquire(ctx)
 		if err != nil {
 			continue
 		}
