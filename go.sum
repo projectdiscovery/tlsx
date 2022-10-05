@@ -248,8 +248,8 @@ github.com/projectdiscovery/cryptoutil v0.0.0-20210805184155-b5d2512f9345 h1:jT6
 github.com/projectdiscovery/cryptoutil v0.0.0-20210805184155-b5d2512f9345/go.mod h1:clhQmPnt35ziJW1AhJRKyu8aygXCSoyWj6dtmZBRjjc=
 github.com/projectdiscovery/dnsx v1.1.1-0.20220831070644-05901e47de9e h1:uwgd/Q9KsSBSNhH5TczJPmMsWg6MNn2aWjdqdXEb8/c=
 github.com/projectdiscovery/dnsx v1.1.1-0.20220831070644-05901e47de9e/go.mod h1:RYUnyX+l93NYELIzoSRiyGwoTjoSQg+xiMQGRzWnHDU=
-github.com/projectdiscovery/fastdialer v0.0.16 h1:0FcWVAtm6ftVALQpckdlKTeZcJi277HduvGXsBDO02Q=
-github.com/projectdiscovery/fastdialer v0.0.16/go.mod h1:poZbCGYGRfRcKxU8/1rWH8EVOJ4AZn1a8+CyINHzffQ=
+github.com/projectdiscovery/fastdialer v0.0.17 h1:wT7LinZAcyEzkfhJLhWNQrA9m79+hTd6CJ7aWTJfXjk=
+github.com/projectdiscovery/fastdialer v0.0.17/go.mod h1:poZbCGYGRfRcKxU8/1rWH8EVOJ4AZn1a8+CyINHzffQ=
 github.com/projectdiscovery/fileutil v0.0.0-20210928100737-cab279c5d4b5/go.mod h1:U+QCpQnX8o2N2w0VUGyAzjM3yBAe4BKedVElxiImsx0=
 github.com/projectdiscovery/fileutil v0.0.0-20220308101036-16c79af1cf5d/go.mod h1:Pm0f+MWgDFMSSI9NBedNh48LyYPs8gD3Jd8DXGmp4aQ=
 github.com/projectdiscovery/fileutil v0.0.0-20220609150212-453ac591c36c/go.mod h1:g8wsrb0S5NtEN0JgVyyPeb3FQdArx+UMESmFX94bcGY=
