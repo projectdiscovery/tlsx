@@ -143,8 +143,12 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 	}
 
 	for task := range inputs {
-		if r.options.Delay > 0 {
-			time.Sleep(time.Duration(r.options.Delay) * time.Millisecond)
+		if r.options.Delay != "" {
+			duration, err := time.ParseDuration(r.options.Delay)
+			if err != nil {
+				gologger.Error().Msgf("error parsing delay %s: %s", r.options.Delay, err)
+			}
+			time.Sleep(duration)
 		}
 		if r.options.Verbose {
 			gologger.Info().Msgf("Processing input %s:%s", task.host, task.port)
