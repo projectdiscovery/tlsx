@@ -104,8 +104,8 @@ func readFlags() error {
 	flagSet.CreateGroup("optimizations", "Optimizations",
 		flagSet.IntVarP(&options.Concurrency, "concurrency", "c", 300, "number of concurrent threads to process"),
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
-		flagSet.IntVar(&options.Retries, "retries", 3, "number of retries to perform for failures"),
-		flagSet.StringVar(&options.Delay, "delay", "", "duration to wait between each connection per thread (ex: 200ms, 1s), use concurrency to fine tune the absolute number of connections made"),
+		flagSet.IntVar(&options.Retries, "retry", 3, "number of retries to perform for failures"),
+		flagSet.StringVar(&options.Delay, "delay", "", "duration to wait between each connection per thread (eg: 200ms, 1s)"),
 	)
 
 	flagSet.CreateGroup("output", "Output",
