@@ -107,7 +107,8 @@ CONFIGURATIONS:
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
    -timeout int          tls connection timeout in seconds (default 5)
-   -retries int          number of retries to perform for failures (default 3)
+   -retry int            number of retries to perform for failures (default 3)
+   -delay string         duration to wait between each connection per thread (eg: 200ms, 1s)
 
 OUTPUT:
    -o, -output string  file to write output to
