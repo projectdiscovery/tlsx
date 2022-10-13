@@ -49,6 +49,10 @@ func (r *Runner) validateOptions() error {
 	if r.options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 	}
+
+	if r.options.Jarm && r.options.Delay != "" {
+		gologger.Info().Label("WRN").Msg("Using connection pooling for jarm hash calculation, delay will not work as expected")
+	}
 	return nil
 }
 
