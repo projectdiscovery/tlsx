@@ -236,8 +236,10 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 				r.processInputItemWithSni(taskInput{host: ip, port: port}, inputs)
 			}
 		}
-	} else if _, ipRange, _ := net.ParseCIDR(input); ipRange != nil {
-		// CIDR input
+		return
+	}
+	// CIDR input
+	if _, ipRange, _ := net.ParseCIDR(input); ipRange != nil {
 		cidrInputs, err := mapcidr.IPAddressesAsStream(input)
 		if err != nil {
 			gologger.Error().Msgf("Could not parse cidr %s: %s", input, err)
@@ -248,7 +250,9 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 				r.processInputItemWithSni(taskInput{host: cidr, port: port}, inputs)
 			}
 		}
-	} else if r.options.ScanAllIPs || len(r.options.IPVersion) > 0 {
+		return
+	}
+	if r.options.ScanAllIPs || len(r.options.IPVersion) > 0 {
 		host, customPort := r.getHostPortFromInput(input)
 		// If the host is a Domain, then perform resolution and discover all IP's
 		ipList, err := r.resolveFQDN(host)
@@ -265,17 +269,18 @@ func (r *Runner) processInputItem(input string, inputs chan taskInput) {
 				r.processInputItemWithSni(taskInput{host: host, ip: ip, port: customPort}, inputs)
 			}
 		}
-	} else {
-		// Normal input
-		host, customPort := r.getHostPortFromInput(input)
-		if customPort == "" {
-			for _, port := range r.options.Ports {
-				r.processInputItemWithSni(taskInput{host: host, port: port}, inputs)
-			}
-		} else {
-			r.processInputItemWithSni(taskInput{host: host, port: customPort}, inputs)
-		}
+		return
 	}
+	// Normal input
+	host, customPort := r.getHostPortFromInput(input)
+	if customPort == "" {
+		for _, port := range r.options.Ports {
+			r.processInputItemWithSni(taskInput{host: host, port: port}, inputs)
+		}
+	} else {
+		r.processInputItemWithSni(taskInput{host: host, port: customPort}, inputs)
+	}
+
 }
 
 func (r *Runner) processInputItemWithSni(task taskInput, inputs chan taskInput) {
