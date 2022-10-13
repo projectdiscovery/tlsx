@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.1
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/iputil v0.0.0-20220712175312-b9406f31cdd8
-	github.com/projectdiscovery/mapcidr v1.0.2
+	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/sliceutil v0.0.0-20220625085859-c3a4ecb669f4
 	github.com/projectdiscovery/stringsutil v0.0.1
 	github.com/rs/xid v1.4.0
@@ -55,6 +55,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/projectdiscovery/asnmap v0.0.1 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
 	github.com/projectdiscovery/cdncheck v0.0.3 // indirect
 	github.com/projectdiscovery/cryptoutil v0.0.0-20210805184155-b5d2512f9345 // indirect
@@ -73,7 +74,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
+	golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220927171203-f486391704dc // indirect
 	golang.org/x/sys v0.0.0-20220731174439-a90be440212d // indirect

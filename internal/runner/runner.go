@@ -18,6 +18,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/tlsx/pkg/output"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
@@ -222,8 +223,21 @@ func (r *Runner) resolveFQDN(target string) ([]string, error) {
 
 // processInputItem processes a single input item
 func (r *Runner) processInputItem(input string, inputs chan taskInput) {
-	// CIDR input
-	if _, ipRange, _ := net.ParseCIDR(input); ipRange != nil {
+	// AS Input
+	if asn.IsASN(input) {
+		asnClient := asn.New()
+		ips, err := asnClient.GetIPAddressesAsStream(input)
+		if err != nil {
+			gologger.Error().Msgf("Could not get IP addresses for %s: %s", input, err)
+			return
+		}
+		for ip := range ips {
+			for _, port := range r.options.Ports {
+				r.processInputItemWithSni(taskInput{host: ip, port: port}, inputs)
+			}
+		}
+	} else if _, ipRange, _ := net.ParseCIDR(input); ipRange != nil {
+		// CIDR input
 		cidrInputs, err := mapcidr.IPAddressesAsStream(input)
 		if err != nil {
 			gologger.Error().Msgf("Could not parse cidr %s: %s", input, err)

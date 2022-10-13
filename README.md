@@ -126,6 +126,7 @@ OUTPUT:
 **tlsx** requires **ip** to make TLS connection and accept multiple format as listed below:
 
 ```bash
+AS1449 # ASN input
 173.0.84.0/24 # CIDR input
 93.184.216.34 # IP input
 example.com # DNS input
