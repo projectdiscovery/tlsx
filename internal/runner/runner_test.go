@@ -123,7 +123,7 @@ func Test_InputASN_processInputItem(t *testing.T) {
 	inputs := make(chan taskInput)
 
 	asn := "AS14421"
-	expectedOutputFile := "goldenfiles/AS14421.txt"
+	expectedOutputFile := "tests/AS14421.txt"
 	go func() {
 		runner.processInputItem(asn, inputs)
 		defer close(inputs)
