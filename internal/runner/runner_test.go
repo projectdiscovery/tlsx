@@ -13,7 +13,6 @@ import (
 
 // Normal input
 func Test_InputDomain_processInputItem(t *testing.T) {
-
 	options := &clients.Options{
 		Ports: []string{"443"},
 	}
@@ -39,7 +38,6 @@ func Test_InputDomain_processInputItem(t *testing.T) {
 }
 
 func Test_InputForMultipleIps_processInputItem(t *testing.T) {
-
 	options := &clients.Options{
 		Ports:      []string{"443"},
 		ScanAllIPs: true,
@@ -78,7 +76,6 @@ func Test_InputForMultipleIps_processInputItem(t *testing.T) {
 }
 
 func Test_InputCIDR_processInputItem(t *testing.T) {
-
 	options := &clients.Options{
 		Ports: []string{"443"},
 	}
@@ -114,7 +111,6 @@ func Test_InputCIDR_processInputItem(t *testing.T) {
 }
 
 func Test_InputASN_processInputItem(t *testing.T) {
-
 	options := &clients.Options{
 		Ports: []string{"443"},
 	}
@@ -138,7 +134,6 @@ func Test_InputASN_processInputItem(t *testing.T) {
 }
 
 func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) {
-
 	fileContent, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
