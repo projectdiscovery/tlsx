@@ -308,7 +308,13 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 // IsTLSRevoked returns true if the certificate has been revoked
 func IsTLSRevoked(cert *x509.Certificate) bool {
 	cflog.Level = 5
-	revoked, ok := revoke.VerifyCertificate(cert)
+	revoked, ok, err := revoke.VerifyCertificateError(cert)
+	if err != nil && revoked {
+		if strings.Contains(err.Error(), "Certificate expired") ||
+			strings.Contains(err.Error(), "isn't valid until") {
+			return false
+		}
+	}
 	return ok && revoked
 }
 
