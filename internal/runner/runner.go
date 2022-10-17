@@ -18,6 +18,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/tlsx/pkg/output"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
@@ -32,6 +33,7 @@ type Runner struct {
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
 	dnsclient    *dnsx.DNSX
+	asnClient    asn.ASNClient
 }
 
 // New creates a new runner from provided configuration options
@@ -79,6 +81,8 @@ func New(options *clients.Options) (*Runner, error) {
 		return nil, err
 	}
 	runner.dnsclient = dnsclient
+
+	runner.asnClient = asn.New()
 
 	outputWriter, err := output.New(options)
 	if err != nil {
@@ -229,45 +233,28 @@ func (r *Runner) resolveFQDN(target string) ([]string, error) {
 
 // processInputItem processes a single input item
 func (r *Runner) processInputItem(input string, inputs chan taskInput) {
+	// AS Input
+	if asn.IsASN(input) {
+		r.processInputASN(input, inputs)
+		return
+	}
 	// CIDR input
 	if _, ipRange, _ := net.ParseCIDR(input); ipRange != nil {
-		cidrInputs, err := mapcidr.IPAddressesAsStream(input)
-		if err != nil {
-			gologger.Error().Msgf("Could not parse cidr %s: %s", input, err)
-			return
-		}
-		for cidr := range cidrInputs {
-			for _, port := range r.options.Ports {
-				r.processInputItemWithSni(taskInput{host: cidr, port: port}, inputs)
-			}
-		}
-	} else if r.options.ScanAllIPs || len(r.options.IPVersion) > 0 {
-		host, customPort := r.getHostPortFromInput(input)
-		// If the host is a Domain, then perform resolution and discover all IP's
-		ipList, err := r.resolveFQDN(host)
-		if err != nil {
-			gologger.Warning().Msgf("Could not resolve %s: %s", host, err)
-			return
-		}
-		for _, ip := range ipList {
-			if customPort == "" {
-				for _, port := range r.options.Ports {
-					r.processInputItemWithSni(taskInput{host: host, ip: ip, port: port}, inputs)
-				}
-			} else {
-				r.processInputItemWithSni(taskInput{host: host, ip: ip, port: customPort}, inputs)
-			}
+		r.processInputCIDR(input, inputs)
+		return
+	}
+	if r.options.ScanAllIPs || len(r.options.IPVersion) > 0 {
+		r.processInputForMultipleIPs(input, inputs)
+		return
+	}
+	// Normal input
+	host, customPort := r.getHostPortFromInput(input)
+	if customPort == "" {
+		for _, port := range r.options.Ports {
+			r.processInputItemWithSni(taskInput{host: host, port: port}, inputs)
 		}
 	} else {
-		// Normal input
-		host, customPort := r.getHostPortFromInput(input)
-		if customPort == "" {
-			for _, port := range r.options.Ports {
-				r.processInputItemWithSni(taskInput{host: host, port: port}, inputs)
-			}
-		} else {
-			r.processInputItemWithSni(taskInput{host: host, port: customPort}, inputs)
-		}
+		r.processInputItemWithSni(taskInput{host: host, port: customPort}, inputs)
 	}
 }
 
@@ -303,4 +290,52 @@ func (r *Runner) getHostPortFromInput(input string) (string, string) {
 		}
 	}
 	return host, ""
+}
+
+// processInputASN processes a single ASN input
+func (r *Runner) processInputASN(input string, inputs chan taskInput) {
+	ips, err := r.asnClient.GetIPAddressesAsStream(input)
+	if err != nil {
+		gologger.Error().Msgf("Could not get IP addresses for %s: %s", input, err)
+		return
+	}
+	for ip := range ips {
+		for _, port := range r.options.Ports {
+			r.processInputItemWithSni(taskInput{host: ip, port: port}, inputs)
+		}
+	}
+}
+
+// processInputCIDR processes a single ASN input
+func (r *Runner) processInputCIDR(input string, inputs chan taskInput) {
+	cidrInputs, err := mapcidr.IPAddressesAsStream(input)
+	if err != nil {
+		gologger.Error().Msgf("Could not parse cidr %s: %s", input, err)
+		return
+	}
+	for cidr := range cidrInputs {
+		for _, port := range r.options.Ports {
+			r.processInputItemWithSni(taskInput{host: cidr, port: port}, inputs)
+		}
+	}
+}
+
+// processInputForMultipleIPs processes single input if scanall and IPVersion flag is passed
+func (r *Runner) processInputForMultipleIPs(input string, inputs chan taskInput) {
+	host, customPort := r.getHostPortFromInput(input)
+	// If the host is a Domain, then perform resolution and discover all IP's
+	ipList, err := r.resolveFQDN(host)
+	if err != nil {
+		gologger.Warning().Msgf("Could not resolve %s: %s", host, err)
+		return
+	}
+	for _, ip := range ipList {
+		if customPort == "" {
+			for _, port := range r.options.Ports {
+				r.processInputItemWithSni(taskInput{host: host, ip: ip, port: port}, inputs)
+			}
+		} else {
+			r.processInputItemWithSni(taskInput{host: host, ip: ip, port: customPort}, inputs)
+		}
+	}
 }
