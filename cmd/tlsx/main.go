@@ -85,6 +85,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display host with host expired certificate"),
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),
 		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display host with mismatched certificate"),
+		flagSet.BoolVarP(&options.Revoked, "revoked", "re", false, "display host with revoked certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",

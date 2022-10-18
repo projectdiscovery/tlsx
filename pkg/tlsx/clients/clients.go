@@ -2,9 +2,11 @@ package clients
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"math"
@@ -13,6 +15,9 @@ import (
 
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
+
+	zverifier "github.com/zmap/zcrypto/verifier"
+	zx509 "github.com/zmap/zcrypto/x509"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
@@ -102,6 +107,8 @@ type Options struct {
 	SelfSigned bool
 	// MisMatched displays if the cert is mismatched
 	MisMatched bool
+	// Revoked displays if the cert is revoked
+	Revoked bool
 	// Hash is the hash to display for certificate
 	Hash string
 	// Jarm calculate jarm fingerprinting with multiple probes
@@ -171,6 +178,8 @@ type CertificateResponse struct {
 	SelfSigned bool `json:"self_signed,omitempty"`
 	// MisMatched returns true if the certificate is mismatched
 	MisMatched bool `json:"mismatched,omitempty"`
+	// Revoked returns true if the certificate is revoked
+	Revoked bool `json:"revoked,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -292,6 +301,34 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 		}
 	}
 	return true
+}
+
+// IsTLSRevoked returns true if the certificate has been revoked
+func IsTLSRevoked(cert *x509.Certificate) bool {
+	zcert, _ := zx509.ParseCertificate(cert.Raw)
+	return IsZTLSRevoked(zcert)
+}
+
+// IsZTLSRevoked returns true if the certificate has been revoked
+func IsZTLSRevoked(cert *zx509.Certificate) bool {
+	OCSPisRevoked, _, OCSPerr := zverifier.CheckOCSP(context.TODO(), cert, nil)
+	if len(cert.CRLDistributionPoints) != 0 {
+		CRLisRevoked, _, CRLerr := zverifier.CheckCRL(context.TODO(), cert, nil)
+
+		if CRLerr == nil {
+			if OCSPerr == nil {
+				return OCSPisRevoked || CRLisRevoked
+			} else {
+				return CRLisRevoked
+			}
+		}
+	}
+
+	if OCSPerr == nil {
+		return OCSPisRevoked
+	}
+
+	return false
 }
 
 // matchWildCardToken matches the wildcardName token and host token
