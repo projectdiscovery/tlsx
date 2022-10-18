@@ -315,12 +315,12 @@ func IsZTLSRevoked(cert *zx509.Certificate) bool {
 	if len(cert.CRLDistributionPoints) != 0 {
 		CRLisRevoked, _, CRLerr := zverifier.CheckCRL(context.TODO(), cert, nil)
 
-		if OCSPerr == nil && CRLerr == nil {
-			return OCSPisRevoked || CRLisRevoked
-		}
-
-		if OCSPerr != nil && CRLerr != nil {
-			return false
+		if CRLerr == nil {
+			if OCSPerr == nil {
+				return OCSPisRevoked || CRLisRevoked
+			} else {
+				return CRLisRevoked
+			}
 		}
 	}
 
