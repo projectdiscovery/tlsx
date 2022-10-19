@@ -90,6 +90,7 @@ MISCONFIGURATIONS:
    -ex, -expired      display host with host expired certificate
    -ss, -self-signed  display host with self-signed certificate
    -mm, -mismatched   display host with mismatched certificate
+   -re, -revoked      display host with revoked certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -107,7 +108,8 @@ CONFIGURATIONS:
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
    -timeout int          tls connection timeout in seconds (default 5)
-   -retries int          number of retries to perform for failures (default 3)
+   -retry int            number of retries to perform for failures (default 3)
+   -delay string         duration to wait between each connection per thread (eg: 200ms, 1s)
 
 OUTPUT:
    -o, -output string  file to write output to
@@ -126,6 +128,7 @@ OUTPUT:
 **tlsx** requires **ip** to make TLS connection and accept multiple format as listed below:
 
 ```bash
+AS1449 # ASN input
 173.0.84.0/24 # CIDR input
 93.184.216.34 # IP input
 example.com # DNS input
@@ -303,12 +306,12 @@ support.hackerone.com:443 [TLS1.2] [TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256]
 
 # TLS Misconfiguration
 
-### Expired / Self Signed / Mismatched Certificate
+### Expired / Self Signed / Mismatched / Revoked Certificate
 
-A list of host can be provided to tlsx to detect **expired / self-signed / mismatched** certificates.
+A list of host can be provided to tlsx to detect **expired / self-signed / mismatched / revoked** certificates.
 
 ```console
-$ tlsx -l hosts.txt -expired -self-signed -mismatched
+$ tlsx -l hosts.txt -expired -self-signed -mismatched -revoked
   
 
   _____ _    _____  __
@@ -324,6 +327,7 @@ $ tlsx -l hosts.txt -expired -self-signed -mismatched
 wrong.host.badssl.com:443 [mismatched]
 self-signed.badssl.com:443 [self-signed]
 expired.badssl.com:443 [expired]
+revoked.badssl.com:443 [revoked]
 ```
 
 ### [JARM](https://engineering.salesforce.com/easily-identify-malicious-servers-on-the-internet-with-jarm-e095edac525a/) TLS Fingerprint

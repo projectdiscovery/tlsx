@@ -203,6 +203,7 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 		Expired:      clients.IsExpired(cert.NotAfter),
 		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
 		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		Revoked:      clients.IsTLSRevoked(cert),
 		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerCN:     cert.Issuer.CommonName,
 		IssuerOrg:    cert.Issuer.Organization,
