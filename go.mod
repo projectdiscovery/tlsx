@@ -19,7 +19,7 @@ require (
 	github.com/projectdiscovery/stringsutil v0.0.2
 	github.com/rs/xid v1.4.0
 	github.com/spacemonkeygo/openssl v0.0.0-20181017203307-c2dcc5cca94a
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c
 	go.uber.org/multierr v1.8.0
 )
