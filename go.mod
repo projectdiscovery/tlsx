@@ -10,8 +10,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/dnsx v1.1.1
 	github.com/projectdiscovery/fastdialer v0.0.17
-	github.com/projectdiscovery/fileutil v0.0.1
-	github.com/projectdiscovery/goflags v0.1.1
+	github.com/projectdiscovery/fileutil v0.0.3
+	github.com/projectdiscovery/goflags v0.1.2
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/iputil v0.0.0-20220712175312-b9406f31cdd8
 	github.com/projectdiscovery/mapcidr v1.0.3
@@ -19,7 +19,7 @@ require (
 	github.com/projectdiscovery/stringsutil v0.0.2
 	github.com/rs/xid v1.4.0
 	github.com/spacemonkeygo/openssl v0.0.0-20181017203307-c2dcc5cca94a
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c
 	go.uber.org/multierr v1.8.0
 )
@@ -77,9 +77,9 @@ require (
 	golang.org/x/crypto v0.0.0-20220824171710-5757bc0c5503 // indirect
 	golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20221002022538-bcab6841153b // indirect
-	golang.org/x/sys v0.0.0-20220731174439-a90be440212d // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
