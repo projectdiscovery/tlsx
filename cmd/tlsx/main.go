@@ -79,6 +79,8 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
 		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
+		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "display client hello if available (ztls only)"),
+		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "display server hello if available (ztls only)"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
