@@ -1,9 +1,9 @@
 package auto
 
 import (
-	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 var (
