@@ -133,6 +133,58 @@ func Test_InputASN_processInputItem(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
 }
 
+func Test_RevokedCert_processInputItem(t *testing.T) {
+	options := &clients.Options{
+		Ports:   []string{"443"},
+		Revoked: true,
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	domain := "revoked.badssl.com"
+	expected := []taskInput{
+		{
+			host: "revoked.badssl.com",
+			port: "443",
+		},
+	}
+	go func() {
+		runner.processInputItem(domain, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
+func Test_SelfSignedCert_processInputItem(t *testing.T) {
+	options := &clients.Options{
+		Ports:      []string{"443"},
+		SelfSigned: true,
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	domain := "self-signed.badssl.com"
+	expected := []taskInput{
+		{
+			host: "self-signed.badssl.com",
+			port: "443",
+		},
+	}
+	go func() {
+		runner.processInputItem(domain, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
 func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) {
 	fileContent, err := os.ReadFile(filename)
 	if err != nil {
