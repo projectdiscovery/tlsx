@@ -129,6 +129,7 @@ github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMyw
 github.com/google/go-cmp v0.4.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.8 h1:e6P7q2lk1O+qJJb4BtCQXlK8vWEO8V1ZeuEdJNOqZyg=
+github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
 github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
@@ -294,6 +295,8 @@ github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3/go.mo
 github.com/projectdiscovery/stringsutil v0.0.0-20220731064040-4b67f194751e/go.mod h1:32NYmKyHkKsmisAOAaWrR15lz2ysz2M8x3KMeeoRHoU=
 github.com/projectdiscovery/stringsutil v0.0.2 h1:uzmw3IVLJSMW1kEg8eCStG/cGbYYZAja8BH3LqqJXMA=
 github.com/projectdiscovery/stringsutil v0.0.2/go.mod h1:EJ3w6bC5fBYjVou6ryzodQq37D5c6qbAYQpGmAy+DC0=
+github.com/projectdiscovery/utils v0.0.1 h1:8jxai1EF3z/lpHeUCQEyNvEzs2Y53bzsMzEhoFjjwo0=
+github.com/projectdiscovery/utils v0.0.1/go.mod h1:PEYYkpCedmtydQRUvfWLPw0VRWpaFms4GFqNAziBANI=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.8.0 h1:FCbCCtXNOY3UtUuHUYaghJg4y7Fd14rXifAYUAtL9R8=
@@ -351,9 +354,13 @@ github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyC
 github.com/valyala/fasthttp v1.6.0/go.mod h1:FstJa9V+Pj9vQ7OJie2qMHdwemEDaDiSdBnvPM1Su9w=
 github.com/valyala/fasttemplate v1.0.1/go.mod h1:UQGH1tvbgY+Nz5t2n7tXsz52dQxojPUpymEIMZ47gx8=
 github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a/go.mod h1:v3UYOV9WzVtRmSR+PDvWpU/qWl4Wa5LApYYX4ZtKbio=
+github.com/weppos/publicsuffix-go v0.12.0/go.mod h1:z3LCPQ38eedDQSwmsSRW4Y7t2L8Ln16JPQ02lHAdn5k=
 github.com/weppos/publicsuffix-go v0.15.1-0.20210928183822-5ee35905bd95/go.mod h1:HYux0V0Zi04bHNwOHy4cXJVz/TQjYonnF6aoYhj+3QE=
 github.com/weppos/publicsuffix-go v0.15.1-0.20220329081811-9a40b608a236 h1:vMJBP3PQViZsF6cOINtvyMC8ptpLsyJ4EwyFnzuWNxc=
 github.com/weppos/publicsuffix-go v0.15.1-0.20220329081811-9a40b608a236/go.mod h1:HYux0V0Zi04bHNwOHy4cXJVz/TQjYonnF6aoYhj+3QE=
+github.com/weppos/publicsuffix-go v0.15.1-0.20220724114530-e087fba66a37 h1:oRCu5zb6sklsDvy5sOz3dFqGg5vAEYBBD2MAYhNThCQ=
+github.com/weppos/publicsuffix-go v0.15.1-0.20220724114530-e087fba66a37/go.mod h1:5ZC/Uv3fIEUE0eP6o9+Yg4+5+W8V0/BieMi05feGXVA=
+github.com/weppos/publicsuffix-go/publicsuffix/generator v0.0.0-20220704091424-e0182326a282/go.mod h1:GHfoeIdZLdZmLjMlzBftbTDntahTttUMWjxZwQJhULE=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
 github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQluxsYJ78Id3Y=
@@ -375,6 +382,8 @@ github.com/zmap/zcertificate v0.0.0-20180516150559-0e3d58b1bac4/go.mod h1:5iU54t
 github.com/zmap/zcrypto v0.0.0-20211005224000-2d0ffdec8a9b/go.mod h1:5nID//bFGkx3/+iHcFIFRHQ54EOPJ0iSj0IGKpMElvw=
 github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c h1:ufDm/IlBYZYLuiqvQuhpTKwrcAS2OlXEzWbDvTVGbSQ=
 github.com/zmap/zcrypto v0.0.0-20220605182715-4dfcec6e9a8c/go.mod h1:egdRkzUylATvPkWMpebZbXhv0FMEMJGX/ur0D3Csk2s=
+github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be h1:M5QjuCbUeNZsup53dlJkI/cx6pVdnDOPzyy+XppoowY=
+github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be/go.mod h1:bRZdjnJaHWVXKEwrfAZMd0gfRjZGNhTbZwzp07s0Abw=
 go.etcd.io/bbolt v1.3.5/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 go.etcd.io/bbolt v1.3.6 h1:/ecaJf0sk1l4l6V4awd65v2C3ILy7MSj+s/x1ADCIMU=
 go.etcd.io/bbolt v1.3.6/go.mod h1:qXsaaIqmgQH0T+OPdb99Bf+PKfBBQVAdyD6TY9G8XM4=
@@ -399,6 +408,8 @@ golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8/go.mod h1:CJ0aWSM057203Lf6IL
 golang.org/x/exp v0.0.0-20200513190911-00229845015e/go.mod h1:4M0jN8W1tt0AVLNr8HDosyJCDCDuyL9N9+3m7wDWgKw=
 golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0 h1:17k44ji3KFYG94XS5QEFC8pyuOlMh3IoR+vkmTZmJJs=
 golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0/go.mod h1:cyybsKvd6eL0RnXn6p/Grxp8F5bW7iYuBgsNCOHpMYE=
+golang.org/x/exp v0.0.0-20221019170559-20944726eadf h1:nFVjjKDgNY37+ZSYCJmtYf7tOlfQswHqplG2eosjOMg=
+golang.org/x/exp v0.0.0-20221019170559-20944726eadf/go.mod h1:cyybsKvd6eL0RnXn6p/Grxp8F5bW7iYuBgsNCOHpMYE=
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
