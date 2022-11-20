@@ -17,9 +17,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	iputil "github.com/projectdiscovery/utils/ip"
 	"github.com/spacemonkeygo/openssl"
 )
 

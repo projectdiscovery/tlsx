@@ -21,8 +21,9 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
-	"github.com/projectdiscovery/stringsutil"
 	ztls "github.com/zmap/zcrypto/tls"
+	stringsutil "github.com/projectdiscovery/utils/strings"
+
 )
 
 // Implementation is an interface implemented by TLSX client

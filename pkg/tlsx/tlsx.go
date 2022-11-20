@@ -4,13 +4,13 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 // Service is a service for tlsx module

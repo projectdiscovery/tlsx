@@ -14,8 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	iputil "github.com/projectdiscovery/utils/ip"
 	"github.com/rs/xid"
 )
 
