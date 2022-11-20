@@ -85,6 +85,8 @@ PROBES:
    -tps, -probe-status  display tls probe status
    -ve, -version-enum   enumerate and display supported tls versions
    -ce, -cipher-enum    enumerate and display supported cipher
+   -ch, -client-hello   include client hello in json output (ztls mode only)
+   -sh, -server-hello   include server hello in json output (ztls mode only)
 
 MISCONFIGURATIONS:
    -ex, -expired      display host with host expired certificate
