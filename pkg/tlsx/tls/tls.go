@@ -126,17 +126,17 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	config := c.tlsConfig
 	if config.ServerName == "" {
-		c := config.Clone()
+		cfg := config.Clone()
 		if options.SNI != "" {
-			c.ServerName = options.SNI
-		} else if iputil.IsIP(hostname) {
+			cfg.ServerName = options.SNI
+		} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
 			// using a random sni will return the default server certificate
-			c.ServerName = xid.New().String()
+			cfg.ServerName = xid.New().String()
 		} else {
-			c.ServerName = hostname
+			cfg.ServerName = hostname
 		}
 
-		config = c
+		config = cfg
 	}
 
 	if options.VersionTLS != "" {

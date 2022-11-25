@@ -107,7 +107,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	if options.SNI != "" {
 		err = conn.SetTlsExtHostName(options.SNI)
-	} else if iputil.IsIP(hostname) {
+	} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
 		// using a random sni will return the default server certificate
 		err = conn.SetTlsExtHostName(xid.New().String())
 	} else {
