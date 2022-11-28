@@ -21,7 +21,9 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
+	ztls "github.com/zmap/zcrypto/tls"
 	stringsutil "github.com/projectdiscovery/utils/strings"
+
 )
 
 // Implementation is an interface implemented by TLSX client
@@ -127,6 +129,10 @@ type Options struct {
 	TlsVersionsEnum bool
 	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
 	TlsCiphersEnum bool
+	// ClientHello include client hello (only ztls)
+	ClientHello bool
+	// ServerHello include server hello (only ztls)
+	ServerHello bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -163,6 +169,8 @@ type Response struct {
 	ServerName  string                 `json:"sni,omitempty"`
 	VersionEnum []string               `json:"version_enum,omitempty"`
 	TlsCiphers  []TlsCiphers           `json:"cipher_enum,omitempty"`
+	ClientHello *ztls.ClientHello      `json:"client_hello,omitempty"`
+	ServerHello *ztls.ServerHello      `json:"servers_hello,omitempty"`
 }
 
 type TlsCiphers struct {
