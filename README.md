@@ -36,7 +36,7 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
  - Customizable **Cipher / SNI / TLS** selection
  - **JARM/JA3** TLS Fingerprint
  - **TLS Misconfigurations**
- - **HOST, IP, URL** and **CIDR** input
+ - **ASN,CIDR,IP,HOST,** and **URL** input
  - STD **IN/OUT** and **TXT/JSON** output
 
 
@@ -100,7 +100,7 @@ CONFIGURATIONS:
    -cc, -cacert string          client certificate authority file
    -ci, -cipher-input string[]  ciphers to use with tls connection
    -sni string[]                tls sni hostname to use
-   -random-sni                  use random sni when empty
+   -rs, -random-sni             use random sni when empty
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -ac, -all-ciphers            send all ciphers as accepted inputs (default true)
