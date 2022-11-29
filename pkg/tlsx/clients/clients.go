@@ -46,6 +46,8 @@ type Options struct {
 	InputList string
 	// ServerName is the optional server-name for tls connection
 	ServerName goflags.StringSlice
+	// RandomForEmptyServerName in case of empty sni
+	RandomForEmptyServerName bool
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
