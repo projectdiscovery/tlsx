@@ -117,6 +117,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if rawConn == nil {
 		return nil, fmt.Errorf("could not connect to %s", address)
 	}
+
 	var resolvedIP string
 	if ip != "" {
 		resolvedIP = ip
