@@ -104,7 +104,13 @@ func (timeoutError) Temporary() bool { return true }
 
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	address := net.JoinHostPort(hostname, port)
+	var address string
+	if ip != "" || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
+		address = net.JoinHostPort(ip, port)
+	} else {
+		address = net.JoinHostPort(hostname, port)
+	}
+
 	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
 		address = net.JoinHostPort(ip, port)
 	}
@@ -132,12 +138,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if conn == nil {
 		return nil, fmt.Errorf("could not connect to %s", address)
 	}
+
 	var resolvedIP string
-	if !iputil.IsIP(hostname) {
+	if ip != "" {
+		resolvedIP = ip
+	} else if iputil.IsIP(hostname) {
+		resolvedIP = hostname
+	} else {
 		resolvedIP = c.dialer.GetDialedIP(hostname)
-		if resolvedIP == "" {
-			resolvedIP = ip
-		}
 	}
 
 	config := c.tlsConfig

@@ -44,10 +44,11 @@ func New(options *clients.Options) (*Client, error) {
 
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	address := net.JoinHostPort(hostname, port)
-
-	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
+	var address string
+	if ip != "" || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
 		address = net.JoinHostPort(ip, port)
+	} else {
+		address = net.JoinHostPort(hostname, port)
 	}
 
 	opensslCtx, err := openssl.NewCtxWithVersion(openssl.AnyVersion)
@@ -92,11 +93,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	defer rawConn.Close()
 
 	var resolvedIP string
-	if !iputil.IsIP(hostname) {
+	if ip != "" {
+		resolvedIP = ip
+	} else if iputil.IsIP(hostname) {
+		resolvedIP = hostname
+	} else {
 		resolvedIP = c.dialer.GetDialedIP(hostname)
-		if resolvedIP == "" {
-			resolvedIP = ip
-		}
 	}
 
 	conn, err := openssl.Client(rawConn, opensslCtx)
