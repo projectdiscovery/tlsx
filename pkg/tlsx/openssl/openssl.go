@@ -51,10 +51,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		address = net.JoinHostPort(hostname, port)
 	}
 
-	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
-		address = net.JoinHostPort(ip, port)
-	}
-
 	opensslCtx, err := openssl.NewCtxWithVersion(openssl.AnyVersion)
 	if err != nil {
 		return nil, err
