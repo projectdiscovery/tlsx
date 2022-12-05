@@ -92,13 +92,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	defer rawConn.Close()
 
-	var resolvedIP string
-	if ip != "" {
-		resolvedIP = ip
-	} else if iputil.IsIP(hostname) {
-		resolvedIP = hostname
-	} else {
-		resolvedIP = c.dialer.GetDialedIP(hostname)
+	resolvedIP, _, err := net.SplitHostPort(rawConn.RemoteAddr().String())
+	if err != nil {
+		return nil, err
 	}
 
 	conn, err := openssl.Client(rawConn, opensslCtx)
