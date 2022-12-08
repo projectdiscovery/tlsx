@@ -21,9 +21,8 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
-	ztls "github.com/zmap/zcrypto/tls"
 	stringsutil "github.com/projectdiscovery/utils/strings"
-
+	ztls "github.com/zmap/zcrypto/tls"
 )
 
 // Implementation is an interface implemented by TLSX client
@@ -313,10 +312,14 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 	return true
 }
 
-// IsTLSRevoked returns true if the certificate has been revoked
+// IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(cert *x509.Certificate) bool {
-	zcert, _ := zx509.ParseCertificate(cert.Raw)
-	return IsZTLSRevoked(zcert)
+	zcert, err := zx509.ParseCertificate(cert.Raw)
+	if err != nil {
+		return true
+	} else {
+		return IsZTLSRevoked(zcert)
+	}
 }
 
 // IsZTLSRevoked returns true if the certificate has been revoked
