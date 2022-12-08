@@ -12,9 +12,8 @@ import (
 )
 
 func TestResolvedIP(t *testing.T) {
-
 	allmodes := []string{"ctls", "ztls", "openssl", "auto"}
-	targethostname := "projectdiscovery.io"
+	targethostname := "scanme.sh"
 	targets, err := getDNSdata(targethostname)
 	if err != nil {
 		t.Fatalf("failed to get dns data: %v", err)
@@ -35,6 +34,10 @@ func TestResolvedIP(t *testing.T) {
 		for _, target := range targets {
 			resp, err := client.ConnectWithOptions(targethostname, target, "443", clients.ConnectOptions{})
 			if err != nil {
+				if iputil.IsIPv6(target) {
+					t.Logf("ipv6 potentially not supported skipping..")
+					continue
+				}
 				t.Fatalf("failed to get response from tlsx client: %v", err)
 			}
 			if !iputil.IsIP(resp.IP) {
