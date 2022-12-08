@@ -36,7 +36,7 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
  - Customizable **Cipher / SNI / TLS** selection
  - **JARM/JA3** TLS Fingerprint
  - **TLS Misconfigurations**
- - **HOST, IP, URL** and **CIDR** input
+ - **ASN,CIDR,IP,HOST,** and **URL** input
  - STD **IN/OUT** and **TXT/JSON** output
 
 
@@ -85,6 +85,8 @@ PROBES:
    -tps, -probe-status  display tls probe status
    -ve, -version-enum   enumerate and display supported tls versions
    -ce, -cipher-enum    enumerate and display supported cipher
+   -ch, -client-hello   include client hello in json output (ztls mode only)
+   -sh, -server-hello   include server hello in json output (ztls mode only)
 
 MISCONFIGURATIONS:
    -ex, -expired      display host with host expired certificate
@@ -98,6 +100,7 @@ CONFIGURATIONS:
    -cc, -cacert string          client certificate authority file
    -ci, -cipher-input string[]  ciphers to use with tls connection
    -sni string[]                tls sni hostname to use
+   -rs, -random-sni             use random sni when empty
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -ac, -all-ciphers            send all ciphers as accepted inputs (default true)

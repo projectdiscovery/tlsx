@@ -21,7 +21,8 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
-	"github.com/projectdiscovery/stringsutil"
+	stringsutil "github.com/projectdiscovery/utils/strings"
+	ztls "github.com/zmap/zcrypto/tls"
 )
 
 // Implementation is an interface implemented by TLSX client
@@ -44,6 +45,8 @@ type Options struct {
 	InputList string
 	// ServerName is the optional server-name for tls connection
 	ServerName goflags.StringSlice
+	// RandomForEmptyServerName in case of empty sni
+	RandomForEmptyServerName bool
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
@@ -127,6 +130,10 @@ type Options struct {
 	TlsVersionsEnum bool
 	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
 	TlsCiphersEnum bool
+	// ClientHello include client hello (only ztls)
+	ClientHello bool
+	// ServerHello include server hello (only ztls)
+	ServerHello bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -163,6 +170,8 @@ type Response struct {
 	ServerName  string                 `json:"sni,omitempty"`
 	VersionEnum []string               `json:"version_enum,omitempty"`
 	TlsCiphers  []TlsCiphers           `json:"cipher_enum,omitempty"`
+	ClientHello *ztls.ClientHello      `json:"client_hello,omitempty"`
+	ServerHello *ztls.ServerHello      `json:"servers_hello,omitempty"`
 }
 
 type TlsCiphers struct {
@@ -303,10 +312,14 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 	return true
 }
 
-// IsTLSRevoked returns true if the certificate has been revoked
+// IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(cert *x509.Certificate) bool {
-	zcert, _ := zx509.ParseCertificate(cert.Raw)
-	return IsZTLSRevoked(zcert)
+	zcert, err := zx509.ParseCertificate(cert.Raw)
+	if err != nil {
+		return true
+	} else {
+		return IsZTLSRevoked(zcert)
+	}
 }
 
 // IsZTLSRevoked returns true if the certificate has been revoked

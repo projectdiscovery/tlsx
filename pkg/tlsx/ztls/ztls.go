@@ -12,9 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
+	iputil "github.com/projectdiscovery/utils/ip"
 	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
@@ -104,7 +104,13 @@ func (timeoutError) Temporary() bool { return true }
 
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	address := net.JoinHostPort(hostname, port)
+	var address string
+	if ip != "" || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
+		address = net.JoinHostPort(ip, port)
+	} else {
+		address = net.JoinHostPort(hostname, port)
+	}
+
 	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
 		address = net.JoinHostPort(ip, port)
 	}
@@ -132,26 +138,24 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if conn == nil {
 		return nil, fmt.Errorf("could not connect to %s", address)
 	}
-	var resolvedIP string
-	if !iputil.IsIP(hostname) {
-		resolvedIP = c.dialer.GetDialedIP(hostname)
-		if resolvedIP == "" {
-			resolvedIP = ip
-		}
+
+	resolvedIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+	if err != nil {
+		return nil, err
 	}
 
 	config := c.tlsConfig
 	if config.ServerName == "" {
-		c := config.Clone()
+		cfg := config.Clone()
 		if options.SNI != "" {
-			c.ServerName = options.SNI
-		} else if iputil.IsIP(hostname) {
+			cfg.ServerName = options.SNI
+		} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
 			// using a random sni will return the default server certificate
-			c.ServerName = xid.New().String()
+			cfg.ServerName = xid.New().String()
 		} else {
-			c.ServerName = hostname
+			cfg.ServerName = hostname
 		}
-		config = c
+		config = cfg
 	}
 
 	if options.VersionTLS != "" {
@@ -215,6 +219,13 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if c.options.Ja3 {
 		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
 	}
+	if c.options.ClientHello {
+		response.ClientHello = hl.ClientHello
+	}
+	if c.options.ServerHello {
+		response.ServerHello = hl.ServerHello
+	}
+
 	return response, nil
 }
 

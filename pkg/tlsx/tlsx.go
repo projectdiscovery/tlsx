@@ -4,13 +4,14 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/projectdiscovery/sliceutil"
+	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 // Service is a service for tlsx module
@@ -23,6 +24,13 @@ type Service struct {
 func New(options *clients.Options) (*Service, error) {
 	service := &Service{
 		options: options,
+	}
+	if options.Fastdialer == nil {
+		var err error
+		options.Fastdialer, err = fastdialer.NewDialer(fastdialer.DefaultOptions)
+		if err != nil {
+			return nil, err
+		}
 	}
 	var err error
 	switch options.ScanMode {
