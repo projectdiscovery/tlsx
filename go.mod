@@ -19,6 +19,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
 	go.uber.org/multierr v1.8.0
+	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 )
 
 require (
@@ -81,7 +82,6 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/exp v0.0.0-20221019170559-20944726eadf // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
