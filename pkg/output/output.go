@@ -100,8 +100,6 @@ func (w *StandardWriter) formatJSON(output *clients.Response) ([]byte, error) {
 
 // formatStandard formats the output for standard client formatting
 func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error) {
-	builder := &bytes.Buffer{}
-
 	if output == nil {
 		return nil, errors.New("empty certificate response")
 	}
@@ -109,6 +107,8 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	if output.CertificateResponse == nil {
 		return nil, errors.New("empty leaf certificate")
 	}
+
+	builder := &bytes.Buffer{}
 
 	if !w.options.RespOnly {
 		builder.WriteString(output.Host)
