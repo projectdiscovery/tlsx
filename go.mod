@@ -18,7 +18,7 @@ require (
 	github.com/spacemonkeygo/openssl v0.0.0-20181017203307-c2dcc5cca94a
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.9.0
 )
 
 require (
