@@ -324,7 +324,12 @@ func IsTLSRevoked(cert *x509.Certificate) bool {
 
 // IsZTLSRevoked returns true if the certificate has been revoked
 func IsZTLSRevoked(cert *zx509.Certificate) bool {
-	OCSPisRevoked, _, OCSPerr := zverifier.CheckOCSP(context.TODO(), cert, nil)
+	var OCSPisRevoked bool = false
+	var OCSPerr error
+	// TODO : Verify Upstream Patch and remove extra condition when fixed
+	if len(cert.IssuingCertificateURL) > 0 && len(cert.OCSPServer) > 0 {
+		OCSPisRevoked, _, OCSPerr = zverifier.CheckOCSP(context.TODO(), cert, nil)
+	}
 	if len(cert.CRLDistributionPoints) != 0 {
 		CRLisRevoked, _, CRLerr := zverifier.CheckCRL(context.TODO(), cert, nil)
 
