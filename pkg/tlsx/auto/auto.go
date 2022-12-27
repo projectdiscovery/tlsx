@@ -24,7 +24,7 @@ func New(options *clients.Options) (*Client, error) {
 	tlsClient, tlsErr := tls.New(options)
 	ztlsClient, ztlsErr := ztls.New(options)
 	opensslClient, opensslErr := openssl.New(options)
-	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && opensslErr != openssl.ErrNotSupported) {
+	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && opensslErr != openssl.ErrNotAvailable) {
 		return nil, multierr.Combine(tlsErr, ztlsErr, opensslErr)
 	}
 	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient}, nil
@@ -54,7 +54,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			stats.IncrementOpensslTLSConnections()
 			return response, nil
 		}
-		if errors.Is(opensslErr, openssl.ErrNotSupported) {
+		if errors.Is(opensslErr, openssl.ErrNotAvailable) {
 			opensslErr = nil
 		}
 	}

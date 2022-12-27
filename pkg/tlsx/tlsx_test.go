@@ -24,7 +24,7 @@ func TestResolvedIP(t *testing.T) {
 			ScanMode: mode,
 			Retries:  3,
 		})
-		if errors.Is(err, openssl.ErrNotSupported) {
+		if errors.Is(err, openssl.ErrNotAvailable) {
 			t.Logf("openssl not available skipping..")
 			continue
 		}

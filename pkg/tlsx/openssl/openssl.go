@@ -1,40 +1,30 @@
-//go:build (linux || darwin) && openssl
-
 // Package openssl implements a tls grabbing implementation using openssl
 package openssl
 
 import (
 	"context"
-	"encoding/pem"
-	"io/ioutil"
+	"crypto/x509"
+	"fmt"
 	"net"
-	"strings"
 	"time"
-
-	"github.com/rs/xid"
-	"github.com/zmap/zcrypto/x509"
 
 	"github.com/pkg/errors"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
-	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
-	iputil "github.com/projectdiscovery/utils/ip"
-	"github.com/spacemonkeygo/openssl"
 )
-
-// Enabled reports if the tool was compiled with openssl support
-const Enabled = true
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
-	dialer           *fastdialer.Dialer
-	openSSLDialFlags []openssl.DialFlags
-	options          *clients.Options
+	dialer  *fastdialer.Dialer
+	options *clients.Options
 }
 
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
+	if !IsAvailable() {
+		return nil, ErrNotAvailable
+	}
 	c := &Client{
 		dialer:  options.Fastdialer,
 		options: options,
@@ -51,41 +41,26 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		address = net.JoinHostPort(hostname, port)
 	}
 
-	opensslCtx, err := openssl.NewCtxWithVersion(openssl.AnyVersion)
-	if err != nil {
-		return nil, err
-	}
-	opensslCtx.SetVerifyMode(openssl.VerifyNone)
-
-	if c.options.Timeout > 0 {
-		opensslCtx.SetTimeout(time.Duration(c.options.Timeout) * time.Second)
-	}
-
-	if len(c.options.Ciphers) > 0 {
-		if err := opensslCtx.SetCipherList(strings.Join(c.options.Ciphers, ",")); err != nil {
-			return nil, errors.Wrap(err, "could not set ciphers")
-		}
+	// Note: CLI options are omitted if given value is empty
+	opensslOptions := Options{
+		Address:    address,
+		ServerName: options.SNI,
+		CertChain:  c.options.TLSChain,
+		Protocol:   getProtocol(options.VersionTLS),
+		CAFile:     c.options.CACertificate,
+		// Cipher: , Add support for cipher transliteration (TODO)
 	}
 
-	if c.options.CACertificate != "" {
-		caCert, err := ioutil.ReadFile(c.options.CACertificate)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not read ca certificate")
-		}
-		caStore := opensslCtx.GetCertificateStore()
-		err = caStore.LoadCertificatesFromPEM(caCert)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not add certificate to store")
-		}
+	if opensslOptions.ServerName == "" {
+		// If there are multiple VHOST openssl returns errors unless hostname is specified (ex: projectdiscovery.io)
+		opensslOptions.ServerName = hostname
 	}
 
-	ctx := context.Background()
-	if c.options.Timeout != 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
-		defer cancel()
-	}
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
+	defer cancel()
 
+	// There is no guarantee that dialed ip is same as ip used by openssl
+	// this is only used to avoid inconsistencies
 	rawConn, err := c.dialer.Dial(ctx, "tcp", address)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not dial address")
@@ -96,49 +71,22 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, err
 	}
-
-	conn, err := openssl.Client(rawConn, opensslCtx)
+	args, err := opensslOptions.Args()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not wrap raw conn")
+		return nil, err
 	}
-	defer conn.Close()
 
-	if options.SNI != "" {
-		err = conn.SetTlsExtHostName(options.SNI)
-	} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
-		// using a random sni will return the default server certificate
-		err = conn.SetTlsExtHostName(xid.New().String())
-	} else {
-		err = conn.SetTlsExtHostName(hostname)
-	}
+	// Here _ contains handshake errors and other errors returned by openssl
+	bin, _, err := execOpenSSL(ctx, args)
 	if err != nil {
-		return nil, errors.New("could not set custom SNI")
+		return nil, err
 	}
 
-	// ignoring handshake errors
-	_ = conn.Handshake()
-
-	peerCertificates, err := conn.PeerCertificateChain()
+	certs, err := readResponse(bin)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get peer certificates")
-	}
-
-	if len(peerCertificates) == 0 {
-		return nil, errors.New("no certificates returned by server")
-	}
-
-	tlsCipher, err := conn.CurrentCipher()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get current cipher")
-	}
-
-	leafCertificate := peerCertificates[0]
-	certificateChain := peerCertificates[1:]
-	serverName := conn.GetServername()
-
-	x509LeafCertificate, err := c.convertOpenSSLToX509Certificate(leafCertificate)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not convert openssl leaf certificate")
+		return nil, err
+	} else if len(certs) == 0 {
+		return nil, fmt.Errorf("openssl did not return any certificates")
 	}
 
 	now := time.Now()
@@ -148,49 +96,77 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		IP:                  resolvedIP,
 		ProbeStatus:         true,
 		Port:                port,
-		Cipher:              tlsCipher,
-		TLSConnection:       "openssl",
-		CertificateResponse: ztls.ConvertCertificateToResponse(c.options, hostname, x509LeafCertificate),
-		ServerName:          serverName,
+		CertificateResponse: c.convertCertificateToResponse(hostname, certs[0]),
+		// Cipher:              tlsCipher,
+		TLSConnection: "openssl",
+		ServerName:    opensslOptions.ServerName,
 	}
+
+	// Note: openssl s_client does not return server certificate if certificate chain is requested
 	if c.options.TLSChain {
-		for _, opensslCert := range certificateChain {
-			x509Cert, err := c.convertOpenSSLToX509Certificate(opensslCert)
-			if err != nil {
-				return nil, errors.Wrap(err, "could not convert openssl chain certificate")
-			}
-			response.Chain = append(response.Chain, ztls.ConvertCertificateToResponse(c.options, hostname, x509Cert))
+		responses := []*clients.CertificateResponse{}
+		certs := getCertChain(ctx, opensslOptions)
+		for _, v := range certs {
+			responses = append(responses, c.convertCertificateToResponse(hostname, v))
 		}
+		response.Chain = responses
 	}
-	return response, nil
+	return nil, nil
 }
 
-func (c *Client) convertOpenSSLToX509Certificate(opensslCert *openssl.Certificate) (*x509.Certificate, error) {
-	pemBytes, err := opensslCert.MarshalPEM()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not marshal openssl to pem x509")
+// same as tls
+func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
+	response := &clients.CertificateResponse{
+		SubjectAN:    cert.DNSNames,
+		Emails:       cert.EmailAddresses,
+		NotBefore:    cert.NotBefore,
+		NotAfter:     cert.NotAfter,
+		Expired:      clients.IsExpired(cert.NotAfter),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		Revoked:      clients.IsTLSRevoked(cert),
+		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
+		IssuerCN:     cert.Issuer.CommonName,
+		IssuerOrg:    cert.Issuer.Organization,
+		SubjectCN:    cert.Subject.CommonName,
+		SubjectOrg:   cert.Subject.Organization,
+		FingerprintHash: clients.CertificateResponseFingerprintHash{
+			MD5:    clients.MD5Fingerprint(cert.Raw),
+			SHA1:   clients.SHA1Fingerprint(cert.Raw),
+			SHA256: clients.SHA256Fingerprint(cert.Raw),
+		},
 	}
-	pemBlock, _ := pem.Decode(pemBytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not read openssl pem x509 to go pem")
+	response.IssuerDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawIssuer, cert.Issuer.String())
+	response.SubjectDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawSubject, cert.Subject.String())
+	if c.options.Cert {
+		response.Certificate = clients.PemEncode(cert.Raw)
 	}
-	if pemBlock.Type != "CERTIFICATE" {
-		return nil, errors.Wrap(err, "unsupported pem block type")
-	}
-	x509Certificate, err := x509.ParseCertificate(pemBlock.Bytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not convert openssl x509 to go x509")
-	}
-
-	return x509Certificate, nil
+	return response
 }
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSVersions() ([]string, error) {
-	return nil, errors.New("not implemented in openssl mode")
+	return nil, ErrNotImplemented
 }
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
-	return nil, errors.New("not implemented in openssl mode")
+	return nil, ErrNotImplemented
+}
+
+// Openssl s_client does not dump certificate chain unless specified
+// and if specified does not dump server certificate
+func getCertChain(ctx context.Context, opts Options) []*x509.Certificate {
+	responses := []*x509.Certificate{}
+	opts.CertChain = true
+	args, _ := opts.Args()
+	bin, _, er := execOpenSSL(ctx, args)
+	if er != nil {
+		return responses
+	}
+	certs, err := readResponse(bin)
+	if err != nil {
+		return responses
+	}
+	return certs
 }

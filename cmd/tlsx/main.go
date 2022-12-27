@@ -54,7 +54,7 @@ func readFlags() error {
 	)
 
 	availableScanModes := []string{"ctls", "ztls"}
-	if openssl.Enabled {
+	if openssl.IsAvailable() {
 		availableScanModes = append(availableScanModes, "openssl")
 	}
 	availableScanModes = append(availableScanModes, "auto")
