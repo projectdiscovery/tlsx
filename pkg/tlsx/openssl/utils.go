@@ -3,6 +3,7 @@ package openssl
 import (
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 )
 
@@ -39,6 +40,16 @@ func parseSessionValue(line string) string {
 	} else {
 		return ""
 	}
+}
+
+// wraperrors even if err is nil
+func wraperrors(err error, newerr error) error {
+	if err == nil {
+		err = newerr
+	} else {
+		err = errors.Wrap(err, err.Error())
+	}
+	return err
 }
 
 func init() {

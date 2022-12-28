@@ -62,6 +62,11 @@ func getProtocol(versionTLS string) Protocols {
 	case "dtls12":
 		tlsversion = DTLSv1_2
 	}
+	if versionTLS == "" {
+		// if no tls version is used use tls13
+		// to avoid possible chances of handshake failures
+		return TLSv1_3
+	}
 	return tlsversion
 }
 

@@ -69,16 +69,25 @@ func readResponse(data string) (*Response, error) {
 	response.Session, err2 = readSessionData(data)
 
 	var err error
-	if err1 != nil || err2 != nil {
-		err = fmt.Errorf("%v:\n%v", err1, err2)
+	switch {
+	case err1 != nil:
+		err = wraperrors(err, err1)
+		fallthrough
+	case err2 != nil:
+		err = wraperrors(err, err2)
+		fallthrough
+	case len(response.AllCerts) == 0:
+		err = wraperrors(err, fmt.Errorf("no certificates found:\n%v", err))
+		fallthrough
+	case response.Session == nil:
+		err = wraperrors(err, fmt.Errorf("session is empty:\n%v", err))
+		fallthrough
+	case err != nil:
+		// if any of above case is successful
+		// add openssl response
+		err = wraperrors(err, fmt.Errorf("\n%v", data))
 	}
-	// Extra Error checking
-	if len(response.AllCerts) == 0 {
-		err = fmt.Errorf("no certificates found:\n%v", err)
-	}
-	if response.Session == nil {
-		err = fmt.Errorf("session is empty:\n%v", err)
-	}
+
 	return response, err
 }
 
@@ -112,8 +121,6 @@ readline:
 		if !strings.HasPrefix(line, "Extended master secret") {
 			// read until end of session data
 			goto readline
-		} else {
-			inFlight = false
 		}
 	} else {
 		goto readline
