@@ -52,16 +52,74 @@ func getCiphers() ([]string, error) {
 }
 
 // read openssl s_client response
-func readResponse(data string) ([]*x509.Certificate, error) {
+func readResponse(data string) (*Response, error) {
+	response := &Response{}
 	if !strings.Contains(data, "CONNECTED") {
 		// If connected string is not available it
 		// openssl failed completely and did not recover
 		return nil, fmt.Errorf(data)
 	}
 
+	var err1, err2 error
 	// openssl s_client returns lot of data however most of
 	// it can be obtained from parse Certificate
-	return parseCertificates(data)
+	response.AllCerts, err1 = parseCertificates(data)
+
+	// Parse Session Data
+	response.Session, err2 = readSessionData(data)
+
+	var err error
+	if err1 != nil || err2 != nil {
+		err = fmt.Errorf("%v:\n%v", err1, err2)
+	}
+	// Extra Error checking
+	if len(response.AllCerts) == 0 {
+		err = fmt.Errorf("no certificates found:\n%v", err)
+	}
+	if response.Session == nil {
+		err = fmt.Errorf("session is empty:\n%v", err)
+	}
+	return response, err
+}
+
+// read Session Data from openssl response
+func readSessionData(data string) (*Session, error) {
+	respreader := bufio.NewReader(strings.NewReader(data))
+	inFlight := false
+	osession := &Session{}
+
+readline:
+	line, err := respreader.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return nil, ErrNoSession
+	} else if err == io.EOF {
+		return nil, nil
+	}
+	line = strings.TrimSpace(line)
+	if strings.HasPrefix(line, "SSL-Session") {
+		inFlight = true
+		goto readline
+	}
+	if inFlight {
+		switch {
+		case strings.HasPrefix(line, "Protocol"):
+			osession.Protocol = parseSessionValue(line)
+		case strings.HasPrefix(line, "Cipher"):
+			osession.Cipher = parseSessionValue(line)
+		case strings.HasPrefix(line, "Master-Key"):
+			osession.MasterKey = parseSessionValue(line)
+		}
+		if !strings.HasPrefix(line, "Extended master secret") {
+			// read until end of session data
+			goto readline
+		} else {
+			inFlight = false
+		}
+	} else {
+		goto readline
+	}
+
+	return osession, nil
 }
 
 // parseCertificate dumped by openssl

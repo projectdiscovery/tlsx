@@ -1,7 +1,9 @@
 package openssl
 
 import (
+	"crypto/x509"
 	"fmt"
+	"strings"
 )
 
 type Protocols int
@@ -34,6 +36,16 @@ func (p *Protocols) String() string {
 	}
 }
 
+// supported tls version
+func supportedTLSVersions() []string {
+	return []string{
+		"tls10",
+		"tls11",
+		"tls12",
+		"tls13",
+	}
+}
+
 func getProtocol(versionTLS string) Protocols {
 	var tlsversion Protocols
 	switch versionTLS {
@@ -55,13 +67,12 @@ func getProtocol(versionTLS string) Protocols {
 
 // OpenSSL Command Line Options
 type Options struct {
-	Address     string    // host:port address to connect
-	Cipher      string    // Cipher to use while connecting
-	ServerName  string    //  Set TLS extension servername in ClientHello (SNI)
-	UseProtocol Protocols // Protocol to Use while connecting
-	CertChain   bool      // Show Certificate Chain
-	Protocol    Protocols // protocol to use
-	CAFile      string    // CA Certificate File
+	Address    string    // host:port address to connect
+	Cipher     []string  // Cipher to use while connecting
+	ServerName string    //  Set TLS extension servername in ClientHello (SNI)
+	CertChain  bool      // Show Certificate Chain
+	Protocol   Protocols // protocol to use
+	CAFile     string    // CA Certificate File
 }
 
 // generate command Args using given options
@@ -73,8 +84,8 @@ func (o *Options) Args() ([]string, error) {
 		return args, fmt.Errorf("openssl: address missing")
 	}
 
-	if o.Cipher != "" {
-		args = append(args, "-cipher", o.Cipher)
+	if len(o.Cipher) != 0 {
+		args = append(args, "-cipher", strings.Join(o.Cipher, ","))
 	}
 	if o.ServerName != "" {
 		args = append(args, "-servername", o.ServerName)
@@ -91,4 +102,33 @@ func (o *Options) Args() ([]string, error) {
 	}
 
 	return args, nil
+}
+
+// Session Details returned by openssl
+type Session struct {
+	Protocol  string
+	Cipher    string
+	SessionID string
+	MasterKey string
+}
+
+func (s *Session) getTLSVersion() string {
+	switch s.Protocol {
+	case "TLSv1":
+		return "tls10"
+	case "TLSv1.1":
+		return "tls11"
+	case "TLSv1.2":
+		return "tls12"
+	case "TLSv1.3":
+		return "tls13"
+	default:
+		return s.Protocol
+	}
+}
+
+// Openssl response
+type Response struct {
+	AllCerts []*x509.Certificate
+	Session  *Session
 }

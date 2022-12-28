@@ -4,7 +4,6 @@ package openssl
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"net"
 	"time"
 
@@ -45,10 +44,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	opensslOptions := Options{
 		Address:    address,
 		ServerName: options.SNI,
-		CertChain:  c.options.TLSChain,
 		Protocol:   getProtocol(options.VersionTLS),
 		CAFile:     c.options.CACertificate,
-		// Cipher: , Add support for cipher transliteration (TODO)
+		Cipher:     validateCiphers(options.Ciphers...),
 	}
 
 	if opensslOptions.ServerName == "" {
@@ -56,14 +54,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		opensslOptions.ServerName = hostname
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
-	defer cancel()
-
+	// timeout cannot be zero
+	if c.options.Timeout == 0 {
+		c.options.Timeout = 1
+	}
 	// There is no guarantee that dialed ip is same as ip used by openssl
 	// this is only used to avoid inconsistencies
-	rawConn, err := c.dialer.Dial(ctx, "tcp", address)
+	rawConn, err := c.dialer.Dial(context.TODO(), "tcp", address)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not dial address")
+		return nil, errors.Wrap(err, "openssl: could not dial address "+address)
 	}
 	defer rawConn.Close()
 
@@ -76,17 +75,16 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		return nil, err
 	}
 
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
+	defer cancel()
 	// Here _ contains handshake errors and other errors returned by openssl
 	bin, _, err := execOpenSSL(ctx, args)
 	if err != nil {
 		return nil, err
 	}
-
-	certs, err := readResponse(bin)
+	resp, err := readResponse(bin)
 	if err != nil {
 		return nil, err
-	} else if len(certs) == 0 {
-		return nil, fmt.Errorf("openssl did not return any certificates")
 	}
 
 	now := time.Now()
@@ -96,10 +94,11 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		IP:                  resolvedIP,
 		ProbeStatus:         true,
 		Port:                port,
-		CertificateResponse: c.convertCertificateToResponse(hostname, certs[0]),
-		// Cipher:              tlsCipher,
-		TLSConnection: "openssl",
-		ServerName:    opensslOptions.ServerName,
+		Version:             resp.Session.getTLSVersion(),
+		CertificateResponse: c.convertCertificateToResponse(hostname, resp.AllCerts[0]),
+		Cipher:              resp.Session.Cipher,
+		TLSConnection:       "openssl",
+		ServerName:          opensslOptions.ServerName,
 	}
 
 	// Note: openssl s_client does not return server certificate if certificate chain is requested
@@ -111,7 +110,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		}
 		response.Chain = responses
 	}
-	return nil, nil
+	return response, nil
 }
 
 // same as tls
@@ -146,12 +145,12 @@ func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certif
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSVersions() ([]string, error) {
-	return nil, ErrNotImplemented
+	return supportedTLSVersions(), nil
 }
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
-	return nil, ErrNotImplemented
+	return fetchCiphers(), nil
 }
 
 // Openssl s_client does not dump certificate chain unless specified
@@ -164,7 +163,7 @@ func getCertChain(ctx context.Context, opts Options) []*x509.Certificate {
 	if er != nil {
 		return responses
 	}
-	certs, err := readResponse(bin)
+	certs, err := parseCertificates(bin)
 	if err != nil {
 		return responses
 	}

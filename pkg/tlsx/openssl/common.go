@@ -12,6 +12,7 @@ var (
 	ErrCertParse      = errors.New("openssl: failed to parse server certificate")
 	ErrNotImplemented = errors.New("openssl: feature not implemented")
 	ErrNotAvailable   = errors.New("openssl executable not installed or in PATH")
+	ErrNoSession      = errors.New("openssl: session not created/found")
 )
 
 var BinaryPath string

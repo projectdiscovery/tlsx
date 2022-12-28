@@ -26,8 +26,8 @@ func TestResponse(t *testing.T) {
 		ErrContains string // errors returned by openssl
 		cert        *x509.Certificate
 	}{
-		{"s_client -connect projectdiscovery.io:443 -tls1", "handshake failure", nil},
-		{"s_client -connect scanme.sh:443", "self signed certificate", &x509.Certificate{Issuer: pkix.Name{Organization: []string{"pd"}, CommonName: "scanme"}}},
+		// {"s_client -connect projectdiscovery.io:443 -tls1", "handshake failure", nil},
+		{"s_client -connect scanme.sh:443", "", &x509.Certificate{Issuer: pkix.Name{Organization: []string{"pd"}, CommonName: "scanme"}}},
 	}
 
 	for _, v := range testcases {
@@ -39,7 +39,7 @@ func TestResponse(t *testing.T) {
 			t.Errorf("openssl: expected %v but got %v", v.ErrContains, errstring)
 		}
 		if v.cert != nil {
-			ocert, err := readResponse(bin)
+			ocert, err := parseCertificates(bin)
 			if err != nil {
 				t.Errorf(err.Error())
 			}
@@ -66,12 +66,37 @@ func TestCertChain(t *testing.T) {
 		t.Errorf("failed to execute cmd:%v\ngot error %v", args, err)
 	}
 
-	xchain, err := readResponse(bin)
+	xchain, err := parseCertificates(bin)
 	if err != nil {
 		t.Errorf("failed to parse certChain: %v", err.Error())
 	}
 	if len(xchain) < 2 {
 		t.Errorf("certChain: expected at least 2 certs but got %v", len(xchain))
+	}
+}
+
+func TestSessionData(t *testing.T) {
+	opts := Options{
+		Address: "scanme.sh:443",
+	}
+	versions := []string{"tls10", "tls11", "tls12", "tls13"}
+	for _, v := range versions {
+		opts.Protocol = getProtocol(v)
+		args, err := opts.Args()
+		if err != nil {
+			t.Errorf("failed to create cmd: %v", err)
+		}
+		out, _, err := execOpenSSL(context.TODO(), args)
+		if err != nil {
+			t.Errorf("failed to create cmd: %v", err)
+		}
+		resp, err := readResponse(out)
+		if err != nil {
+			t.Errorf("failed to create cmd: %v", err)
+		}
+		if resp.Session.getTLSVersion() != v {
+			t.Errorf("expected tlsversion %v but got %v", v, resp.Session.getTLSVersion())
+		}
 	}
 }
 

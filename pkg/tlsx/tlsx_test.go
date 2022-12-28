@@ -38,10 +38,10 @@ func TestResolvedIP(t *testing.T) {
 					t.Logf("ipv6 potentially not supported skipping..")
 					continue
 				}
-				t.Fatalf("failed to get response from tlsx client: %v", err)
+				t.Fatalf("%v: failed to get response from tlsx client: %v", mode, err)
 			}
 			if !iputil.IsIP(resp.IP) {
-				t.Fatalf("expected ip address for %v but got %v for mode %v", target, resp.IP, mode)
+				t.Fatalf("%v: expected ip address for %v but got %v for mode %v", mode, target, resp.IP, mode)
 			}
 		}
 	}
