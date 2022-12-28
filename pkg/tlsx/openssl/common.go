@@ -42,7 +42,7 @@ func init() {
 		BinaryPath, _ = exec.LookPath("openssl")
 	}
 	OpenSSL_CONF = filepath.Join(os.TempDir(), "openssl.cnf")
-	err := os.WriteFile(OpenSSL_CONF, []byte(openSSLConfig), 0644)
+	err := os.WriteFile(OpenSSL_CONF, []byte(openSSLConfig), 0600)
 	if err != nil {
 		gologger.Debug().Label("openssl").Msgf("Failed to create openssl.cnf file")
 	}
