@@ -76,10 +76,10 @@ func readResponse(data string) (*Response, error) {
 	case err2 != nil:
 		err = wraperrors(err, err2)
 		fallthrough
-	case len(response.AllCerts) == 0:
+	case response != nil && len(response.AllCerts) == 0:
 		err = wraperrors(err, fmt.Errorf("no certificates found:\n%v", err))
 		fallthrough
-	case response.Session == nil:
+	case response != nil && response.Session == nil:
 		err = wraperrors(err, fmt.Errorf("session is empty:\n%v", err))
 		fallthrough
 	case err != nil:
