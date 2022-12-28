@@ -12,7 +12,7 @@ import (
 )
 
 func TestResolvedIP(t *testing.T) {
-	allmodes := []string{"ctls", "ztls", "openssl", "auto"}
+	allmodes := []string{"openssl", "ctls", "ztls", "auto"}
 	targethostname := "scanme.sh"
 	targets, err := getDNSdata(targethostname)
 	if err != nil {
@@ -23,6 +23,7 @@ func TestResolvedIP(t *testing.T) {
 		client, err := tlsx.New(&clients.Options{
 			ScanMode: mode,
 			Retries:  3,
+			Timeout:  3,
 		})
 		if errors.Is(err, openssl.ErrNotAvailable) {
 			t.Logf("openssl not available skipping..")

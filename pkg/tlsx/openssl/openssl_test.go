@@ -54,6 +54,7 @@ func TestCertChain(t *testing.T) {
 	opts := Options{
 		Address:   "projectdiscovery.io:443",
 		CertChain: true,
+		Protocol:  TLSv1_3,
 	}
 
 	args, err := opts.Args()
@@ -76,23 +77,23 @@ func TestCertChain(t *testing.T) {
 }
 
 func TestSessionData(t *testing.T) {
-	opts := Options{
-		Address: "scanme.sh:443",
-	}
 	versions := []string{"tls10", "tls11", "tls12", "tls13"}
 	for _, v := range versions {
-		opts.Protocol = getProtocol(v)
+		opts := Options{
+			Address:  "scanme.sh:443",
+			Protocol: getProtocol(v),
+		}
 		args, err := opts.Args()
 		if err != nil {
-			t.Errorf("failed to create cmd: %v", err)
+			t.Errorf("failed to parse cmd args: %v", err)
 		}
 		out, _, err := execOpenSSL(context.TODO(), args)
 		if err != nil {
-			t.Errorf("failed to create cmd: %v", err)
+			t.Errorf("failed to run openssl: %v", err)
 		}
 		resp, err := readResponse(out)
 		if err != nil {
-			t.Errorf("failed to create cmd: %v", err)
+			t.Fatalf("failed to parse openssl response: %v", err)
 		}
 		if resp.Session.getTLSVersion() != v {
 			t.Errorf("expected tlsversion %v but got %v", v, resp.Session.getTLSVersion())

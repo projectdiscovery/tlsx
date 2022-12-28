@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -24,6 +25,8 @@ func execOpenSSL(ctx context.Context, args []string) (string, string, error) {
 	*/
 	var outbuff, inbuff, errbuff bytes.Buffer
 	cmd := exec.CommandContext(ctx, BinaryPath)
+	newenv := "OPENSSL_CONF=" + OpenSSL_CONF
+	cmd.Env = append(os.Environ(), newenv)
 	cmd.Args = args
 	cmd.Stderr = &errbuff
 	cmd.Stdout = &outbuff
@@ -76,7 +79,7 @@ func readResponse(data string) (*Response, error) {
 	case err2 != nil:
 		err = wraperrors(err, err2)
 		fallthrough
-	case response != nil && len(response.AllCerts) == 0:
+	case response != nil && (response.AllCerts == nil || len(response.AllCerts) == 0):
 		err = wraperrors(err, fmt.Errorf("no certificates found:\n%v", err))
 		fallthrough
 	case response != nil && response.Session == nil:
