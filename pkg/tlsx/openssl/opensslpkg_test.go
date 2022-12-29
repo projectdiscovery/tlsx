@@ -11,8 +11,9 @@ import (
 
 func TestOpenssL(t *testing.T) {
 	client, err := openssl.New(&clients.Options{
-		Timeout: 3,
-		Verbose: true,
+		Timeout:  6,
+		Verbose:  true,
+		TLSChain: true,
 	})
 	if err != nil && !errors.Is(err, openssl.ErrNotAvailable) {
 		t.Fatalf("unkown error: %v", err)
@@ -41,11 +42,16 @@ func TestOpenssL(t *testing.T) {
 		VersionTLS: "tls11",
 		SNI:        "scanme.sh",
 	})
-	if err != nil {
+	if err != nil || resp == nil {
 		t.Errorf("failed to connect using openssl: %v", err)
 	}
 	if resp.Version != "tls11" {
 		t.Errorf("something went wrong expected version %v but got %v", "tls11", resp.Version)
+	}
+
+	if len(resp.Chain) == 0 {
+		// cert chain length should at least be one(if self signed)
+		t.Errorf("invalid cert chain : %v", *resp)
 	}
 
 	for _, v := range dnsData.A {
@@ -58,6 +64,9 @@ func TestOpenssL(t *testing.T) {
 		}
 		if resp2.Version != "tls13" {
 			t.Errorf("something went wrong expected version %v but got %v", "tls13", resp2.Version)
+		}
+		if resp2.IssuerCN != "scanme" {
+			t.Errorf("invalid certificate parsed cert is %v", resp2.Certificate)
 		}
 	}
 }

@@ -101,6 +101,41 @@ func TestSessionData(t *testing.T) {
 	}
 }
 
+func TestParsing(t *testing.T) {
+	data, errbuf, er := execOpenSSL(context.Background(), []string{"version"})
+	if er != nil {
+		t.Fatalf("failed to execute openssl: %v %v", er, errbuf)
+	}
+
+	resp, err := readResponse(data)
+	if err == nil || resp != nil {
+		// this should fail since openssl only designed to parse s_client response
+		t.Errorf("openssl: parsed unknown response can only parse s_client %v", data)
+	}
+
+	opts := Options{
+		Address:  "hackyourselffirst.com:443",
+		Protocol: TLSv1,
+	}
+
+	args, err := opts.Args()
+	if err != nil {
+		t.Fatalf("failed to parse args %v", err)
+	}
+
+	data, errbuf, er = execOpenSSL(context.TODO(), args)
+	if er != nil {
+		t.Fatalf("failed to execute openssl: %v %v", er, errbuf)
+	}
+
+	_, err = readResponse(data)
+	// This case where certain servers impose minTLS Version
+	// where connection is established but certificate is not sent to openssl client
+	if err == nil {
+		t.Fatalf("openssl: should fail but did not for case %v", data)
+	}
+}
+
 func TestMain(m *testing.M) {
 	if !IsAvailable() {
 		log.Print(ErrNotAvailable)
