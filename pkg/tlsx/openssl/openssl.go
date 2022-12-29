@@ -4,6 +4,7 @@ package openssl
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
 	"net"
 	"time"
 
@@ -57,6 +58,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	// timeout cannot be zero
 	if c.options.Timeout == 0 {
 		c.options.Timeout = 1
+	}
+
+	// validate dialer before using
+	if c.dialer == nil {
+		var err error
+		c.dialer, err = fastdialer.NewDialer(fastdialer.DefaultOptions)
+		if err != nil {
+			return nil, fmt.Errorf("openssl: failed to create new dialer %v", c.dialer)
+		}
 	}
 	// There is no guarantee that dialed ip is same as ip used by openssl
 	// this is only used to avoid inconsistencies
