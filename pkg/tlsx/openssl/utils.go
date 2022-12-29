@@ -52,6 +52,13 @@ func wraperrors(err error, newerr error) error {
 	return err
 }
 
+func wrapErrWithcmd(err error, args []string) error {
+	if err != nil {
+		return errors.Wrapf(err, "[openssl:cmd] openssl %v\n", strings.Join(args, " "))
+	}
+	return nil
+}
+
 func init() {
 	if !IsAvailable() {
 		return

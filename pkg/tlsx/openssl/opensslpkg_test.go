@@ -57,13 +57,13 @@ func TestOpenssL(t *testing.T) {
 	for _, v := range dnsData.A {
 		// Try connecting using IP
 		resp2, err := client.ConnectWithOptions("scanme.sh", v, "443", clients.ConnectOptions{
-			VersionTLS: "tls13",
+			VersionTLS: "tls12",
 		})
 		if err != nil {
 			t.Errorf("failed to connect using openssl: %v", err)
 		}
-		if resp2.Version != "tls13" {
-			t.Errorf("something went wrong expected version %v but got %v", "tls13", resp2.Version)
+		if resp2.Version != "tls12" {
+			t.Errorf("something went wrong expected version %v but got %v", "tls12", resp2.Version)
 		}
 		if resp2.IssuerCN != "scanme" {
 			t.Errorf("invalid certificate parsed cert is %v", resp2.Certificate)

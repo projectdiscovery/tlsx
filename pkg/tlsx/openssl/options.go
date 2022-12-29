@@ -25,8 +25,8 @@ func (p *Protocols) String() string {
 		return "tls1_1"
 	case 2:
 		return "tls1_2"
-	case 3:
-		return "tls1_3"
+	// case 3:
+	// 	return "tls1_3"
 	case 4:
 		return "dtls1"
 	case 5:
@@ -42,7 +42,7 @@ func supportedTLSVersions() []string {
 		"tls10",
 		"tls11",
 		"tls12",
-		"tls13",
+		// "tls13",
 	}
 }
 
@@ -55,8 +55,8 @@ func getProtocol(versionTLS string) Protocols {
 		tlsversion = TLSv1_1
 	case "tls12":
 		tlsversion = TLSv1_2
-	case "tls13":
-		tlsversion = TLSv1_3
+	// case "tls13":
+	// 	tlsversion = TLSv1_3
 	case "dtls10":
 		tlsversion = DTLSv1
 	case "dtls12":
@@ -65,7 +65,7 @@ func getProtocol(versionTLS string) Protocols {
 	if versionTLS == "" {
 		// if no tls version is used use tls13
 		// to avoid possible chances of handshake failures
-		return TLSv1_3
+		return TLSv1_2
 	}
 	return tlsversion
 }
@@ -125,8 +125,8 @@ func (s *Session) getTLSVersion() string {
 		return "tls11"
 	case "TLSv1.2":
 		return "tls12"
-	case "TLSv1.3":
-		return "tls13"
+	// case "TLSv1.3":
+	// 	return "tls13"
 	default:
 		return s.Protocol
 	}

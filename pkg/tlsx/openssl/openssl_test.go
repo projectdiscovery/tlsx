@@ -77,7 +77,7 @@ func TestCertChain(t *testing.T) {
 }
 
 func TestSessionData(t *testing.T) {
-	versions := []string{"tls10", "tls11", "tls12", "tls13"}
+	versions := []string{"tls10", "tls11", "tls12"}
 	for _, v := range versions {
 		opts := Options{
 			Address:  "scanme.sh:443",
