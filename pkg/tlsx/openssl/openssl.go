@@ -55,9 +55,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		opensslOptions.ServerName = hostname
 	}
 
-	// timeout cannot be zero
-	if c.options.Timeout == 0 {
-		c.options.Timeout = 1
+	// timeout cannot be zero(If GOOS= windows it should be on average 3)
+	// this timeout will be used by os.exec context
+	if c.options.Timeout < 3 {
+		c.options.Timeout = 3
 	}
 
 	// validate dialer before using

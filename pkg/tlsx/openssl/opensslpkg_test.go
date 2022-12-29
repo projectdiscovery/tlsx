@@ -11,6 +11,7 @@ import (
 
 func TestOpenssL(t *testing.T) {
 	client, err := openssl.New(&clients.Options{
+		Timeout: 3,
 		Verbose: true,
 	})
 	if err != nil && !errors.Is(err, openssl.ErrNotAvailable) {
