@@ -6,13 +6,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
 
@@ -91,12 +89,11 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
 	defer cancel()
 	// Here _ contains handshake errors and other errors returned by openssl
-	gologger.Verbose().Label("openssl:cmd").Msgf("openssl s_client %v", strings.Join(args, " "))
-	bin, _, err := execOpenSSL(ctx, args)
+	data, errstream, err := execOpenSSL(ctx, args)
 	if err != nil {
-		return nil, wrapErrWithcmd(err, args)
+		return nil, wraperrors(wrapErrWithcmd(err, args), fmt.Errorf("%v %v", data, errstream))
 	}
-	resp, err := readResponse(bin)
+	resp, err := readResponse(data)
 	if err != nil {
 		return nil, wrapErrWithcmd(err, args)
 	}

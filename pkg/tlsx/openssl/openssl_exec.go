@@ -60,14 +60,12 @@ func readResponse(data string) (*Response, error) {
 	if !strings.Contains(data, "CONNECTED") {
 		// If connected string is not available it
 		// openssl failed completely and did not recover
-		return nil, fmt.Errorf(data)
+		return nil, fmt.Errorf("openssl response does not contain 'CONNECTED' %v", data)
 	}
-
 	var err1, err2 error
 	// openssl s_client returns lot of data however most of
 	// it can be obtained from parse Certificate
 	response.AllCerts, err1 = parseCertificates(data)
-
 	// Parse Session Data
 	response.Session, err2 = readSessionData(data)
 
@@ -90,7 +88,6 @@ func readResponse(data string) (*Response, error) {
 		// add openssl response
 		err = wraperrors(err, fmt.Errorf("\n%v", data))
 	}
-
 	return response, err
 }
 
@@ -103,9 +100,9 @@ func readSessionData(data string) (*Session, error) {
 readline:
 	line, err := respreader.ReadString('\n')
 	if err != nil && err != io.EOF {
-		return nil, ErrNoSession
+		return nil, wraperrors(err, ErrNoSession)
 	} else if err == io.EOF {
-		return nil, nil
+		return osession, nil
 	}
 	line = strings.TrimSpace(line)
 	if strings.HasPrefix(line, "SSL-Session") {
@@ -128,7 +125,6 @@ readline:
 	} else {
 		goto readline
 	}
-
 	return osession, nil
 }
 
