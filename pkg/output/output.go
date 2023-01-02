@@ -11,6 +11,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"golang.org/x/exp/maps"
 )
 
 // Writer is an interface which writes output to somewhere for katana events.
@@ -99,6 +100,14 @@ func (w *StandardWriter) formatJSON(output *clients.Response) ([]byte, error) {
 
 // formatStandard formats the output for standard client formatting
 func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error) {
+	if output == nil {
+		return nil, errors.New("empty certificate response")
+	}
+
+	if output.CertificateResponse == nil {
+		return nil, errors.New("empty leaf certificate")
+	}
+
 	builder := &bytes.Buffer{}
 
 	if !w.options.RespOnly {
@@ -242,13 +251,7 @@ func uniqueNormalizeCertNames(names []string) []string {
 	unique := make(map[string]struct{})
 	for _, value := range names {
 		replaced := strings.Replace(value, "*.", "", -1)
-		if _, ok := unique[replaced]; !ok {
-			unique[replaced] = struct{}{}
-		}
+		unique[replaced] = struct{}{}
 	}
-	results := make([]string, 0, len(unique))
-	for v := range unique {
-		results = append(results, v)
-	}
-	return results
+	return maps.Keys(unique)
 }
