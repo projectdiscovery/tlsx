@@ -73,7 +73,7 @@ func openSSLSetup() errorutils.Error {
 		IsLibreSSL = true
 	}
 	// else assume given is openssl
-	OpenSSL_Version := arr[1]
+	OpenSSLVersion := arr[1]
 	/*
 		This config is only valid for openssl and not "LibreSSL"
 	*/
@@ -84,9 +84,9 @@ func openSSLSetup() errorutils.Error {
 			gologger.Debug().Label("openssl").Msgf("Failed to create openssl.cnf file")
 			OPENSSL_CONF = ""
 		}
-		PkgTag = "OpenSSL" + OpenSSL_Version
+		PkgTag = "OpenSSL" + OpenSSLVersion
 	} else {
-		PkgTag = "LibreSSL" + OpenSSL_Version
+		PkgTag = "LibreSSL" + OpenSSLVersion
 	}
 
 	return nil

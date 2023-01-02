@@ -2,6 +2,7 @@ package openssl_test
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -49,9 +50,15 @@ func TestOpenssL(t *testing.T) {
 		t.Errorf("something went wrong expected version %v but got %v", "tls11", resp.Version)
 	}
 
-	if len(resp.Chain) == 0 {
+	if len(resp.Chain) == 0 || resp.Chain[0] == nil {
 		// cert chain length should at least be one(if self signed)
 		t.Errorf("invalid cert chain : %v", *resp)
+	} else {
+		cert := resp.Chain[0]
+		org := []string{"pd"}
+		if cert.IssuerCN != "scanme" || cert.SubjectCN != "scanme" || !reflect.DeepEqual(cert.IssuerOrg, org) || !reflect.DeepEqual(cert.SubjectOrg, org) {
+			t.Errorf("malformed response parsed from certificate got issuer: %v %v,subject %v %v", cert.IssuerCN, cert.IssuerOrg, cert.SubjectCN, cert.SubjectOrg)
+		}
 	}
 
 	for _, v := range dnsData.A {

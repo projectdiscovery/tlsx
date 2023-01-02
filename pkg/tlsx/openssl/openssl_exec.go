@@ -15,6 +15,8 @@ import (
 	errorutils "github.com/projectdiscovery/utils/errors"
 )
 
+const commadFormat string = "Command: %v"
+
 type CMDOUT struct {
 	Command string
 	Stdout  string
@@ -72,28 +74,28 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	}
 	result, err := execOpenSSL(ctx, args)
 	if err != nil {
-		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, binaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf("Command: %v", result.Command)
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, binaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf(commadFormat, result.Command)
 	}
 	response := &Response{}
 	if !strings.Contains(result.Stdout, "CONNECTED") {
 		// If connected string is not available it
 		// openssl failed completely and did not recover
-		return nil, errorutils.NewWithTag(PkgTag, "failed to parse 'CONNECTED' not found got %v", result.Stderr).Msgf("Command: %v", result.Command)
+		return nil, errorutils.NewWithTag(PkgTag, "failed to parse 'CONNECTED' not found got %v", result.Stderr).Msgf(commadFormat, result.Command)
 	}
-	var err1, err2 error
+	var errParseCertificates, errParseSessionData error
 	// openssl s_client returns lot of data however most of
 	// it can be obtained from parse Certificate
-	response.AllCerts, err1 = parseCertificates(result.Stdout)
+	response.AllCerts, errParseCertificates = parseCertificates(result.Stdout)
 	// Parse Session Data
-	response.Session, err2 = readSessionData(result.Stdout)
+	response.Session, errParseSessionData = readSessionData(result.Stdout)
 
 	var allerrors errorutils.Error
 	switch {
-	case err1 != nil:
-		allerrors = Wrap(allerrors, errorutils.NewWithErr(err1).WithTag(PkgTag).Msgf("failed to parse server certificate from response"))
+	case errParseCertificates != nil:
+		allerrors = Wrap(allerrors, errorutils.NewWithErr(errParseCertificates).WithTag(PkgTag).Msgf("failed to parse server certificate from response"))
 		fallthrough
-	case err2 != nil:
-		allerrors = Wrap(allerrors, errorutils.NewWithErr(err2).WithTag(PkgTag).Msgf("failed to parse session data from response"))
+	case errParseSessionData != nil:
+		allerrors = Wrap(allerrors, errorutils.NewWithErr(errParseSessionData).WithTag(PkgTag).Msgf("failed to parse session data from response"))
 		fallthrough
 	case len(response.AllCerts) == 0:
 		allerrors = Wrap(allerrors, errorutils.NewWithTag(PkgTag, "no server certificates found"))
@@ -101,7 +103,7 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	case allerrors != nil:
 		// if any of above case is successful
 		// add openssl response
-		return nil, allerrors.Msgf("failed to parse openssl response. original response is:\n%v", *result).Msgf("Command: %v", result.Command)
+		return nil, allerrors.Msgf("failed to parse openssl response. original response is:\n%v", *result).Msgf(commadFormat, result.Command)
 	}
 	return response, nil
 }
@@ -166,9 +168,9 @@ readline:
 		certBuff.WriteString(line)
 		certBuff.WriteString("\n")
 		inFlight = false
-		xcert, er := getx509Certificate(certBuff.Bytes())
-		if er != nil {
-			return nil, er
+		xcert, certerr := getx509Certificate(certBuff.Bytes())
+		if certerr != nil {
+			return nil, errorutils.NewWithErr(certerr).WithTag(PkgTag).Msgf("failed to parse x509 certificate from PEM data of openssl")
 		}
 		certArr = append(certArr, xcert)
 		certBuff.Reset()
