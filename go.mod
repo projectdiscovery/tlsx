@@ -10,15 +10,16 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/dnsx v1.1.1
 	github.com/projectdiscovery/fastdialer v0.0.19
-	github.com/projectdiscovery/goflags v0.1.5
+	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.5
 	github.com/projectdiscovery/mapcidr v1.0.3
-	github.com/projectdiscovery/utils v0.0.3
+	github.com/projectdiscovery/utils v0.0.4-0.20221214110533-9f95ee986a54
 	github.com/rs/xid v1.4.0
 	github.com/spacemonkeygo/openssl v0.0.0-20181017203307-c2dcc5cca94a
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
-	go.uber.org/multierr v1.8.0
+	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
+	go.uber.org/multierr v1.9.0
 )
 
 require (
@@ -47,7 +48,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/klauspost/compress v1.11.7 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
 	github.com/microcosm-cc/bluemonday v1.0.21 // indirect
@@ -67,7 +68,7 @@ require (
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
 	github.com/projectdiscovery/sliceutil v0.0.1 // indirect
 	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
-	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
@@ -81,7 +82,6 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/exp v0.0.0-20221019170559-20944726eadf // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
