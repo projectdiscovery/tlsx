@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
+	errorutils "github.com/projectdiscovery/utils/errors"
 )
 
 var (
@@ -133,4 +135,12 @@ func readFlags() error {
 		}
 	}
 	return nil
+}
+
+func init() {
+	// Feature: Debug Mode
+	// Errors will include stacktrace when debug mode is enabled
+	if os.Getenv("DEBUG") != "" {
+		errorutils.ShowStackTrace = true
+	}
 }
