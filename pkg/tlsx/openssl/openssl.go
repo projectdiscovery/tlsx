@@ -4,14 +4,13 @@ package openssl
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	errorutils "github.com/projectdiscovery/utils/errors"
+	iputil "github.com/projectdiscovery/utils/ip"
 )
 
 // Client is a TLS grabbing client using crypto/tls
@@ -35,14 +34,14 @@ func New(options *clients.Options) (*Client, error) {
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	var address string
-	if ip != "" || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
+	if (ip != "" && iputil.IsIP(ip)) || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
 		address = net.JoinHostPort(ip, port)
 	} else {
 		address = net.JoinHostPort(hostname, port)
 	}
 
 	// Note: CLI options are omitted if given value is empty
-	opensslOptions := Options{
+	opensslOptions := &Options{
 		Address:    address,
 		ServerName: options.SNI,
 		Protocol:   getProtocol(options.VersionTLS),
@@ -55,7 +54,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		opensslOptions.ServerName = hostname
 	}
 
-	// timeout cannot be zero(If GOOS= windows it should be on average 3)
+	// timeout cannot be zero(If GOOS==windows it should be on average 3)
 	// this timeout will be used by os.exec context
 	if c.options.Timeout < 3 {
 		c.options.Timeout = 3
@@ -66,14 +65,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		var err error
 		c.dialer, err = fastdialer.NewDialer(fastdialer.DefaultOptions)
 		if err != nil {
-			return nil, fmt.Errorf("openssl: failed to create new dialer %v", c.dialer)
+			return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("failed to create new fastdialer")
 		}
 	}
 	// There is no guarantee that dialed ip is same as ip used by openssl
 	// this is only used to avoid inconsistencies
 	rawConn, err := c.dialer.Dial(context.TODO(), "tcp", address)
 	if err != nil || rawConn == nil {
-		return nil, errors.Wrap(err, "openssl: could not dial address "+address)
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("could not dial address:%v", address)
 	}
 	defer rawConn.Close()
 
@@ -81,21 +80,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, err
 	}
-	args, err := opensslOptions.Args()
-	if err != nil {
-		return nil, err
-	}
-
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
 	defer cancel()
 	// Here _ contains handshake errors and other errors returned by openssl
-	data, errstream, err := execOpenSSL(ctx, args)
-	if err != nil {
-		return nil, wraperrors(wrapErrWithcmd(err, args), fmt.Errorf("%v %v", data, errstream))
-	}
-	resp, err := readResponse(data)
-	if err != nil {
-		return nil, wrapErrWithcmd(err, args)
+	resp, errx := getResponse(ctx, opensslOptions)
+	if errx != nil {
+		return nil, errx.Msgf("failed to response from openssl").WithTag(PkgTag)
 	}
 
 	now := time.Now()
@@ -106,7 +96,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		ProbeStatus:         true,
 		Port:                port,
 		Version:             resp.Session.getTLSVersion(),
-		CertificateResponse: c.convertCertificateToResponse(hostname, resp.AllCerts[0]),
+		CertificateResponse: clients.Convertx509toResponse(hostname, resp.AllCerts[0], c.options.Cert),
 		Cipher:              resp.Session.Cipher,
 		TLSConnection:       "openssl",
 		ServerName:          opensslOptions.ServerName,
@@ -117,41 +107,11 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		responses := []*clients.CertificateResponse{}
 		certs := getCertChain(ctx, opensslOptions)
 		for _, v := range certs {
-			responses = append(responses, c.convertCertificateToResponse(hostname, v))
+			responses = append(responses, clients.Convertx509toResponse(hostname, v, c.options.Cert))
 		}
 		response.Chain = responses
 	}
 	return response, nil
-}
-
-// same as tls
-func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
-	response := &clients.CertificateResponse{
-		SubjectAN:    cert.DNSNames,
-		Emails:       cert.EmailAddresses,
-		NotBefore:    cert.NotBefore,
-		NotAfter:     cert.NotAfter,
-		Expired:      clients.IsExpired(cert.NotAfter),
-		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
-		Revoked:      clients.IsTLSRevoked(cert),
-		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerCN:     cert.Issuer.CommonName,
-		IssuerOrg:    cert.Issuer.Organization,
-		SubjectCN:    cert.Subject.CommonName,
-		SubjectOrg:   cert.Subject.Organization,
-		FingerprintHash: clients.CertificateResponseFingerprintHash{
-			MD5:    clients.MD5Fingerprint(cert.Raw),
-			SHA1:   clients.SHA1Fingerprint(cert.Raw),
-			SHA256: clients.SHA256Fingerprint(cert.Raw),
-		},
-	}
-	response.IssuerDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawIssuer, cert.Issuer.String())
-	response.SubjectDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawSubject, cert.Subject.String())
-	if c.options.Cert {
-		response.Certificate = clients.PemEncode(cert.Raw)
-	}
-	return response
 }
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
@@ -166,15 +126,15 @@ func (c *Client) SupportedTLSCiphers() ([]string, error) {
 
 // Openssl s_client does not dump certificate chain unless specified
 // and if specified does not dump server certificate
-func getCertChain(ctx context.Context, opts Options) []*x509.Certificate {
+func getCertChain(ctx context.Context, opts *Options) []*x509.Certificate {
 	responses := []*x509.Certificate{}
 	opts.CertChain = true
 	args, _ := opts.Args()
-	bin, _, er := execOpenSSL(ctx, args)
+	result, er := execOpenSSL(ctx, args)
 	if er != nil {
 		return responses
 	}
-	certs, err := parseCertificates(bin)
+	certs, err := parseCertificates(result.Stdout)
 	if err != nil {
 		return responses
 	}

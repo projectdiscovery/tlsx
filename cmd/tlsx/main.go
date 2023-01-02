@@ -103,6 +103,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
+		flagSet.StringVarP(&options.OpenSSLBinary, "openssl-binary", "ob", "", "OpenSSL Binary Path"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",

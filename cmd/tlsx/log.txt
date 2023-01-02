@@ -1,0 +1,105 @@
+scanme.sh:443
+scanme.sh:443 [[35mtls12,tls10,tls11[0m]
+scanme.sh:443 (128.199.158.128)
+{
+  "timestamp": "2023-01-02T20:54:26.839715+05:30",
+  "host": "scanme.sh",
+  "ip": "128.199.158.128",
+  "port": "443",
+  "probe_status": true,
+  "tls_version": "tls12",
+  "self_signed": true,
+  "mismatched": true,
+  "not_before": "2022-06-07T15:18:51Z",
+  "not_after": "2032-06-04T15:18:51Z",
+  "subject_dn": "CN=scanme, O=pd",
+  "subject_cn": "scanme",
+  "subject_org": [
+    "pd"
+  ],
+  "issuer_dn": "CN=scanme, O=pd",
+  "issuer_cn": "scanme",
+  "issuer_org": [
+    "pd"
+  ],
+  "fingerprint_hash": {
+    "md5": "eacf1e9b4acca9168b43f84a9bfaa7c5",
+    "sha1": "550837ef878d58c92820e9498e3807c6bd7184ec",
+    "sha256": "ebbf69a9e7ba65b51fa12cd44105055c2c2c250706e9795fab219d3d5dff5fac"
+  },
+  "tls_connection": "openssl",
+  "sni": "scanme.sh"
+}
+{
+  "timestamp": "2023-01-02T20:54:27.21244+05:30",
+  "host": "scanme.sh",
+  "ip": "128.199.158.128",
+  "port": "443",
+  "probe_status": true,
+  "tls_version": "tls12",
+  "self_signed": true,
+  "mismatched": true,
+  "not_before": "2022-06-07T15:18:51Z",
+  "not_after": "2032-06-04T15:18:51Z",
+  "subject_dn": "CN=scanme, O=pd",
+  "subject_cn": "scanme",
+  "subject_org": [
+    "pd"
+  ],
+  "issuer_dn": "CN=scanme, O=pd",
+  "issuer_cn": "scanme",
+  "issuer_org": [
+    "pd"
+  ],
+  "fingerprint_hash": {
+    "md5": "eacf1e9b4acca9168b43f84a9bfaa7c5",
+    "sha1": "550837ef878d58c92820e9498e3807c6bd7184ec",
+    "sha256": "ebbf69a9e7ba65b51fa12cd44105055c2c2c250706e9795fab219d3d5dff5fac"
+  },
+  "tls_connection": "openssl",
+  "sni": "scanme.sh",
+  "version_enum": [
+    "tls12",
+    "tls10",
+    "tls11"
+  ],
+  "cipher_enum": [
+    {
+      "version": "tls12",
+      "ciphers": [
+        "ECDHE-ECDSA-CHACHA20-POLY1305",
+        "ECDHE-ECDSA-AES128-SHA",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-AES256-SHA",
+        "ECDHE-ECDSA-AES128-GCM-SHA256"
+      ]
+    },
+    {
+      "version": "tls10",
+      "ciphers": [
+        "ECDHE-ECDSA-AES256-SHA",
+        "ECDHE-ECDSA-AES128-SHA"
+      ]
+    },
+    {
+      "version": "tls11",
+      "ciphers": [
+        "ECDHE-ECDSA-AES128-SHA",
+        "ECDHE-ECDSA-AES256-SHA"
+      ]
+    }
+  ]
+}
+  
+
+  _____ _    _____  __
+ |_   _| |  / __\ \/ /
+   | | | |__\__ \>  < 
+   |_| |____|___/_/\_\	v1.0.0
+
+		projectdiscovery.io
+
+[[34mWRN[0m] Use with caution. You are responsible for your actions.
+[[34mWRN[0m] Developers assume no liability and are not responsible for any misuse or damage.
+[[34mINF[0m] Processing input scanme.sh:443
+scanme.sh:443 [[32msuccess[0m]

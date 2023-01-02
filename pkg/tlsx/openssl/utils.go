@@ -3,8 +3,8 @@ package openssl
 import (
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/utils/errors"
 )
 
 // AllCiphers
@@ -42,21 +42,12 @@ func parseSessionValue(line string) string {
 	}
 }
 
-// wraperrors even if err is nil
-func wraperrors(err error, newerr error) error {
-	if err == nil {
-		err = newerr
-	} else {
-		err = errors.Wrap(err, err.Error())
+// Wraps err2 over err1 even if err is nil
+func Wrap(err1 errors.Error, err2 errors.Error) errors.Error {
+	if err1 == nil {
+		return err2
 	}
-	return err
-}
-
-func wrapErrWithcmd(err error, args []string) error {
-	if err != nil {
-		return errors.Wrapf(err, "[openssl:cmd] openssl %v\n", strings.Join(args, " "))
-	}
-	return nil
+	return err1.Wrap(err2)
 }
 
 func init() {

@@ -91,9 +91,8 @@ type Options struct {
 	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool
-
-	// Begin List of probes for tlsx
-
+	// OpenSSL Binary Path
+	OpenSSLBinary string
 	// SAN displays Subject Alternative Names
 	SAN bool
 	// CN displays Subject Common Name

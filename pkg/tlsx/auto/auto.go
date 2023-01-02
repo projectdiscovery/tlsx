@@ -9,6 +9,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	errorutils "github.com/projectdiscovery/utils/errors"
 	"go.uber.org/multierr"
 )
 
@@ -24,7 +25,8 @@ func New(options *clients.Options) (*Client, error) {
 	tlsClient, tlsErr := tls.New(options)
 	ztlsClient, ztlsErr := ztls.New(options)
 	opensslClient, opensslErr := openssl.New(options)
-	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && opensslErr != openssl.ErrNotAvailable) {
+
+	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && !errorutils.IsAny(opensslErr, openssl.ErrNotAvailable)) {
 		return nil, multierr.Combine(tlsErr, ztlsErr, opensslErr)
 	}
 	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient}, nil

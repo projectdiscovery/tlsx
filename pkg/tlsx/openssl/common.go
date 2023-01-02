@@ -1,27 +1,35 @@
 package openssl
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	errorutils "github.com/projectdiscovery/utils/errors"
 )
 
 var (
-	ErrParse          = errors.New("openssl: failed to parse openssl response")
-	ErrCertParse      = errors.New("openssl: failed to parse server certificate")
-	ErrNotImplemented = errors.New("openssl: feature not implemented")
-	ErrNotAvailable   = errors.New("openssl: executable not installed or in PATH")
-	ErrNoSession      = errors.New("openssl: session not created/found")
+	ErrParse          = errorutils.NewWithTag("openssl", "failed to parse openssl response")
+	ErrCertParse      = errorutils.NewWithTag("openssl", "failed to parse server certificate")
+	ErrNotImplemented = errorutils.NewWithTag("openssl", "feature not implemented")
+	ErrNotAvailable   = errorutils.NewWithTag("openssl", "executable not installed or in PATH")
+	ErrNoSession      = errorutils.NewWithTag("openssl", "session not created/found")
 )
 
-var BinaryPath, OpenSSL_CONF string
+var (
+	binaryPath   = ""
+	OPENSSL_CONF = ""
+	IsLibreSSL   = false
+	PkgTag       = "" // Header or Tag value that will be reflected in all errors (include openssl(libressl) and version)
+)
 
 // Certain distro provide openssl config with different min protocol version ex: Ubuntu 18,19,20 etc
-// In such case temporary overrride using a temp file with below config
+// In such case temporary override using a temp file with below config
+// this temporary override is only done to openssl and not `LibreSSL`(due to certain inconsistencies)
 var openSSLConfig string = `openssl_conf = default_conf
 
 [ default_conf ]
@@ -37,22 +45,63 @@ CipherString = DEFAULT:@SECLEVEL=1
 
 func init() {
 	if runtime.GOOS == "windows" {
-		BinaryPath, _ = exec.LookPath("openssl.exe")
+		binaryPath, _ = exec.LookPath("openssl.exe")
 	} else {
-		BinaryPath, _ = exec.LookPath("openssl")
+		binaryPath, _ = exec.LookPath("openssl")
 	}
-	OpenSSL_CONF = filepath.Join(os.TempDir(), "openssl.cnf")
-	err := os.WriteFile(OpenSSL_CONF, []byte(openSSLConfig), 0600)
+	if binaryPath == "" {
+		// not available or failed to get return
+		gologger.Debug().Label("openssl").Msgf("openssl binary not found skipping")
+		return
+	}
+	if err := openSSLSetup(); err != nil {
+		gologger.Debug().Label("openssl").Msgf(err.Error())
+	}
+}
+
+// fetch openssl version
+func openSSLSetup() errorutils.Error {
+	result, err := execOpenSSL(context.TODO(), []string{"version"})
 	if err != nil {
-		gologger.Debug().Label("openssl").Msgf("Failed to create openssl.cnf file")
+		return errorutils.NewWithErr(err).WithTag("openssl").Msgf(result.Stderr)
 	}
+	arr := strings.Fields(result.Stdout)
+	if len(arr) < 2 {
+		return errorutils.NewWithTag("openssl", "failed to parse openssl version got %v", result.Stdout)
+	}
+	if arr[0] == "LibreSSL" {
+		IsLibreSSL = true
+	}
+	// else assume given is openssl
+	OpenSSL_Version := arr[1]
+	/*
+		This config is only valid for openssl and not "LibreSSL"
+	*/
+	if !IsLibreSSL {
+		OPENSSL_CONF = filepath.Join(os.TempDir(), "openssl.cnf")
+		err := os.WriteFile(OPENSSL_CONF, []byte(openSSLConfig), 0600)
+		if err != nil {
+			gologger.Debug().Label("openssl").Msgf("Failed to create openssl.cnf file")
+			OPENSSL_CONF = ""
+		}
+		PkgTag = "OpenSSL" + OpenSSL_Version
+	} else {
+		PkgTag = "LibreSSL" + OpenSSL_Version
+	}
+
+	return nil
 }
 
 // check if openssl if available for use
 func IsAvailable() bool {
-	if BinaryPath != "" {
-		return true
-	} else {
-		return false
+	return binaryPath != ""
+}
+
+// UseOpenSSLBinary From Path
+func UseOpenSSLBinary(binpath string) {
+	binaryPath = binpath
+	if err := openSSLSetup(); err != nil {
+		// do not fallback
+		gologger.Fatal().Label("openssl").Msgf(err.Error())
 	}
 }

@@ -11,10 +11,18 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	errorutils "github.com/projectdiscovery/utils/errors"
 )
 
+type CMDOUT struct {
+	Command string
+	Stdout  string
+	Stderr  string
+}
+
 // execute openssl command and get results
-func execOpenSSL(ctx context.Context, args []string) (string, string, error) {
+func execOpenSSL(ctx context.Context, args []string) (*CMDOUT, error) {
 	/*
 		after executing given command it returns
 		1. Stdout stream of OpenSSL which contains certificate and actual response
@@ -24,9 +32,11 @@ func execOpenSSL(ctx context.Context, args []string) (string, string, error) {
 		3. error purely realted to I/O and command execution
 	*/
 	var outbuff, inbuff, errbuff bytes.Buffer
-	cmd := exec.CommandContext(ctx, BinaryPath)
-	newenv := "OPENSSL_CONF=" + OpenSSL_CONF
-	cmd.Env = append(os.Environ(), newenv)
+	cmd := exec.CommandContext(ctx, binaryPath)
+	if !IsLibreSSL {
+		newenv := "OPENSSL_CONF=" + OPENSSL_CONF
+		cmd.Env = append(os.Environ(), newenv)
+	}
 	cmd.Args = args
 	cmd.Stderr = &errbuff
 	cmd.Stdout = &outbuff
@@ -34,61 +44,66 @@ func execOpenSSL(ctx context.Context, args []string) (string, string, error) {
 	inbuff.WriteString("Q")
 
 	if err := cmd.Start(); err != nil {
-		return outbuff.String(), errbuff.String(), fmt.Errorf("failed to start openssl: %v", err)
+		return &CMDOUT{Stderr: errbuff.String(), Stdout: outbuff.String()}, fmt.Errorf("failed to start openssl: %v", err)
 	}
 	if err := cmd.Wait(); err != nil && errbuff.Len() == 0 {
-		return outbuff.String(), errbuff.String(), err
+		return &CMDOUT{Stderr: errbuff.String(), Stdout: outbuff.String()}, err
 	}
-	return strings.TrimSpace(outbuff.String()), errbuff.String(), nil
+	return &CMDOUT{Stderr: errbuff.String(), Stdout: outbuff.String()}, nil
 }
 
 // getCiphers returns openssl ciphers
 func getCiphers() ([]string, error) {
 	ciphers := []string{}
-	res, _, err := execOpenSSL(context.TODO(), []string{"ciphers"})
+	res, err := execOpenSSL(context.TODO(), []string{"ciphers"})
 	if err != nil {
 		return ciphers, err
 	}
-	res = strings.TrimSpace(res)
-	ciphers = append(ciphers, strings.Split(res, ":")...)
+	out := strings.TrimSpace(res.Stdout)
+	ciphers = append(ciphers, strings.Split(out, ":")...)
 	return ciphers, nil
 }
 
 // read openssl s_client response
-func readResponse(data string) (*Response, error) {
+func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Error) {
+	args, errx := opts.Args()
+	if errx != nil {
+		return nil, errorutils.NewWithErr(errx).WithTag(PkgTag).Msgf("failed to create cmd from args got %v", *opts)
+	}
+	result, err := execOpenSSL(ctx, args)
+	if err != nil {
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, binaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf("Command: %v", result.Command)
+	}
 	response := &Response{}
-	if !strings.Contains(data, "CONNECTED") {
+	if !strings.Contains(result.Stdout, "CONNECTED") {
 		// If connected string is not available it
 		// openssl failed completely and did not recover
-		return nil, fmt.Errorf("openssl response does not contain 'CONNECTED' %v", data)
+		return nil, errorutils.NewWithTag(PkgTag, "failed to parse 'CONNECTED' not found got %v", result.Stderr).Msgf("Command: %v", result.Command)
 	}
 	var err1, err2 error
 	// openssl s_client returns lot of data however most of
 	// it can be obtained from parse Certificate
-	response.AllCerts, err1 = parseCertificates(data)
+	response.AllCerts, err1 = parseCertificates(result.Stdout)
 	// Parse Session Data
-	response.Session, err2 = readSessionData(data)
+	response.Session, err2 = readSessionData(result.Stdout)
 
-	var err error
+	var allerrors errorutils.Error
 	switch {
 	case err1 != nil:
-		err = wraperrors(err, err1)
+		allerrors = Wrap(allerrors, errorutils.NewWithErr(err1).WithTag(PkgTag).Msgf("failed to parse server certificate from response"))
 		fallthrough
 	case err2 != nil:
-		err = wraperrors(err, err2)
+		allerrors = Wrap(allerrors, errorutils.NewWithErr(err2).WithTag(PkgTag).Msgf("failed to parse session data from response"))
 		fallthrough
-	case response != nil && (response.AllCerts == nil || len(response.AllCerts) == 0):
-		err = wraperrors(err, fmt.Errorf("no certificates found:\n%v", err))
+	case len(response.AllCerts) == 0:
+		allerrors = Wrap(allerrors, errorutils.NewWithTag(PkgTag, "no server certificates found"))
 		fallthrough
-	case response != nil && response.Session == nil:
-		err = wraperrors(err, fmt.Errorf("session is empty:\n%v", err))
-		fallthrough
-	case err != nil:
+	case allerrors != nil:
 		// if any of above case is successful
 		// add openssl response
-		err = wraperrors(err, fmt.Errorf("\n%v", data))
+		return nil, allerrors.Msgf("failed to parse openssl response. original response is:\n%v", *result).Msgf("Command: %v", result.Command)
 	}
-	return response, err
+	return response, nil
 }
 
 // read Session Data from openssl response
@@ -100,7 +115,7 @@ func readSessionData(data string) (*Session, error) {
 readline:
 	line, err := respreader.ReadString('\n')
 	if err != nil && err != io.EOF {
-		return nil, wraperrors(err, ErrNoSession)
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag).Wrap(ErrNoSession)
 	} else if err == io.EOF {
 		return osession, nil
 	}
@@ -119,8 +134,8 @@ readline:
 			osession.MasterKey = parseSessionValue(line)
 		}
 		if !strings.HasPrefix(line, "Extended master secret") {
-			// read until end of session data
-			goto readline
+			// read until end of session data and return
+			return osession, nil
 		}
 	} else {
 		goto readline

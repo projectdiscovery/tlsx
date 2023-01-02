@@ -31,15 +31,15 @@ func TestResponse(t *testing.T) {
 	}
 
 	for _, v := range testcases {
-		bin, errstring, err := execOpenSSL(context.Background(), strings.Fields(v.Command))
+		result, err := execOpenSSL(context.Background(), strings.Fields(v.Command))
 		if err != nil {
 			t.Errorf("failed to execute cmd:%v\ngot error %v", v.Command, err)
 		}
-		if v.ErrContains != "" && !strings.Contains(errstring, v.ErrContains) {
-			t.Errorf("openssl: expected %v but got %v", v.ErrContains, errstring)
+		if v.ErrContains != "" && !strings.Contains(result.Stderr, v.ErrContains) {
+			t.Errorf("openssl: expected %v but got %v", v.ErrContains, result.Stderr)
 		}
 		if v.cert != nil {
-			ocert, err := parseCertificates(bin)
+			ocert, err := parseCertificates(result.Stdout)
 			if err != nil {
 				t.Errorf(err.Error())
 			}
@@ -62,12 +62,12 @@ func TestCertChain(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	bin, _, err := execOpenSSL(context.Background(), args)
+	result, err := execOpenSSL(context.Background(), args)
 	if err != nil {
-		t.Errorf("failed to execute cmd:%v\ngot error %v", args, err)
+		t.Errorf("failed to execute cmd:%v\ngot error %v", result.Command, err)
 	}
 
-	xchain, err := parseCertificates(bin)
+	xchain, err := parseCertificates(result.Stdout)
 	if err != nil {
 		t.Errorf("failed to parse certChain: %v", err.Error())
 	}
@@ -79,21 +79,13 @@ func TestCertChain(t *testing.T) {
 func TestSessionData(t *testing.T) {
 	versions := []string{"tls10", "tls11", "tls12"}
 	for _, v := range versions {
-		opts := Options{
+		opts := &Options{
 			Address:  "scanme.sh:443",
 			Protocol: getProtocol(v),
 		}
-		args, err := opts.Args()
+		resp, err := getResponse(context.TODO(), opts)
 		if err != nil {
-			t.Errorf("failed to parse cmd args: %v", err)
-		}
-		out, _, err := execOpenSSL(context.TODO(), args)
-		if err != nil {
-			t.Errorf("failed to run openssl: %v", err)
-		}
-		resp, err := readResponse(out)
-		if err != nil {
-			t.Fatalf("failed to parse openssl response: %v", err)
+			t.Fatalf("failed to get openssl response: %v", err)
 		}
 		if resp.Session.getTLSVersion() != v {
 			t.Errorf("expected tlsversion %v but got %v", v, resp.Session.getTLSVersion())
@@ -102,37 +94,35 @@ func TestSessionData(t *testing.T) {
 }
 
 func TestParsing(t *testing.T) {
-	data, errbuf, er := execOpenSSL(context.Background(), []string{"version"})
+	/*
+		Test Session Parsing and Certificate Parsing when response is malformed
+	*/
+	result, er := execOpenSSL(context.Background(), []string{"version"})
 	if er != nil {
-		t.Fatalf("failed to execute openssl: %v %v", er, errbuf)
+		t.Fatalf("failed to execute openssl: %v %v", er, *result)
 	}
-
-	resp, err := readResponse(data)
-	if err == nil || resp != nil {
+	resp, err := readSessionData(result.Stdout)
+	if err == nil && resp.Protocol != "" {
 		// this should fail since openssl only designed to parse s_client response
-		t.Errorf("openssl: parsed unknown response can only parse s_client %v", data)
+		t.Errorf("openssl: parsed unknown response can only parse s_client %v", *result)
 	}
-
 	opts := Options{
 		Address:  "hackyourselffirst.com:443",
 		Protocol: TLSv1,
 	}
-
 	args, err := opts.Args()
 	if err != nil {
 		t.Fatalf("failed to parse args %v", err)
 	}
-
-	data, errbuf, er = execOpenSSL(context.TODO(), args)
+	result, er = execOpenSSL(context.TODO(), args)
 	if er != nil {
-		t.Fatalf("failed to execute openssl: %v %v", er, errbuf)
+		t.Fatalf("failed to execute openssl: %v %v", er, *result)
 	}
-
-	_, err = readResponse(data)
+	certs, err := parseCertificates(result.Stdout)
 	// This case where certain servers impose minTLS Version
 	// where connection is established but certificate is not sent to openssl client
-	if err == nil {
-		t.Fatalf("openssl: should fail but did not for case %v", data)
+	if len(certs) > 0 && certs != nil && err == nil {
+		t.Fatalf("openssl: should fail but did not for case %v", *result)
 	}
 }
 
