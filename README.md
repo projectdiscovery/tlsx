@@ -404,12 +404,12 @@ echo example.com | tlsx -json -silent | jq .
 
 tlsx provides multiple modes to make TLS Connection -
 
-- `auto` (with fallback support) - default
-- `ctls` (**crypto/tls**)
-- `ztls` (**zcrypto/tls**)
-- `openssl` (conditional build)
+- `auto` (automatic fallback to other modes upon failure) - **default**
+- `ctls` (**[crypto/tls](https://github.com/golang/go/blob/master/src/crypto/tls/tls.go)**)
+- `ztls` (**[zcrypto/tls](https://github.com/zmap/zcrypto)**)
+- `openssl` (**[openssl](https://github.com/openssl/openssl)**)
 
-Some pointers for the specific mode / library is highlighted in [linked discussions](https://github.com/projectdiscovery/tlsx/discussions/2), `auto` mode is supported to ensure the maximum coverage and scans for the hosts running older version of TLS by retrying the connection using `ztls` mode upon any connection error.
+Some pointers for the specific mode / library is highlighted in [linked discussions](https://github.com/projectdiscovery/tlsx/discussions/2), `auto` mode is supported to ensure the maximum coverage and scans for the hosts running older version of TLS by retrying the connection using `ztls` and `openssl` mode upon any connection error.
 
 An example of using `ztls` mode to scan website using old / outdated TLS version.
 
@@ -430,62 +430,13 @@ $ echo tls-v1-0.badssl.com | tlsx -port 1010 -sm ztls
 tls-v1-0.badssl.com:1010
 ```
 
+### OpenSSL
+
+To use the openssl connection mode, you will need to have openssl installed on your system. Most modern systems come with openssl pre-installed, but if it is not present on your system, you can install it manually. You can check if openssl is installed by running the command `openssl version`. If openssl is installed, this command will display the version number.
+
 <table>
 <tr>
 <td>
-
-### OpenSSL
-
-`tlsx` can be built with support for `OpenSSL` for osx and linux systems. The library must be installed with the following commands:
-
-
-**OSX**:
-
-```console
-brew install openssl
-```
-
-**OSX Arm**:
-
-```console
-brew install openssl
-```
-
-```console
-export CGO_LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
-export CGO_CPPFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
-```
-
-```console
-go build -tags openssl .
-```
-
-**Linux**:
-
-```console
-apt install openssl
-```
-
-On some linux systems the default configuration is restrictive, and in order to allow more tls coverage the enclosed `assets/openssl.include` should be copied onto the system and the following snippet added to `/etc/ssl/openssl.cnf`:
-
-```
-.include /path/to/openssl.include
-```
-
-Finally the binary must be built with the `openssl` tag:
-
-```console
-go build -tags openssl .
-```
-
-At this point the engine can be used with:
-
-```console
-tlsx -sm openssl -json
-```
-</td>
-</tr>
-</table>
 
 ### Pre-Handshake (Early Termination)
 
@@ -512,9 +463,13 @@ $ tlsx -u example.com -pre-handshake
 example.com:443
 ```
 
-**Note:**
+> **Note**:
 
 > **pre-handshake** mode utilizes `ztls` (**zcrypto/tls**) which also means the support is limited till `TLS v1.2` as `TLS v1.3` is not supported by `ztls` library.
+
+</table>
+</tr>
+</td>
 
 ### TLS Version
 
@@ -562,7 +517,6 @@ $ tlsx -u example.com -ci cipher_list.txt -cipher
 This program optionally uses:
 
 - [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
-- [spacelog](https://github.com/spacemonkeygo/spacelog) for openssl cgo bindings.
 
 --------
 
