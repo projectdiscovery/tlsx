@@ -22,6 +22,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
@@ -44,6 +45,9 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
+	}
+	if options.OpenSSLBinary != "" {
+		openssl.UseOpenSSLBinary(options.OpenSSLBinary)
 	}
 	showBanner()
 

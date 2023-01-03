@@ -182,44 +182,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ctls",
-		CertificateResponse: c.convertCertificateToResponse(hostname, leafCertificate),
+		CertificateResponse: clients.Convertx509toResponse(hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {
-			response.Chain = append(response.Chain, c.convertCertificateToResponse(hostname, cert))
+			response.Chain = append(response.Chain, clients.Convertx509toResponse(hostname, cert, c.options.Cert))
 		}
 	}
 	return response, nil
-}
-
-func (c *Client) convertCertificateToResponse(hostname string, cert *x509.Certificate) *clients.CertificateResponse {
-	response := &clients.CertificateResponse{
-		SubjectAN:    cert.DNSNames,
-		Emails:       cert.EmailAddresses,
-		NotBefore:    cert.NotBefore,
-		NotAfter:     cert.NotAfter,
-		Expired:      clients.IsExpired(cert.NotAfter),
-		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
-		Revoked:      clients.IsTLSRevoked(cert),
-		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerCN:     cert.Issuer.CommonName,
-		IssuerOrg:    cert.Issuer.Organization,
-		SubjectCN:    cert.Subject.CommonName,
-		SubjectOrg:   cert.Subject.Organization,
-		FingerprintHash: clients.CertificateResponseFingerprintHash{
-			MD5:    clients.MD5Fingerprint(cert.Raw),
-			SHA1:   clients.SHA1Fingerprint(cert.Raw),
-			SHA256: clients.SHA256Fingerprint(cert.Raw),
-		},
-	}
-	response.IssuerDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawIssuer, cert.Issuer.String())
-	response.SubjectDN = clients.ParseASN1DNSequenceWithZpkixOrDefault(cert.RawSubject, cert.Subject.String())
-	if c.options.Cert {
-		response.Certificate = clients.PemEncode(cert.Raw)
-	}
-	return response
 }
 
 // SupportedTLSVersions returns the list of standard tls library supported tls versions

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
+	errorutils "github.com/projectdiscovery/utils/errors"
 )
 
 var (
@@ -54,7 +56,7 @@ func readFlags() error {
 	)
 
 	availableScanModes := []string{"ctls", "ztls"}
-	if openssl.Enabled {
+	if openssl.IsAvailable() {
 		availableScanModes = append(availableScanModes, "openssl")
 	}
 	availableScanModes = append(availableScanModes, "auto")
@@ -103,6 +105,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
+		flagSet.StringVarP(&options.OpenSSLBinary, "openssl-binary", "ob", "", "OpenSSL Binary Path"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",
@@ -132,4 +135,12 @@ func readFlags() error {
 		}
 	}
 	return nil
+}
+
+func init() {
+	// Feature: Debug Mode
+	// Errors will include stacktrace when debug mode is enabled
+	if os.Getenv("DEBUG") != "" {
+		errorutils.ShowStackTrace = true
+	}
 }
