@@ -11,14 +11,14 @@ require (
 	github.com/projectdiscovery/dnsx v1.1.1
 	github.com/projectdiscovery/fastdialer v0.0.19
 	github.com/projectdiscovery/goflags v0.1.6
-	github.com/projectdiscovery/gologger v1.1.5
+	github.com/projectdiscovery/gologger v1.1.7
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/utils v0.0.4-0.20230102120019-c7a04e2045be
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
-	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 	go.uber.org/multierr v1.9.0
+	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 )
 
 require (
