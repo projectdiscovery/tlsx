@@ -312,25 +312,29 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 }
 
 // IsTLSRevoked returns true if the certificate has been revoked or failed to parse
-func IsTLSRevoked(cert *x509.Certificate) bool {
+func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
 	zcert, err := zx509.ParseCertificate(cert.Raw)
 	if err != nil {
 		return true
 	} else {
-		return IsZTLSRevoked(zcert)
+		return IsZTLSRevoked(options, zcert)
 	}
 }
 
 // IsZTLSRevoked returns true if the certificate has been revoked
-func IsZTLSRevoked(cert *zx509.Certificate) bool {
+func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 	var OCSPisRevoked bool = false
 	var OCSPerr error
 	// TODO : Verify Upstream Patch and remove extra condition when fixed
 	if len(cert.IssuingCertificateURL) > 0 && len(cert.OCSPServer) > 0 {
-		OCSPisRevoked, _, OCSPerr = zverifier.CheckOCSP(context.TODO(), cert, nil)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(options.Timeout)*time.Second)
+		defer cancel()
+		OCSPisRevoked, _, OCSPerr = zverifier.CheckOCSP(ctx, cert, nil)
 	}
 	if len(cert.CRLDistributionPoints) != 0 {
-		CRLisRevoked, _, CRLerr := zverifier.CheckCRL(context.TODO(), cert, nil)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(options.Timeout)*time.Second)
+		defer cancel()
+		CRLisRevoked, _, CRLerr := zverifier.CheckCRL(ctx, cert, nil)
 
 		if CRLerr == nil {
 			if OCSPerr == nil {
