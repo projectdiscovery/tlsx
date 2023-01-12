@@ -147,6 +147,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	config := c.tlsConfig
 	if config.ServerName == "" {
 		cfg := config.Clone()
+		// todo: zcrypto Clone leaves out custom flag => send patch upstream
+		cfg.CertsOnly = config.CertsOnly
 		if options.SNI != "" {
 			cfg.ServerName = options.SNI
 		} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
