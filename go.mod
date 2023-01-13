@@ -16,7 +16,7 @@ require (
 	github.com/projectdiscovery/utils v0.0.4-0.20230102120019-c7a04e2045be
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
-	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
+	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
 	go.uber.org/multierr v1.9.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 )
