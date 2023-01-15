@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 )
 
-func Convertx509toResponse(hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
+func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
 	response := &CertificateResponse{
 		SubjectAN:    cert.DNSNames,
 		Emails:       cert.EmailAddresses,
@@ -13,7 +13,7 @@ func Convertx509toResponse(hostname string, cert *x509.Certificate, showcert boo
 		Expired:      IsExpired(cert.NotAfter),
 		SelfSigned:   IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
 		MisMatched:   IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
-		Revoked:      IsTLSRevoked(cert),
+		Revoked:      IsTLSRevoked(options, cert),
 		WildCardCert: IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerCN:     cert.Issuer.CommonName,
 		IssuerOrg:    cert.Issuer.Organization,

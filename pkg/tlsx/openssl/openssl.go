@@ -96,7 +96,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		ProbeStatus:         true,
 		Port:                port,
 		Version:             resp.Session.getTLSVersion(),
-		CertificateResponse: clients.Convertx509toResponse(hostname, resp.AllCerts[0], c.options.Cert),
+		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, resp.AllCerts[0], c.options.Cert),
 		Cipher:              resp.Session.Cipher,
 		TLSConnection:       "openssl",
 		ServerName:          opensslOptions.ServerName,
@@ -107,7 +107,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		responses := []*clients.CertificateResponse{}
 		certs := getCertChain(ctx, opensslOptions)
 		for _, v := range certs {
-			responses = append(responses, clients.Convertx509toResponse(hostname, v, c.options.Cert))
+			responses = append(responses, clients.Convertx509toResponse(c.options, hostname, v, c.options.Cert))
 		}
 		response.Chain = responses
 	}
