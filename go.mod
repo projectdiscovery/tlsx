@@ -9,16 +9,16 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/dnsx v1.1.1
-	github.com/projectdiscovery/fastdialer v0.0.19
+	github.com/projectdiscovery/fastdialer v0.0.20
 	github.com/projectdiscovery/goflags v0.1.6
-	github.com/projectdiscovery/gologger v1.1.5
+	github.com/projectdiscovery/gologger v1.1.7
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/utils v0.0.4-0.20230102120019-c7a04e2045be
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
-	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
-	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
+	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
 	go.uber.org/multierr v1.9.0
+	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 )
 
 require (
@@ -81,9 +81,9 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/net v0.2.0 // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect

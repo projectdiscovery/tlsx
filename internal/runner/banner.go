@@ -17,7 +17,7 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-var version = "v1.0.3"
+var version = "v1.0.4"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
@@ -60,7 +60,4 @@ func (r *Runner) validateOptions() error {
 func showBanner() {
 	gologger.Print().Msgf("%s\n", banner)
 	gologger.Print().Msgf("\t\tprojectdiscovery.io\n\n")
-
-	gologger.Print().Label("WRN").Msgf("Use with caution. You are responsible for your actions.\n")
-	gologger.Print().Label("WRN").Msgf("Developers assume no liability and are not responsible for any misuse or damage.\n")
 }

@@ -182,12 +182,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ctls",
-		CertificateResponse: clients.Convertx509toResponse(hostname, leafCertificate, c.options.Cert),
+		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,
 	}
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {
-			response.Chain = append(response.Chain, clients.Convertx509toResponse(hostname, cert, c.options.Cert))
+			response.Chain = append(response.Chain, clients.Convertx509toResponse(c.options, hostname, cert, c.options.Cert))
 		}
 	}
 	return response, nil
