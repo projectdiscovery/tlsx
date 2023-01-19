@@ -111,6 +111,11 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		address = net.JoinHostPort(hostname, port)
 	}
 
+	//validation
+	if (hostname == "" && ip == "") || port == "" {
+		return nil, errorutil.NewWithTag("ztls", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
+	}
+
 	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
 		address = net.JoinHostPort(ip, port)
 	}

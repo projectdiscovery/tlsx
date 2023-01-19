@@ -104,7 +104,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	//validation
 	if (hostname == "" && ip == "") || port == "" {
-		return nil, errorutil.NewWithTag("ctls", "client requires host/ip and port but got %v:%v")
+		return nil, errorutil.NewWithTag("ctls", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
 	}
 
 	ctx := context.Background()

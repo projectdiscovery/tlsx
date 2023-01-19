@@ -62,6 +62,11 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	var resp *clients.Response
 	var err error
 
+	//validation
+	if (host == "" && ip == "") || port == "" {
+		return nil, errorutil.NewWithTag("tlsx", "tlsx requires valid address got port=%v,hostname=%v,ip=%v", port, host, ip)
+	}
+
 	for i := 0; i < s.options.Retries; i++ {
 		if resp, err = s.client.ConnectWithOptions(host, ip, port, options); resp != nil {
 			err = nil
@@ -105,7 +110,6 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 		resp.TlsCiphers = supportedTlsCiphers
 	}
-
 	return resp, nil
 }
 
