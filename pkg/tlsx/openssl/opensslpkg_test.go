@@ -1,4 +1,4 @@
-package openssl_test
+package openssl
 
 import (
 	"errors"
@@ -7,16 +7,15 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
-	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 )
 
 func TestOpenssL(t *testing.T) {
-	client, err := openssl.New(&clients.Options{
+	client, err := New(&clients.Options{
 		Timeout:  6,
 		Verbose:  true,
 		TLSChain: true,
 	})
-	if err != nil && !errors.Is(err, openssl.ErrNotAvailable) {
+	if err != nil && !errors.Is(err, ErrNotAvailable) {
 		t.Fatalf("unkown error: %v", err)
 	}
 
