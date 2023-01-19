@@ -11,10 +11,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
 	"github.com/rs/xid"
 )
@@ -59,7 +59,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {
-			return nil, errors.Wrap(err, "could not get tls ciphers")
+			return nil, errorutil.NewWithTag("ctls", "could not get tls ciphers").Wrap(err)
 		} else {
 			c.tlsConfig.CipherSuites = customCiphers
 		}
@@ -67,7 +67,7 @@ func New(options *clients.Options) (*Client, error) {
 	if options.CACertificate != "" {
 		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not read ca certificate")
+			return nil, errorutil.NewWithTag("ctls", "could not read ca certificate").Wrap(err)
 		}
 		certPool := x509.NewCertPool()
 		if !certPool.AppendCertsFromPEM(caCert) {
@@ -78,7 +78,7 @@ func New(options *clients.Options) (*Client, error) {
 	if options.MinVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MinVersion]
 		if !ok {
-			return nil, fmt.Errorf("invalid min version specified: %s", options.MinVersion)
+			return nil, errorutil.NewWithTag("ctls", "invalid min version specified: %s", options.MinVersion)
 		} else {
 			c.tlsConfig.MinVersion = version
 		}
@@ -86,7 +86,7 @@ func New(options *clients.Options) (*Client, error) {
 	if options.MaxVersion != "" {
 		version, ok := versionStringToTLSVersion[options.MaxVersion]
 		if !ok {
-			return nil, fmt.Errorf("invalid max version specified: %s", options.MaxVersion)
+			return nil, errorutil.NewWithTag("ctls", "invalid max version specified: %s", options.MaxVersion)
 		} else {
 			c.tlsConfig.MaxVersion = version
 		}
@@ -102,6 +102,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	} else {
 		address = net.JoinHostPort(hostname, port)
 	}
+	//validation
+	if (hostname == "" && ip == "") || port == "" {
+		return nil, errorutil.NewWithTag("ctls", "client requires host/ip and port but got %v:%v")
+	}
 
 	ctx := context.Background()
 	if c.options.Timeout != 0 {
@@ -112,10 +116,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	rawConn, err := c.dialer.Dial(ctx, "tcp", address)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not dial address")
+		return nil, errorutil.NewWithTag("ctls", "could not dial address").Wrap(err)
 	}
 	if rawConn == nil {
-		return nil, fmt.Errorf("could not connect to %s", address)
+		return nil, errorutil.NewWithTag("ctls", "could not connect to %s", address)
 	}
 
 	resolvedIP, _, err := net.SplitHostPort(rawConn.RemoteAddr().String())
@@ -150,7 +154,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if len(options.Ciphers) > 0 {
 		customCiphers, err := toTLSCiphers(options.Ciphers)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not get tls ciphers")
+			return nil, errorutil.NewWithTag("ctls", "could not get tls ciphers").Wrap(err)
 		}
 		c.tlsConfig.CipherSuites = customCiphers
 	}
@@ -158,13 +162,13 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	conn := tls.Client(rawConn, config)
 	if err := conn.HandshakeContext(ctx); err != nil {
 		rawConn.Close()
-		return nil, errors.Wrap(err, "could not do handshake")
+		return nil, errorutil.NewWithTag("ctls", "could not do handshake").Wrap(err)
 	}
 	defer conn.Close()
 
 	connectionState := conn.ConnectionState()
 	if len(connectionState.PeerCertificates) == 0 {
-		return nil, errors.New("no certificates returned by server")
+		return nil, errorutil.New("no certificates returned by server")
 	}
 	tlsVersion := versionToTLSVersionString[connectionState.Version]
 	tlsCipher := tls.CipherSuiteName(connectionState.CipherSuite)

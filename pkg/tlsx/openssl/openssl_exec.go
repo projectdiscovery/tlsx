@@ -135,14 +135,12 @@ readline:
 		case strings.HasPrefix(line, "Master-Key"):
 			osession.MasterKey = parseSessionValue(line)
 		}
-		if !strings.HasPrefix(line, "Extended master secret") {
+		if strings.HasPrefix(line, "Timeout") {
 			// read until end of session data and return
 			return osession, nil
 		}
-	} else {
-		goto readline
 	}
-	return osession, nil
+	goto readline
 }
 
 // parseCertificate dumped by openssl

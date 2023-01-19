@@ -124,6 +124,10 @@ OUTPUT:
    -version            display project version
 ```
 
+## Using tlsx as library
+
+Examples of using tlsx as library are provided in the [examples](examples/) folder.
+
 ## Running tlsx
 
 ### Input for tlsx

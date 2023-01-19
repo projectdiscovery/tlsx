@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/internal/runner"
@@ -27,20 +26,20 @@ func main() {
 
 func process() error {
 	if err := readFlags(); err != nil {
-		return errors.Wrap(err, "could not read flags")
+		return errorutils.NewWithErr(err).Msgf("could not read flags")
 	}
 	runner, err := runner.New(options)
 	if err != nil {
-		return errors.Wrap(err, "could not create runner")
+		return errorutils.NewWithErr(err).Msgf("could not create runner")
 	}
 	if runner == nil {
 		return nil
 	}
 	if err := runner.Execute(); err != nil {
-		return errors.Wrap(err, "could not execute runner")
+		return errorutils.NewWithErr(err).Msgf("could not execute runner")
 	}
 	if err := runner.Close(); err != nil {
-		return errors.Wrap(err, "could not close runner")
+		return errorutils.NewWithErr(err).Msgf("could not close runner")
 	}
 	return nil
 }
@@ -126,12 +125,12 @@ func readFlags() error {
 	)
 
 	if err := flagSet.Parse(); err != nil {
-		return errors.Wrap(err, "could not parse flags")
+		return errorutils.NewWithErr(err).Msgf("could not parse flags")
 	}
 
 	if cfgFile != "" {
 		if err := flagSet.MergeConfigFile(cfgFile); err != nil {
-			return errors.Wrap(err, "could not read config file")
+			return errorutils.NewWithErr(err).Msgf("could not read config file")
 		}
 	}
 	return nil
