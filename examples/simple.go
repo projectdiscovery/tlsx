@@ -28,7 +28,7 @@ func main() {
 		}
 
 		// connect to any host either with hostname or ip
-		// service.Connect(hostname ,ip ,port string)
+		// service.Connect(hostname, ip , port string)
 		resp, err := service.Connect("scanme.sh", "", "443")
 		if err != nil {
 			panic(err)
