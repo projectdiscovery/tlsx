@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/utils/errors"
+	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
 // AllCiphers
@@ -43,7 +43,7 @@ func parseSessionValue(line string) string {
 }
 
 // Wraps err2 over err1 even if err is nil
-func Wrap(err1 errors.Error, err2 errors.Error) errors.Error {
+func Wrap(err1 errorutil.Error, err2 errorutil.Error) errorutil.Error {
 	if err1 == nil {
 		return err2
 	}
