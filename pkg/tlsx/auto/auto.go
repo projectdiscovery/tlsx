@@ -3,7 +3,6 @@
 package auto
 
 import (
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
@@ -56,7 +55,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			stats.IncrementOpensslTLSConnections()
 			return response, nil
 		}
-		if errors.Is(opensslErr, openssl.ErrNotAvailable) {
+		if errorutils.IsAny(opensslErr, openssl.ErrNotAvailable) {
 			opensslErr = nil
 		}
 	}

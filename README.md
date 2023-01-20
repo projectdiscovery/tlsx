@@ -7,6 +7,7 @@
 <p align="center">
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-_red.svg"></a>
 <a href="https://goreportcard.com/badge/github.com/projectdiscovery/tlsx"><img src="https://goreportcard.com/badge/github.com/projectdiscovery/tlsx"></a>
+<a href="https://pkg.go.dev/github.com/projectdiscovery/tlsx/pkg/tlsx"><img src="https://img.shields.io/badge/go-reference-blue"></a>
 <a href="https://github.com/projectdiscovery/tlsx/releases"><img src="https://img.shields.io/github/release/projectdiscovery/tlsx"></a>
 <a href="https://twitter.com/pdiscoveryio"><img src="https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter"></a>
 <a href="https://discord.gg/projectdiscovery"><img src="https://img.shields.io/discord/695645237418131507.svg?logo=discord"></a>
@@ -123,6 +124,10 @@ OUTPUT:
    -v, -verbose        display verbose output
    -version            display project version
 ```
+
+## Using tlsx as library
+
+Examples of using tlsx as library are provided in the [examples](examples/) folder.
 
 ## Running tlsx
 

@@ -3,7 +3,6 @@ package tlsx
 import (
 	"strconv"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
@@ -11,6 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	errorutil "github.com/projectdiscovery/utils/errors"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
@@ -47,7 +47,7 @@ func New(options *clients.Options) (*Service, error) {
 		service.client, err = tls.New(options)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create tls service")
+		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err)
 	}
 	return service, nil
 }
@@ -62,6 +62,11 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	var resp *clients.Response
 	var err error
 
+	//validation
+	if (host == "" && ip == "") || port == "" {
+		return nil, errorutil.NewWithTag("tlsx", "tlsx requires valid address got port=%v,hostname=%v,ip=%v", port, host, ip)
+	}
+
 	for i := 0; i < s.options.Retries; i++ {
 		if resp, err = s.client.ConnectWithOptions(host, ip, port, options); resp != nil {
 			err = nil
@@ -69,10 +74,10 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 	}
 	if resp == nil && err == nil {
-		return nil, errors.New("no response returned for connection")
+		return nil, errorutil.NewWithTag("auto", "no response returned for connection")
 	}
 	if err != nil {
-		wrappedErr := errors.Wrap(err, "could not connect to host")
+		wrappedErr := errorutil.NewWithTag("auto", "could not connect to host").Wrap(err)
 		if s.options.ProbeStatus {
 			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false, ServerName: options.SNI}, wrappedErr
 		}
@@ -105,7 +110,6 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 		resp.TlsCiphers = supportedTlsCiphers
 	}
-
 	return resp, nil
 }
 

@@ -39,6 +39,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	} else {
 		address = net.JoinHostPort(hostname, port)
 	}
+	//validation
+	if (hostname == "" && ip == "") || port == "" {
+		return nil, errorutils.NewWithTag("openssl", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
+	}
 
 	// Note: CLI options are omitted if given value is empty
 	opensslOptions := &Options{
