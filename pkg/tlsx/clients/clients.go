@@ -22,6 +22,7 @@ import (
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/retryablehttp-go"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	ztls "github.com/zmap/zcrypto/tls"
 )
@@ -414,5 +415,5 @@ func ParseASN1DNSequenceWithZpkix(data []byte) string {
 func init() {
 	// asssign default values to cfssl
 	log.Level = log.LevelError
-	revoke.HTTPClient.Timeout = 30
+	revoke.HTTPClient = retryablehttp.DefaultPooledClient()
 }
