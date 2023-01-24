@@ -52,7 +52,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	if options.EnumMode == clients.Cipher {
 		if len(options.Ciphers) == 0 {
-			return nil, errorutils.NewWithTag("openssl", "missing cipher value in cipher enum mode", options.Ciphers)
+			return nil, errorutils.NewWithTag("openssl", "missing cipher value in cipher enum mode")
 		}
 		if _, err := toOpenSSLCiphers(options.Ciphers...); err != nil {
 			return nil, errorutils.NewWithErr(err).WithTag("openssl")

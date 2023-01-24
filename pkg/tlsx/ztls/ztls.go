@@ -124,7 +124,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	if options.EnumMode == clients.Cipher {
 		if len(options.Ciphers) == 0 {
-			return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode", options.Ciphers)
+			return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode")
 		}
 		if _, err := toZTLSCiphers(options.Ciphers); err != nil {
 			return nil, errorutil.NewWithErr(err).WithTag("ztls")

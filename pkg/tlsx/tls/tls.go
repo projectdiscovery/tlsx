@@ -118,7 +118,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			return nil, errorutil.NewWithTag("ctls", "cipher enum not supported in ctls with tls1.3")
 		}
 		if len(options.Ciphers) == 0 {
-			return nil, errorutil.NewWithTag("ctls", "missing cipher value in cipher enum mode", options.Ciphers)
+			return nil, errorutil.NewWithTag("ctls", "missing cipher value in cipher enum mode")
 		}
 		if _, err := toTLSCiphers(options.Ciphers); err != nil {
 			return nil, errorutil.NewWithErr(err).WithTag("ctls")
