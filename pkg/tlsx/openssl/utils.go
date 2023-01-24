@@ -7,29 +7,23 @@ import (
 	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
-// AllCiphers
-var AllCiphers map[string]struct{} = map[string]struct{}{}
+// AllCipherNames contains all ciphers supported by openssl
+var AllCiphersNames []string = []string{}
 
-// returns array of openssl Ciphers
-func fetchCiphers() []string {
-	arr := []string{}
-	for k := range AllCiphers {
-		arr = append(arr, k)
-	}
-	return arr
-}
+// cipherMap
+var cipherMap map[string]struct{} = map[string]struct{}{}
 
 // validate given ciphers and
-func validateCiphers(cipher ...string) []string {
+func toOpenSSLCiphers(cipher ...string) ([]string, error) {
 	arr := []string{}
 	for _, v := range cipher {
-		if _, ok := AllCiphers[v]; ok {
+		if _, ok := cipherMap[v]; ok {
 			arr = append(arr, v)
 		} else {
-			gologger.Debug().Label("openssl").Msgf("does not support %v cipher. skipping..", v)
+			return arr, errorutil.NewWithTag("openssl", "cipher suite %v not supported", v)
 		}
 	}
-	return arr
+	return arr, nil
 }
 
 func parseSessionValue(line string) string {
@@ -59,6 +53,7 @@ func init() {
 		gologger.Debug().Label("openssl").Msg(err.Error())
 	}
 	for _, v := range ciphers {
-		AllCiphers[v] = struct{}{}
+		cipherMap[v] = struct{}{}
+		AllCiphersNames = append(AllCiphersNames, v)
 	}
 }

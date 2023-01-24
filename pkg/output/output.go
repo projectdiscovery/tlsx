@@ -2,6 +2,7 @@ package output
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -147,7 +148,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		}
 	}
 
-	if !w.options.SAN && !w.options.CN {
+	if !w.options.SAN && !w.options.CN && !w.options.TlsCiphersEnum {
 		builder.WriteString(outputPrefix)
 	}
 	if !output.ProbeStatus {
@@ -235,7 +236,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString("]")
 	}
 
-	if w.options.TlsVersionsEnum {
+	if w.options.TlsCiphersEnum {
+		for _, v := range output.TlsCiphers {
+			builder.WriteString(outputPrefix)
+			builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.BrightBlue(v.Version), w.aurora.BrightGreen(strings.Join(v.Ciphers, ","))))
+		}
+	} else if w.options.TlsVersionsEnum {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.Magenta(strings.Join(output.VersionEnum, ",")).String())
 		builder.WriteString("]")

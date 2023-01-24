@@ -13,6 +13,7 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/stringsutil"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
@@ -105,6 +106,23 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	//validation
 	if (hostname == "" && ip == "") || port == "" {
 		return nil, errorutil.NewWithTag("ctls", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
+	}
+
+	// In enum mode return if given options are not supported
+	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...)) {
+		// version not supported
+		return nil, errorutil.NewWithTag("ctls", "tlsversion `%v` not supported in ctls", options.VersionTLS)
+	}
+	if options.EnumMode == clients.Cipher {
+		if options.VersionTLS == "tls13" {
+			return nil, errorutil.NewWithTag("ctls", "cipher enum not supported in ctls with tls1.3")
+		}
+		if len(options.Ciphers) == 0 {
+			return nil, errorutil.NewWithTag("ctls", "missing cipher value in cipher enum mode", options.Ciphers)
+		}
+		if _, err := toTLSCiphers(options.Ciphers); err != nil {
+			return nil, errorutil.NewWithErr(err).WithTag("ctls")
+		}
 	}
 
 	ctx := context.Background()

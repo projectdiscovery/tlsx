@@ -11,6 +11,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	errorutils "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
 // Client is a TLS grabbing client using crypto/tls
@@ -44,13 +45,30 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		return nil, errorutils.NewWithTag("openssl", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
 	}
 
+	// In enum mode return if given options are not supported
+	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTLSVersions...)) {
+		// version not supported
+		return nil, errorutils.NewWithTag("openssl", "tlsversion `%v` not supported in openssl", options.VersionTLS)
+	}
+	if options.EnumMode == clients.Cipher {
+		if len(options.Ciphers) == 0 {
+			return nil, errorutils.NewWithTag("openssl", "missing cipher value in cipher enum mode", options.Ciphers)
+		}
+		if _, err := toOpenSSLCiphers(options.Ciphers...); err != nil {
+			return nil, errorutils.NewWithErr(err).WithTag("openssl")
+		}
+	}
+
 	// Note: CLI options are omitted if given value is empty
 	opensslOptions := &Options{
 		Address:    address,
 		ServerName: options.SNI,
 		Protocol:   getProtocol(options.VersionTLS),
 		CAFile:     c.options.CACertificate,
-		Cipher:     validateCiphers(options.Ciphers...),
+	}
+
+	if ciphers, _ := toOpenSSLCiphers(options.Ciphers...); len(ciphers) > 0 {
+		opensslOptions.Cipher = ciphers
 	}
 
 	if opensslOptions.ServerName == "" {
@@ -120,12 +138,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSVersions() ([]string, error) {
-	return supportedTLSVersions(), nil
+	return SupportedTLSVersions, nil
 }
 
 // SupportedTLSVersions is meaningless here but necessary due to the interface system implemented
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
-	return fetchCiphers(), nil
+	return AllCiphersNames, nil
 }
 
 // Openssl s_client does not dump certificate chain unless specified

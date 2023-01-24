@@ -49,6 +49,10 @@ func New(options *clients.Options) (*Runner, error) {
 	if options.OpenSSLBinary != "" {
 		openssl.UseOpenSSLBinary(options.OpenSSLBinary)
 	}
+	if options.TlsCiphersEnum {
+		// cipher enumeration requires tls versions
+		options.TlsVersionsEnum = true
+	}
 	showBanner()
 
 	if options.Version {

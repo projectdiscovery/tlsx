@@ -387,10 +387,19 @@ func PemEncode(cert []byte) string {
 	return buf.String()
 }
 
+type EnumMode uint
+
+const (
+	None EnumMode = iota
+	Version
+	Cipher
+)
+
 type ConnectOptions struct {
 	SNI        string
 	VersionTLS string
 	Ciphers    []string
+	EnumMode   EnumMode // Enumeration Mode (version or ciphers)
 }
 
 // ParseASN1DNSequenceWithZpkixOrDefault return the parsed value of ASN1DNSequence or a default string value

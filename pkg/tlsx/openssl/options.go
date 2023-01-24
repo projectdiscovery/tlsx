@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+// SupportedTLSVersion of OpenSSL Mode
+var SupportedTLSVersions = []string{
+	"tls10",
+	"tls11",
+	"tls12",
+	// "tls13",
+}
+
 type Protocols int
 
 const (
@@ -36,16 +44,6 @@ func (p *Protocols) String() string {
 	}
 }
 
-// supported tls version
-func supportedTLSVersions() []string {
-	return []string{
-		"tls10",
-		"tls11",
-		"tls12",
-		// "tls13",
-	}
-}
-
 func getProtocol(versionTLS string) Protocols {
 	var tlsversion Protocols
 	switch versionTLS {
@@ -55,15 +53,15 @@ func getProtocol(versionTLS string) Protocols {
 		tlsversion = TLSv1_1
 	case "tls12":
 		tlsversion = TLSv1_2
-	// case "tls13":
-	// 	tlsversion = TLSv1_3
-	case "dtls10":
-		tlsversion = DTLSv1
-	case "dtls12":
-		tlsversion = DTLSv1_2
+		// case "tls13":
+		// 	tlsversion = TLSv1_3
+		// case "dtls10":
+		// 	tlsversion = DTLSv1
+		// case "dtls12":
+		// 	tlsversion = DTLSv1_2
 	}
 	if versionTLS == "" {
-		// if no tls version is used use tls13
+		// if no tls version is used use tls12
 		// to avoid possible chances of handshake failures
 		return TLSv1_2
 	}
