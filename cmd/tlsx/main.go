@@ -105,6 +105,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
 		flagSet.StringVarP(&options.OpenSSLBinary, "openssl-binary", "ob", "", "OpenSSL Binary Path"),
+		flagSet.BoolVarP(&options.HardFail, "hardfail", "hf", false, "strategy to use if encountered errors while checking revocation status"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",
