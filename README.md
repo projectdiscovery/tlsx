@@ -522,6 +522,7 @@ $ tlsx -u example.com -ci cipher_list.txt -cipher
 This program optionally uses:
 
 - [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
+- [cfssl](https://github.com/cloudflare/cfssl) library from the cloudflare team
 
 --------
 
