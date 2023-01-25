@@ -15,6 +15,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
@@ -114,6 +115,20 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	//validation
 	if (hostname == "" && ip == "") || port == "" {
 		return nil, errorutil.NewWithTag("ztls", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
+	}
+
+	// In enum mode return if given options are not supported
+	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...)) {
+		// version not supported
+		return nil, errorutil.NewWithTag("ztls", "tlsversion `%v` not supported in ctls", options.VersionTLS)
+	}
+	if options.EnumMode == clients.Cipher {
+		if len(options.Ciphers) == 0 {
+			return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode")
+		}
+		if _, err := toZTLSCiphers(options.Ciphers); err != nil {
+			return nil, errorutil.NewWithErr(err).WithTag("ztls")
+		}
 	}
 
 	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
