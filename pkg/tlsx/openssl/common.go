@@ -21,7 +21,7 @@ var (
 )
 
 var (
-	binaryPath   = ""
+	BinaryPath   = ""
 	OPENSSL_CONF = ""
 	IsLibreSSL   = false
 	PkgTag       = "" // Header or Tag value that will be reflected in all errors (include openssl(libressl) and version)
@@ -45,11 +45,11 @@ CipherString = DEFAULT:@SECLEVEL=1
 
 func init() {
 	if runtime.GOOS == "windows" {
-		binaryPath, _ = exec.LookPath("openssl.exe")
+		BinaryPath, _ = exec.LookPath("openssl.exe")
 	} else {
-		binaryPath, _ = exec.LookPath("openssl")
+		BinaryPath, _ = exec.LookPath("openssl")
 	}
-	if binaryPath == "" {
+	if BinaryPath == "" {
 		// not available or failed to get return
 		gologger.Debug().Label("openssl").Msgf("openssl binary not found skipping")
 		return
@@ -94,12 +94,12 @@ func openSSLSetup() errorutils.Error {
 
 // check if openssl if available for use
 func IsAvailable() bool {
-	return binaryPath != ""
+	return BinaryPath != ""
 }
 
 // UseOpenSSLBinary From Path
 func UseOpenSSLBinary(binpath string) {
-	binaryPath = binpath
+	BinaryPath = binpath
 	if err := openSSLSetup(); err != nil {
 		// do not fallback
 		gologger.Fatal().Label("openssl").Msgf(err.Error())

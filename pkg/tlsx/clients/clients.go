@@ -133,6 +133,8 @@ type Options struct {
 	ClientHello bool
 	// ServerHello include server hello (only ztls)
 	ServerHello bool
+	// HealthCheck performs a capabilities healthcheck
+	HealthCheck bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer

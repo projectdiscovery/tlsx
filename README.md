@@ -123,6 +123,9 @@ OUTPUT:
    -nc, -no-color      disable colors in cli output
    -v, -verbose        display verbose output
    -version            display project version
+
+DEBUG:
+   -health-check, -hc  run diagnostic check up
 ```
 
 ## Using tlsx as library
