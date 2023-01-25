@@ -58,8 +58,10 @@ tlsx -h
 This will display help for the tool. Here are all the switches it supports.
 
 ```console
+TLSX is a tls data gathering and analysis toolkit.
+
 Usage:
-  ./tlsx [flags]
+  tlsx [flags]
 
 Flags:
 INPUT:
@@ -68,7 +70,7 @@ INPUT:
    -p, -port string[]  target port to connect (default 443)
 
 SCAN-MODE:
-   -sm, -scan-mode string     tls connection mode to use (ctls, ztls, auto) (default "auto")
+   -sm, -scan-mode string     tls connection mode to use (ctls, ztls, openssl, auto) (default "auto")
    -ps, -pre-handshake        enable pre-handshake tls connection (early termination) using ztls
    -sa, -scan-all-ips         scan all ips for a host (default false)
    -iv, -ip-version string[]  ip version to use (4, 6) (default 4)
@@ -108,6 +110,7 @@ CONFIGURATIONS:
    -cert, -certificate          include certificates in json output (PEM format)
    -tc, -tls-chain              include certificates chain in json output
    -vc, -verify-cert            enable verification of server certificate
+   -ob, -openssl-binary string  OpenSSL Binary Path
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
@@ -489,6 +492,7 @@ The acceptable values for TLS version is specified below.
 - `tls10`
 - `tls11`
 - `tls12`
+- `tls13`
 
 Here is an example using `max-version` to scan for hosts supporting an older version of TLS, i.e **TLS v1.0**
 
