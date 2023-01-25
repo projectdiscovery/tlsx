@@ -125,8 +125,17 @@ func readFlags() error {
 		flagSet.BoolVar(&options.Version, "version", false, "display project version"),
 	)
 
+	flagSet.CreateGroup("debug", "Debug",
+		flagSet.BoolVarP(&options.HealthCheck, "hc", "health-check", false, "run diagnostic check up"),
+	)
+
 	if err := flagSet.Parse(); err != nil {
 		return errorutils.NewWithErr(err).Msgf("could not parse flags")
+	}
+
+	if options.HealthCheck {
+		gologger.Print().Msgf("%s\n", runner.DoHealthCheck(flagSet))
+		os.Exit(0)
 	}
 
 	if cfgFile != "" {

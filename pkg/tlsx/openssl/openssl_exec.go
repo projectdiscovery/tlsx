@@ -34,7 +34,7 @@ func execOpenSSL(ctx context.Context, args []string) (*CMDOUT, error) {
 		3. error purely realted to I/O and command execution
 	*/
 	var outbuff, inbuff, errbuff bytes.Buffer
-	cmd := exec.CommandContext(ctx, binaryPath)
+	cmd := exec.CommandContext(ctx, BinaryPath)
 	if !IsLibreSSL {
 		newenv := "OPENSSL_CONF=" + OPENSSL_CONF
 		cmd.Env = append(os.Environ(), newenv)
@@ -74,7 +74,7 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	}
 	result, err := execOpenSSL(ctx, args)
 	if err != nil {
-		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, binaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf(commadFormat, result.Command)
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, BinaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf(commadFormat, result.Command)
 	}
 	response := &Response{}
 	if !strings.Contains(result.Stdout, "CONNECTED") {

@@ -9,6 +9,7 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/projectdiscovery/dnsx v1.1.1
 	github.com/projectdiscovery/fastdialer v0.0.22
+	github.com/projectdiscovery/fileutil v0.0.3
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.7
 	github.com/projectdiscovery/mapcidr v1.0.3
@@ -122,7 +123,6 @@ require (
 	github.com/projectdiscovery/asnmap v0.0.1 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
 	github.com/projectdiscovery/cdncheck v0.0.3 // indirect
-	github.com/projectdiscovery/fileutil v0.0.3 // indirect
 	github.com/projectdiscovery/hmap v0.0.2 // indirect
 	github.com/projectdiscovery/iputil v0.0.2 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.3 // indirect
