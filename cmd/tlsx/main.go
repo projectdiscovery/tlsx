@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/internal/runner"
@@ -27,20 +26,20 @@ func main() {
 
 func process() error {
 	if err := readFlags(); err != nil {
-		return errors.Wrap(err, "could not read flags")
+		return errorutils.NewWithErr(err).Msgf("could not read flags")
 	}
 	runner, err := runner.New(options)
 	if err != nil {
-		return errors.Wrap(err, "could not create runner")
+		return errorutils.NewWithErr(err).Msgf("could not create runner")
 	}
 	if runner == nil {
 		return nil
 	}
 	if err := runner.Execute(); err != nil {
-		return errors.Wrap(err, "could not execute runner")
+		return errorutils.NewWithErr(err).Msgf("could not execute runner")
 	}
 	if err := runner.Close(); err != nil {
-		return errors.Wrap(err, "could not close runner")
+		return errorutils.NewWithErr(err).Msgf("could not close runner")
 	}
 	return nil
 }
@@ -106,6 +105,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
 		flagSet.StringVarP(&options.OpenSSLBinary, "openssl-binary", "ob", "", "OpenSSL Binary Path"),
+		flagSet.BoolVarP(&options.HardFail, "hardfail", "hf", false, "strategy to use if encountered errors while checking revocation status"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",
@@ -125,13 +125,22 @@ func readFlags() error {
 		flagSet.BoolVar(&options.Version, "version", false, "display project version"),
 	)
 
+	flagSet.CreateGroup("debug", "Debug",
+		flagSet.BoolVarP(&options.HealthCheck, "hc", "health-check", false, "run diagnostic check up"),
+	)
+
 	if err := flagSet.Parse(); err != nil {
-		return errors.Wrap(err, "could not parse flags")
+		return errorutils.NewWithErr(err).Msgf("could not parse flags")
+	}
+
+	if options.HealthCheck {
+		gologger.Print().Msgf("%s\n", runner.DoHealthCheck(flagSet))
+		os.Exit(0)
 	}
 
 	if cfgFile != "" {
 		if err := flagSet.MergeConfigFile(cfgFile); err != nil {
-			return errors.Wrap(err, "could not read config file")
+			return errorutils.NewWithErr(err).Msgf("could not read config file")
 		}
 	}
 	return nil

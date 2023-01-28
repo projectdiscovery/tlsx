@@ -9,12 +9,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
+	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/rs/xid"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
@@ -61,7 +62,7 @@ func New(options *clients.Options) (*Client, error) {
 	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
-			return nil, errors.Wrap(err, "could not get ztls ciphers")
+			return nil, errorutil.NewWithTag("ztls", "could not get ztls ciphers").Wrap(err)
 		} else {
 			c.tlsConfig.CipherSuites = customCiphers
 		}
@@ -69,7 +70,7 @@ func New(options *clients.Options) (*Client, error) {
 	if options.CACertificate != "" {
 		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not read ca certificate")
+			return nil, errorutil.NewWithTag("ztls", "could not read ca certificate").Wrap(err)
 		}
 		certPool := x509.NewCertPool()
 		if !certPool.AppendCertsFromPEM(caCert) {
@@ -111,6 +112,25 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		address = net.JoinHostPort(hostname, port)
 	}
 
+	//validation
+	if (hostname == "" && ip == "") || port == "" {
+		return nil, errorutil.NewWithTag("ztls", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
+	}
+
+	// In enum mode return if given options are not supported
+	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...)) {
+		// version not supported
+		return nil, errorutil.NewWithTag("ztls", "tlsversion `%v` not supported in ctls", options.VersionTLS)
+	}
+	if options.EnumMode == clients.Cipher {
+		if len(options.Ciphers) == 0 {
+			return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode")
+		}
+		if _, err := toZTLSCiphers(options.Ciphers); err != nil {
+			return nil, errorutil.NewWithErr(err).WithTag("ztls")
+		}
+	}
+
 	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
 		address = net.JoinHostPort(ip, port)
 	}
@@ -133,7 +153,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	conn, err := c.dialer.Dial(ctx, "tcp", address)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not connect to address")
+		return nil, errorutil.NewWithTag("ztls", "could not connect to address").Wrap(err)
 	}
 	if conn == nil {
 		return nil, fmt.Errorf("could not connect to %s", address)
@@ -170,7 +190,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if len(options.Ciphers) > 0 {
 		customCiphers, err := toZTLSCiphers(options.Ciphers)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not get tls ciphers")
+			return nil, errorutil.NewWithTag("ztls", "could not get tls ciphers").Wrap(err)
 		}
 		c.tlsConfig.CipherSuites = customCiphers
 	}
@@ -189,7 +209,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	if err != nil {
 		conn.Close()
-		return nil, errors.Wrap(err, "could not do tls handshake")
+		return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
 	}
 	defer tlsConn.Close()
 

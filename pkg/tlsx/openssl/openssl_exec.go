@@ -34,7 +34,7 @@ func execOpenSSL(ctx context.Context, args []string) (*CMDOUT, error) {
 		3. error purely realted to I/O and command execution
 	*/
 	var outbuff, inbuff, errbuff bytes.Buffer
-	cmd := exec.CommandContext(ctx, binaryPath)
+	cmd := exec.CommandContext(ctx, BinaryPath)
 	if !IsLibreSSL {
 		newenv := "OPENSSL_CONF=" + OPENSSL_CONF
 		cmd.Env = append(os.Environ(), newenv)
@@ -74,7 +74,7 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	}
 	result, err := execOpenSSL(ctx, args)
 	if err != nil {
-		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, binaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf(commadFormat, result.Command)
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, BinaryPath).Msgf("failed to execute openssl got %v", result.Stderr).Msgf(commadFormat, result.Command)
 	}
 	response := &Response{}
 	if !strings.Contains(result.Stdout, "CONNECTED") {
@@ -135,14 +135,12 @@ readline:
 		case strings.HasPrefix(line, "Master-Key"):
 			osession.MasterKey = parseSessionValue(line)
 		}
-		if !strings.HasPrefix(line, "Extended master secret") {
+		if strings.HasPrefix(line, "Timeout") {
 			// read until end of session data and return
 			return osession, nil
 		}
-	} else {
-		goto readline
 	}
-	return osession, nil
+	goto readline
 }
 
 // parseCertificate dumped by openssl

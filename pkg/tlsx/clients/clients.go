@@ -2,7 +2,6 @@ package clients
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -13,14 +12,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudflare/cfssl/log"
+	"github.com/cloudflare/cfssl/revoke"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
-	zverifier "github.com/zmap/zcrypto/verifier"
 	zx509 "github.com/zmap/zcrypto/x509"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/goflags"
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/retryablehttp-go"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	ztls "github.com/zmap/zcrypto/tls"
 )
@@ -111,6 +113,9 @@ type Options struct {
 	MisMatched bool
 	// Revoked displays if the cert is revoked
 	Revoked bool
+	// HardFail defines Revoke status when there are parse failures or other errors
+	// If HardFail is true then on any error certificate is considered as revoked
+	HardFail bool
 	// Hash is the hash to display for certificate
 	Hash string
 	// Jarm calculate jarm fingerprinting with multiple probes
@@ -133,6 +138,8 @@ type Options struct {
 	ClientHello bool
 	// ServerHello include server hello (only ztls)
 	ServerHello bool
+	// HealthCheck performs a capabilities healthcheck
+	HealthCheck bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -313,43 +320,33 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 
 // IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
-	zcert, err := zx509.ParseCertificate(cert.Raw)
-	if err != nil {
-		return true
-	} else {
-		return IsZTLSRevoked(options, zcert)
+	revoke.HardFail = options.HardFail
+	if cert == nil {
+		gologger.Debug().Msgf("IsTLSRevoked: got nil certificate skipping revocation check")
+		return options.HardFail
 	}
+	if options.Timeout > 0 {
+		revoke.HTTPClient.Timeout = time.Duration(options.Timeout)
+	}
+	// - false, false: an error was encountered while checking revocations.
+	// - false, true:  the certificate was checked successfully, and it is not revoked.
+	// - true, true:   the certificate was checked successfully, and it is revoked.
+	// - true, false:  failure to check revocation status causes verification to fail
+	revoked, ok := revoke.VerifyCertificate(cert)
+	if !ok {
+		gologger.Debug().Msgf("IsTLSRevoked: failed to check revocation status")
+	}
+	return revoked
 }
 
 // IsZTLSRevoked returns true if the certificate has been revoked
 func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
-	var OCSPisRevoked bool = false
-	var OCSPerr error
-	// TODO : Verify Upstream Patch and remove extra condition when fixed
-	if len(cert.IssuingCertificateURL) > 0 && len(cert.OCSPServer) > 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(options.Timeout)*time.Second)
-		defer cancel()
-		OCSPisRevoked, _, OCSPerr = zverifier.CheckOCSP(ctx, cert, nil)
+	xcert, err := x509.ParseCertificate(cert.Raw)
+	if err != nil {
+		gologger.Debug().Msgf("ztls: failed to convert zx509->x509 while checking revocation status: %v", err)
+		return options.HardFail
 	}
-	if len(cert.CRLDistributionPoints) != 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(options.Timeout)*time.Second)
-		defer cancel()
-		CRLisRevoked, _, CRLerr := zverifier.CheckCRL(ctx, cert, nil)
-
-		if CRLerr == nil {
-			if OCSPerr == nil {
-				return OCSPisRevoked || CRLisRevoked
-			} else {
-				return CRLisRevoked
-			}
-		}
-	}
-
-	if OCSPerr == nil {
-		return OCSPisRevoked
-	}
-
-	return false
+	return IsTLSRevoked(options, xcert)
 }
 
 // matchWildCardToken matches the wildcardName token and host token
@@ -387,10 +384,19 @@ func PemEncode(cert []byte) string {
 	return buf.String()
 }
 
+type EnumMode uint
+
+const (
+	None EnumMode = iota
+	Version
+	Cipher
+)
+
 type ConnectOptions struct {
 	SNI        string
 	VersionTLS string
 	Ciphers    []string
+	EnumMode   EnumMode // Enumeration Mode (version or ciphers)
 }
 
 // ParseASN1DNSequenceWithZpkixOrDefault return the parsed value of ASN1DNSequence or a default string value
@@ -415,4 +421,10 @@ func ParseASN1DNSequenceWithZpkix(data []byte) string {
 	name.FillFromRDNSequence(&rdnSequence)
 	dnParsedString := name.String()
 	return dnParsedString
+}
+
+func init() {
+	// asssign default values to cfssl
+	log.Level = log.LevelError
+	revoke.HTTPClient = retryablehttp.DefaultPooledClient()
 }

@@ -2,6 +2,7 @@ package output
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -9,8 +10,8 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/logrusorgru/aurora"
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	errorutil "github.com/projectdiscovery/utils/errors"
 	"golang.org/x/exp/maps"
 )
 
@@ -40,7 +41,7 @@ func New(options *clients.Options) (Writer, error) {
 	if options.OutputFile != "" {
 		output, err := newFileOutputWriter(options.OutputFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not create output file")
+			return nil, errorutil.NewWithErr(err).Msgf("could not create output file")
 		}
 		outputFile = output
 	}
@@ -65,7 +66,7 @@ func (w *StandardWriter) Write(event *clients.Response) error {
 		data, err = w.formatStandard(event)
 	}
 	if err != nil {
-		return errors.Wrap(err, "could not format output")
+		return errorutil.NewWithErr(err).Msgf("could not format output")
 	}
 	data = bytes.TrimSuffix(data, []byte("\n")) // remove last newline
 
@@ -78,7 +79,7 @@ func (w *StandardWriter) Write(event *clients.Response) error {
 			data = decolorizerRegex.ReplaceAll(data, []byte(""))
 		}
 		if writeErr := w.outputFile.Write(data); writeErr != nil {
-			return errors.Wrap(err, "could not write to output")
+			return errorutil.NewWithErr(err).Msgf("could not write to output")
 		}
 	}
 	return nil
@@ -101,11 +102,11 @@ func (w *StandardWriter) formatJSON(output *clients.Response) ([]byte, error) {
 // formatStandard formats the output for standard client formatting
 func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error) {
 	if output == nil {
-		return nil, errors.New("empty certificate response")
+		return nil, errorutil.New("empty certificate response")
 	}
 
 	if output.CertificateResponse == nil {
-		return nil, errors.New("empty leaf certificate")
+		return nil, errorutil.New("empty leaf certificate")
 	}
 
 	builder := &bytes.Buffer{}
@@ -147,7 +148,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		}
 	}
 
-	if !w.options.SAN && !w.options.CN {
+	if !w.options.SAN && !w.options.CN && !w.options.TlsCiphersEnum {
 		builder.WriteString(outputPrefix)
 	}
 	if !output.ProbeStatus {
@@ -235,7 +236,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString("]")
 	}
 
-	if w.options.TlsVersionsEnum {
+	if w.options.TlsCiphersEnum {
+		for _, v := range output.TlsCiphers {
+			builder.WriteString(outputPrefix)
+			builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.BrightBlue(v.Version), w.aurora.BrightGreen(strings.Join(v.Ciphers, ","))))
+		}
+	} else if w.options.TlsVersionsEnum {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.Magenta(strings.Join(output.VersionEnum, ",")).String())
 		builder.WriteString("]")

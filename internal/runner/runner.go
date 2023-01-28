@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
@@ -23,6 +22,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
+	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
@@ -49,6 +49,10 @@ func New(options *clients.Options) (*Runner, error) {
 	if options.OpenSSLBinary != "" {
 		openssl.UseOpenSSLBinary(options.OpenSSLBinary)
 	}
+	if options.TlsCiphersEnum {
+		// cipher enumeration requires tls versions
+		options.TlsVersionsEnum = true
+	}
 	showBanner()
 
 	if options.Version {
@@ -57,7 +61,7 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	runner := &Runner{options: options}
 	if err := runner.validateOptions(); err != nil {
-		return nil, errors.Wrap(err, "could not validate options")
+		return nil, errorutil.NewWithErr(err).Msgf("could not validate options")
 	}
 
 	dialerOpts := fastdialer.DefaultOptions
@@ -69,7 +73,7 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	fastDialer, err := fastdialer.NewDialer(dialerOpts)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create dialer")
+		return nil, errorutil.NewWithErr(err).Msgf("could not create dialer")
 	}
 	runner.fastDialer = fastDialer
 	runner.options.Fastdialer = fastDialer
@@ -90,7 +94,7 @@ func New(options *clients.Options) (*Runner, error) {
 
 	outputWriter, err := output.New(options)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create output writer")
+		return nil, errorutil.NewWithErr(err).Msgf("could not create output writer")
 	}
 	runner.outputWriter = outputWriter
 
@@ -184,7 +188,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	if r.options.InputList != "" {
 		file, err := os.Open(r.options.InputList)
 		if err != nil {
-			return errors.Wrap(err, "could not open input file")
+			return errorutil.NewWithErr(err).Msgf("could not open input file")
 		}
 		defer file.Close()
 
