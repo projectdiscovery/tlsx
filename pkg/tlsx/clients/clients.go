@@ -31,6 +31,9 @@ import (
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
 	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
+
+	EnumerateCiphers(hostname, ip, port string, options ConnectOptions) ([]string, error)
+
 	// SupportedTLSVersions returns the list of supported tls versions
 	SupportedTLSVersions() ([]string, error)
 	// SupportedTLSCiphers returns the list of supported tls ciphers

@@ -70,12 +70,13 @@ func getProtocol(versionTLS string) Protocols {
 
 // OpenSSL Command Line Options
 type Options struct {
-	Address    string    // host:port address to connect
-	Cipher     []string  // Cipher to use while connecting
-	ServerName string    //  Set TLS extension servername in ClientHello (SNI)
-	CertChain  bool      // Show Certificate Chain
-	Protocol   Protocols // protocol to use
-	CAFile     string    // CA Certificate File
+	Address       string    // host:port address to connect
+	Cipher        []string  // Cipher to use while connecting
+	ServerName    string    //  Set TLS extension servername in ClientHello (SNI)
+	CertChain     bool      // Show Certificate Chain
+	Protocol      Protocols // protocol to use
+	CAFile        string    // CA Certificate File
+	SkipCertParse bool      // SkipCertParse skips parsing and validating certs
 }
 
 // generate command Args using given options

@@ -124,12 +124,12 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
 	github.com/projectdiscovery/cdncheck v0.0.3 // indirect
 	github.com/projectdiscovery/hmap v0.0.2 // indirect
-	github.com/projectdiscovery/iputil v0.0.2 // indirect
+	github.com/projectdiscovery/iputil v0.0.2
 	github.com/projectdiscovery/networkpolicy v0.0.3 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.20 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.10-0.20230123170312-75b58f90739a
 	github.com/projectdiscovery/sliceutil v0.0.1 // indirect
-	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
+	github.com/projectdiscovery/stringsutil v0.0.2
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect

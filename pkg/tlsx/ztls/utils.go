@@ -1,8 +1,10 @@
 package ztls
 
 import (
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	"github.com/zmap/zcrypto/tls"
+	"github.com/zmap/zcrypto/x509"
 )
 
 var (
@@ -31,6 +33,45 @@ func toZTLSCiphers(items []string) ([]uint16, error) {
 		convertedCiphers = append(convertedCiphers, zcipher)
 	}
 	return convertedCiphers, nil
+}
+
+// ConvertCertificateToResponse using zcrypto x509
+func ConvertCertificateToResponse(options *clients.Options, hostname string, cert *x509.Certificate) *clients.CertificateResponse {
+	if cert == nil {
+		return nil
+	}
+	response := &clients.CertificateResponse{
+		SubjectAN:    cert.DNSNames,
+		Emails:       cert.EmailAddresses,
+		NotBefore:    cert.NotBefore,
+		NotAfter:     cert.NotAfter,
+		Expired:      clients.IsExpired(cert.NotAfter),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		Revoked:      clients.IsZTLSRevoked(options, cert),
+		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
+		IssuerDN:     cert.Issuer.String(),
+		IssuerCN:     cert.Issuer.CommonName,
+		IssuerOrg:    cert.Issuer.Organization,
+		SubjectDN:    cert.Subject.String(),
+		SubjectCN:    cert.Subject.CommonName,
+		SubjectOrg:   cert.Subject.Organization,
+		FingerprintHash: clients.CertificateResponseFingerprintHash{
+			MD5:    clients.MD5Fingerprint(cert.Raw),
+			SHA1:   clients.SHA1Fingerprint(cert.Raw),
+			SHA256: clients.SHA256Fingerprint(cert.Raw),
+		},
+	}
+	if options.Cert {
+		response.Certificate = clients.PemEncode(cert.Raw)
+	}
+	return response
+}
+
+// ParseSimpleTLSCertificate using zcrypto x509
+func ParseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
+	parsed, _ := x509.ParseCertificate(cert.Raw)
+	return parsed
 }
 
 var ztlsCiphers = map[string]uint16{

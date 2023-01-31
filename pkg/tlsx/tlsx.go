@@ -94,6 +94,9 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	}
 
 	if s.options.TlsVersionsEnum {
+		if s == nil {
+			panic("s is nil")
+		}
 		options.EnumMode = clients.Version
 		supportedTlsVersions := []string{resp.Version}
 		enumeratedTlsVersions, _ := s.enumTlsVersions(host, ip, port, options)
@@ -131,16 +134,10 @@ func (s *Service) enumTlsVersions(host, ip, port string, options clients.Connect
 }
 
 func (s *Service) enumTlsCiphers(host, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	var enumeratedTlsCiphers []string
 	clientSupportedCiphers, err := s.client.SupportedTLSCiphers()
 	if err != nil {
 		return nil, err
 	}
-	for _, cipher := range clientSupportedCiphers {
-		options.Ciphers = []string{cipher}
-		if resp, err := s.client.ConnectWithOptions(host, ip, port, options); err == nil && resp != nil {
-			enumeratedTlsCiphers = append(enumeratedTlsCiphers, cipher)
-		}
-	}
-	return enumeratedTlsCiphers, nil
+	options.Ciphers = clientSupportedCiphers
+	return s.client.EnumerateCiphers(host, ip, port, options)
 }
