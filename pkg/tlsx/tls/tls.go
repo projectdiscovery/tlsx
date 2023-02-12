@@ -150,9 +150,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		cfg := config.Clone()
 		if options.SNI != "" {
 			cfg.ServerName = options.SNI
-		} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
-			// using a random sni will return the default server certificate
-			cfg.ServerName = xid.New().String()
+		} else if iputil.IsIP(hostname) {
+			if c.options.RandomForEmptyServerName {
+				// using a random sni will return the default server certificate
+				cfg.ServerName = xid.New().String()
+			} else if c.options.ReversePtrSNI {
+				if names, err := iputil.ToFQDN(hostname); err == nil && len(names) > 0 {
+					cfg.ServerName = names[0]
+				}
+			}
 		} else {
 			cfg.ServerName = hostname
 		}
