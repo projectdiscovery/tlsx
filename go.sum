@@ -752,8 +752,8 @@ github.com/projectdiscovery/cdncheck v0.0.3 h1:li2/rUJmhVXSqRFyhJMqi6pdBX6ZxMnwz
 github.com/projectdiscovery/cdncheck v0.0.3/go.mod h1:EevMeCG1ogBoUJYaa0Mv9R1VUboDm/DiynId7DboKy0=
 github.com/projectdiscovery/dnsx v1.1.1 h1:yGYEH1vfVN7YdvdOtPzPvrc6JuHCi8wBTAkStP/f2QI=
 github.com/projectdiscovery/dnsx v1.1.1/go.mod h1:DVvc+ePRCknahLpz4Y8nMppYOGUZhkEmYsTPuYx1a5w=
-github.com/projectdiscovery/fastdialer v0.0.22 h1:uiTgIfGcZAGrPzmCI8kZJtaJRWdiB6uUz5iTbUBNu4w=
-github.com/projectdiscovery/fastdialer v0.0.22/go.mod h1:voh0atf8ulFu99jRVCXIpEwgClD2aHBT6R3RH6zojmU=
+github.com/projectdiscovery/fastdialer v0.0.23 h1:os5xlNQGKhxJMR9diT1CvGfIddelTWYft28eMYnSEaw=
+github.com/projectdiscovery/fastdialer v0.0.23/go.mod h1:voh0atf8ulFu99jRVCXIpEwgClD2aHBT6R3RH6zojmU=
 github.com/projectdiscovery/fileutil v0.0.0-20220308101036-16c79af1cf5d/go.mod h1:Pm0f+MWgDFMSSI9NBedNh48LyYPs8gD3Jd8DXGmp4aQ=
 github.com/projectdiscovery/fileutil v0.0.3 h1:GSsoey4p8ZHIRxWF2VXh4mhLr+wfEkpJwvF0Dxpn/gg=
 github.com/projectdiscovery/fileutil v0.0.3/go.mod h1:GLejWd3YerG3RNYD/Hk2pJlytlYRgHdkWfWUAdCH2YQ=
