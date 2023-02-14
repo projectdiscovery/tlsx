@@ -531,6 +531,7 @@ This program optionally uses:
 
 - [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
 - [cfssl](https://github.com/cloudflare/cfssl) library from the cloudflare team
+- cipher data from [ciphersuite.info](https://ciphersuite.info) for ciphersuite classification
 
 --------
 
