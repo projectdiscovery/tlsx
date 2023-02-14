@@ -7,7 +7,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.50
-	github.com/projectdiscovery/dnsx v1.1.1
+	github.com/projectdiscovery/dnsx v1.1.2
 	github.com/projectdiscovery/fastdialer v0.0.23
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.8
@@ -126,11 +126,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4 // indirect
 	github.com/projectdiscovery/cdncheck v0.0.3 // indirect
-	github.com/projectdiscovery/hmap v0.0.6 // indirect
+	github.com/projectdiscovery/hmap v0.0.8 // indirect
 	github.com/projectdiscovery/iputil v0.0.2 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.3 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.20 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.10-0.20230123170312-75b58f90739a
+	github.com/projectdiscovery/retryabledns v1.0.21 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.10
 	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
@@ -141,7 +141,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
-	go.etcd.io/bbolt v1.3.6 // indirect
+	go.etcd.io/bbolt v1.3.7 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
