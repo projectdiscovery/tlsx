@@ -80,6 +80,12 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
 		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
+		flagSet.EnumVarP(&options.TLsCipherLevel, "cipher-level", "cl", goflags.EnumVariable(0), "only use ciphers of level (all/secure/insecure/weak) while enumeration", goflags.AllowdTypes{
+			"all":      goflags.EnumVariable(clients.All),
+			"weak":     goflags.EnumVariable(clients.Weak),
+			"insecure": goflags.EnumVariable(clients.Insecure),
+			"secure":   goflags.EnumVariable(clients.Secure),
+		}),
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
 	)

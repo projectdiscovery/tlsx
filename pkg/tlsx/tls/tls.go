@@ -160,21 +160,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 }
 
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	if options.EnumMode == clients.Cipher {
-		if options.VersionTLS == "tls13" {
-			return nil, errorutil.NewWithTag("ctls", "cipher enum not supported in ctls with tls1.3")
-		}
-		if len(options.Ciphers) == 0 {
-			return nil, errorutil.NewWithTag("ctls", "missing cipher value in cipher enum mode")
-		}
+	// filter ciphers based on given seclevel
+	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel)
+
+	if options.VersionTLS == "tls13" {
+		return nil, errorutil.NewWithTag("ctls", "cipher enum not supported in ctls with tls1.3")
 	}
 
 	enumeratedCiphers := []string{}
-	toEnumerate := clients.IntersectStringSlices(options.Ciphers, AllCiphersNames)
-	if len(toEnumerate) == 0 {
-		return enumeratedCiphers, errorutil.NewWithTag("ctls", "cipher enum failed: no valid ciphers found")
-	}
-	options.Ciphers = toEnumerate
 
 	baseCfg, err := c.getConfig(hostname, ip, port, options)
 	if err != nil {
@@ -196,7 +189,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 		}
-		conn.Close() // close baseConn internally
+		_ = conn.Close() // close baseConn internally
 	}
 	return enumeratedCiphers, nil
 }

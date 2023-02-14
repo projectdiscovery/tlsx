@@ -101,13 +101,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 // EnumerateCiphers enumerates all supported ciphers of openssl on target
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	// filter ciphers that are not supported by ztls
+	// filter ciphers based on given seclevel
+	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel)
+
 	enumeratedCiphers := []string{}
-	toEnumerate := clients.IntersectStringSlices(options.Ciphers, AllCiphersNames)
-	if len(toEnumerate) == 0 {
-		return enumeratedCiphers, errorutils.NewWithTag(PkgTag, "cipher enum failed: no valid ciphers found")
-	}
-	options.Ciphers = toEnumerate
 
 	// generate openssl options
 	opensslOpts, err := c.getOpenSSLopts(hostname, ip, port, options)

@@ -67,8 +67,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
 	wg := &sync.WaitGroup{}
-	toEnumerate := clients.IntersectStringSlices(options.Ciphers, allCiphersNames)
-	options.Ciphers = toEnumerate
 	ciphersFound := []string{}
 	cipherMutex := &sync.Mutex{}
 	allClients := []clients.Implementation{c.opensslClient, c.tlsClient, c.ztlsClient}

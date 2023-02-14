@@ -134,10 +134,16 @@ func (s *Service) enumTlsVersions(host, ip, port string, options clients.Connect
 }
 
 func (s *Service) enumTlsCiphers(host, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	clientSupportedCiphers, err := s.client.SupportedTLSCiphers()
-	if err != nil {
-		return nil, err
+	options.EnumMode = clients.Cipher
+	switch s.options.TLsCipherLevel {
+	case "weak":
+		options.CipherLevel = clients.Weak
+	case "secure":
+		options.CipherLevel = clients.Secure
+	case "insecure":
+		options.CipherLevel = clients.Insecure
+	default:
+		options.CipherLevel = clients.All
 	}
-	options.Ciphers = clientSupportedCiphers
 	return s.client.EnumerateCiphers(host, ip, port, options)
 }

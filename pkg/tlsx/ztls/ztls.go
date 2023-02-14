@@ -170,17 +170,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 // EnumerateCiphers enumerate target with ciphers supported by ztls
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	if len(options.Ciphers) == 0 {
-		return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode")
-	}
+	// filter ciphers based on given seclevel
+	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel)
 
-	// filter ciphers that are not supported by ztls
 	enumeratedCiphers := []string{}
-	toEnumerate := clients.IntersectStringSlices(options.Ciphers, AllCiphersNames)
-	if len(toEnumerate) == 0 {
-		return enumeratedCiphers, errorutil.NewWithTag("ztls", "cipher enum failed: no valid ciphers found")
-	}
-	options.Ciphers = toEnumerate
 
 	// create ztls base config
 	baseCfg, err := c.getConfig(hostname, ip, port, options)
@@ -201,7 +194,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
-		conn.Close() // also closes baseConn internally
+		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil
 }
@@ -223,16 +216,8 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 		// version not supported
 		return nil, errorutil.NewWithTag("ztls", "tlsversion `%v` not supported in ztls", options.VersionTLS)
 	}
-	if options.EnumMode == clients.Cipher {
-		if !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...) {
-			return nil, errorutil.NewWithTag("ztls", "cipher enum with version %v not implemented", options.VersionTLS)
-		}
-		if len(options.Ciphers) == 0 {
-			return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode")
-		}
-		if _, err := toZTLSCiphers(options.Ciphers); err != nil {
-			return nil, errorutil.NewWithErr(err).WithTag("ztls")
-		}
+	if options.EnumMode == clients.Cipher && !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...) {
+		return nil, errorutil.NewWithTag("ztls", "cipher enum with version %v not implemented", options.VersionTLS)
 	}
 
 	config := c.tlsConfig
