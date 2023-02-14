@@ -34,7 +34,6 @@ type Runner struct {
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
 	dnsclient    *dnsx.DNSX
-	asnClient    asn.ASNClient
 }
 
 // New creates a new runner from provided configuration options
@@ -89,8 +88,6 @@ func New(options *clients.Options) (*Runner, error) {
 		return nil, err
 	}
 	runner.dnsclient = dnsclient
-
-	runner.asnClient = asn.New()
 
 	outputWriter, err := output.New(options)
 	if err != nil {
@@ -302,7 +299,7 @@ func (r *Runner) getHostPortFromInput(input string) (string, string) {
 
 // processInputASN processes a single ASN input
 func (r *Runner) processInputASN(input string, inputs chan taskInput) {
-	ips, err := r.asnClient.GetIPAddressesAsStream(input)
+	ips, err := asn.GetIPAddressesAsStream(input)
 	if err != nil {
 		gologger.Error().Msgf("Could not get IP addresses for %s: %s", input, err)
 		return

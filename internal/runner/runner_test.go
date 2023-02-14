@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
-	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/stretchr/testify/require"
 )
@@ -115,7 +114,6 @@ func Test_InputASN_processInputItem(t *testing.T) {
 		Ports: []string{"443"},
 	}
 	runner := &Runner{options: options}
-	runner.asnClient = asn.New()
 	inputs := make(chan taskInput)
 
 	asn := "AS14421"
