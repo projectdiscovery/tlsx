@@ -104,6 +104,7 @@ CONFIGURATIONS:
    -ci, -cipher-input string[]  ciphers to use with tls connection
    -sni string[]                tls sni hostname to use
    -rs, -random-sni             use random sni when empty
+   -rps, -rev-ptr-sni           perform reverse PTR to retrieve SNI from IP
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -ac, -all-ciphers            send all ciphers as accepted inputs (default true)

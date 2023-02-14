@@ -52,6 +52,8 @@ type Options struct {
 	ServerName goflags.StringSlice
 	// RandomForEmptyServerName in case of empty sni
 	RandomForEmptyServerName bool
+	// ReversePtrSNI performs a reverse PTR query to obtain SNI from IP
+	ReversePtrSNI bool
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
