@@ -3,8 +3,8 @@ package assets
 import (
 	_ "embed"
 	"encoding/json"
-	"log"
 
+	"github.com/projectdiscovery/gologger"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
@@ -49,6 +49,6 @@ func getCipherWithLevel(level ...string) []string {
 func init() {
 	err := json.Unmarshal([]byte(CipherDataBin), &CipherSecLevel)
 	if err != nil {
-		log.Printf("failed to load cipherstatus_data.json, cipher-enum might return unexpected results")
+		gologger.Error().Label("cipher").Msgf("failed to load cipherstatus_data.json, cipher-enum might return unexpected results: %v", err)
 	}
 }

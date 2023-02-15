@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/projectdiscovery/gologger"
 )
 
 // stores ciphers with stats ex: "AES128-SHA256": "Weak"
@@ -26,29 +26,29 @@ func main() {
 
 	bin, err := json.Marshal(ciphers)
 	if err != nil {
-		log.Fatalf("failed to marshal cipherstats %v", err)
+		gologger.Fatal().Msgf("failed to marshal cipherstats %v", err)
 	}
 	err = os.WriteFile(cipherfile, bin, 0600)
 	if err != nil {
-		log.Fatalf("failed to write ciphers to file got %v", err)
+		gologger.Fatal().Msgf("failed to write ciphers to file got %v", err)
 	}
-	log.Printf("updated cipherstatus.json, total unique ciphers : %v\n", len(ciphers))
+	gologger.Print().Msgf("updated cipherstatus.json, total unique ciphers : %v\n", len(ciphers))
 }
 
 func FetchAndLoadCiphers(url string) {
 	res, err := http.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		gologger.Fatal().Msg(err.Error())
 	}
 	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+	if res.StatusCode != http.StatusOK {
+		gologger.Fatal().Msgf("status code error: %d %s", res.StatusCode, res.Status)
 	}
 
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		gologger.Fatal().Msg(err.Error())
 	}
 	doc.Find(".long-string").Each(func(i int, s *goquery.Selection) {
 		arr := strings.Fields(s.Text())
