@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
@@ -45,6 +46,7 @@ func New(options *clients.Options) (*Service, error) {
 	default:
 		// Default mode is TLS
 		service.client, err = tls.New(options)
+		options.ScanMode = "ctls"
 	}
 	if err != nil {
 		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err)
@@ -94,9 +96,6 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	}
 
 	if s.options.TlsVersionsEnum {
-		if s == nil {
-			panic("s is nil")
-		}
 		options.EnumMode = clients.Version
 		supportedTlsVersions := []string{resp.Version}
 		enumeratedTlsVersions, _ := s.enumTlsVersions(host, ip, port, options)
@@ -107,6 +106,9 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	var supportedTlsCiphers []clients.TlsCiphers
 	if s.options.TlsCiphersEnum {
 		options.EnumMode = clients.Cipher
+		if !s.options.Silent {
+			gologger.Print().Msgf("Started Cipher Enumeration in %v mode", s.options.ScanMode)
+		}
 		for _, supportedTlsVersion := range resp.VersionEnum {
 			options.VersionTLS = supportedTlsVersion
 			enumeratedTlsVersions, _ := s.enumTlsCiphers(host, ip, port, options)

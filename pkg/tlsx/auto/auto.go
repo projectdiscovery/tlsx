@@ -69,20 +69,27 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	wg := &sync.WaitGroup{}
 	ciphersFound := []string{}
 	cipherMutex := &sync.Mutex{}
-	allClients := []clients.Implementation{c.opensslClient, c.tlsClient, c.ztlsClient}
+	allClients := []clients.Implementation{}
+	if c.opensslClient != nil {
+		allClients = append(allClients, c.opensslClient)
+	}
+	if c.ztlsClient != nil {
+		allClients = append(allClients, c.ztlsClient)
+	}
+	if c.tlsClient != nil {
+		allClients = append(allClients, c.tlsClient)
+	}
 
 	for _, v := range allClients {
-		if v != nil {
-			wg.Add(1)
-			go func(clientx clients.Implementation) {
-				defer wg.Done()
-				if res, _ := clientx.EnumerateCiphers(hostname, ip, port, options); len(res) > 0 {
-					cipherMutex.Lock()
-					ciphersFound = append(ciphersFound, res...)
-					cipherMutex.Unlock()
-				}
-			}(v)
-		}
+		wg.Add(1)
+		go func(clientx clients.Implementation) {
+			defer wg.Done()
+			if res, _ := clientx.EnumerateCiphers(hostname, ip, port, options); len(res) > 0 {
+				cipherMutex.Lock()
+				ciphersFound = append(ciphersFound, res...)
+				cipherMutex.Unlock()
+			}
+		}(v)
 	}
 	wg.Wait()
 	//Dedupe and return
