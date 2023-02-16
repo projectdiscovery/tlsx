@@ -9,6 +9,7 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	errorutils "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
@@ -116,6 +117,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 	for _, v := range toEnumerate {
 		opensslOpts.Cipher = []string{v}
+		stats.IncrementOpensslTLSConnections()
 		if resp, errx := getResponse(context.TODO(), opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
 			// 0000 indicates handshake failure
 			enumeratedCiphers = append(enumeratedCiphers, resp.Session.Cipher)

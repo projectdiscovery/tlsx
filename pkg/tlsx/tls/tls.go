@@ -14,6 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/stringsutil"
+	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	"github.com/rs/xid"
@@ -181,6 +182,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		if err != nil {
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ctls")
 		}
+		stats.IncrementCryptoTLSConnections()
 		baseCfg.CipherSuites = []uint16{tlsCiphers[v]}
 
 		conn := tls.Client(baseConn, baseCfg)

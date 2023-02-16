@@ -11,6 +11,7 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
 	errorutil "github.com/projectdiscovery/utils/errors"
@@ -187,6 +188,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		if err != nil {
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls")
 		}
+		stats.IncrementZcryptoTLSConnections()
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
