@@ -107,7 +107,7 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	if s.options.TlsCiphersEnum {
 		options.EnumMode = clients.Cipher
 		if !s.options.Silent {
-			gologger.Print().Msgf("Started Cipher Enumeration in %v mode", s.options.ScanMode)
+			gologger.Info().Msgf("Started TLS Cipher Enumeration using %v mode", s.options.ScanMode)
 		}
 		for _, supportedTlsVersion := range resp.VersionEnum {
 			options.VersionTLS = supportedTlsVersion
