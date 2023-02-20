@@ -238,29 +238,15 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 
 	if w.options.TlsCiphersEnum {
 		for _, v := range output.TlsCiphers {
-			if len(v.Ciphers) == 0 {
-				// skip if no ciphers found for that tlsVersion
-				continue
+			ct := v.Ciphers.ColorCode(w.aurora)
+			all := []string{}
+			all = append(all, ct.Insecure...)
+			all = append(all, ct.Weak...)
+			all = append(all, ct.Secure...)
+			all = append(all, ct.Unknown...)
+			if len(all) > 0 {
+				builder.WriteString(fmt.Sprintf("[%v] [%v]\n", w.aurora.Magenta(v.Version), strings.Join(all, ",")))
 			}
-			builder.WriteString(outputPrefix)
-			// color code all found ciphers
-			var ciphersbuff bytes.Buffer
-			for k, v := range v.Ciphers {
-				if k != 0 {
-					ciphersbuff.WriteString(",")
-				}
-				switch clients.GetCipherLevel(v) {
-				case clients.Insecure:
-					ciphersbuff.WriteString(w.aurora.BrightRed(v).String())
-				case clients.Secure:
-					ciphersbuff.WriteString(w.aurora.BrightGreen(v).String())
-				case clients.Weak:
-					ciphersbuff.WriteString(w.aurora.BrightYellow(v).String())
-				default:
-					ciphersbuff.WriteString(w.aurora.BrightMagenta(v).String())
-				}
-			}
-			builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.BrightBlue(v.Version), ciphersbuff.String()))
 		}
 	} else if w.options.TlsVersionsEnum {
 		builder.WriteString(" [")

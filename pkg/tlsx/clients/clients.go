@@ -14,6 +14,7 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/cloudflare/cfssl/revoke"
+	"github.com/logrusorgru/aurora"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
@@ -188,8 +189,51 @@ type Response struct {
 }
 
 type TlsCiphers struct {
-	Version string   `json:"version,omitempty"`
-	Ciphers []string `json:"ciphers,omitempty"`
+	Version string      `json:"version,omitempty"`
+	Ciphers CipherTypes `json:"ciphers,omitempty"`
+}
+
+type CipherTypes struct {
+	Weak     []string `json:"weak,omitempty"`
+	Insecure []string `json:"insecure,omitempty"`
+	Secure   []string `json:"secure,omitempty"`
+	Unknown  []string `json:"unknown,omitempty"` // cipher type not know to tlsx
+}
+
+// ColorCode returns a clone of CipherTypes with Colored Strings
+func (c *CipherTypes) ColorCode(a aurora.Aurora) CipherTypes {
+	ct := CipherTypes{}
+	for _, v := range c.Weak {
+		ct.Weak = append(ct.Weak, a.BrightYellow(v).String())
+	}
+	for _, v := range c.Insecure {
+		ct.Insecure = append(ct.Insecure, a.BrightRed(v).String())
+	}
+	for _, v := range c.Secure {
+		ct.Secure = append(ct.Secure, a.BrightGreen(v).String())
+	}
+	for _, v := range c.Unknown {
+		ct.Unknown = append(ct.Unknown, a.BrightMagenta(v).String())
+	}
+	return ct
+}
+
+// IdentifyCiphers identifies type of ciphers from given cipherList
+func IdentifyCiphers(cipherList []string) CipherTypes {
+	ct := CipherTypes{}
+	for _, v := range cipherList {
+		switch GetCipherLevel(v) {
+		case Insecure:
+			ct.Insecure = append(ct.Insecure, v)
+		case Secure:
+			ct.Secure = append(ct.Secure, v)
+		case Weak:
+			ct.Weak = append(ct.Weak, v)
+		default:
+			ct.Unknown = append(ct.Unknown, v)
+		}
+	}
+	return ct
 }
 
 // CertificateResponse is the response for a certificate

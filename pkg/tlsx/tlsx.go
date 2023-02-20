@@ -111,9 +111,10 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 		for _, supportedTlsVersion := range resp.VersionEnum {
 			options.VersionTLS = supportedTlsVersion
-			enumeratedTlsVersions, _ := s.enumTlsCiphers(host, ip, port, options)
-			enumeratedTlsVersions = sliceutil.Dedupe(enumeratedTlsVersions)
-			supportedTlsCiphers = append(supportedTlsCiphers, clients.TlsCiphers{Version: supportedTlsVersion, Ciphers: enumeratedTlsVersions})
+			enumeratedTlsCiphers, _ := s.enumTlsCiphers(host, ip, port, options)
+			enumeratedTlsCiphers = sliceutil.Dedupe(enumeratedTlsCiphers)
+			cipherTypes := clients.IdentifyCiphers(enumeratedTlsCiphers)
+			supportedTlsCiphers = append(supportedTlsCiphers, clients.TlsCiphers{Version: supportedTlsVersion, Ciphers: cipherTypes})
 		}
 		resp.TlsCiphers = supportedTlsCiphers
 	}
