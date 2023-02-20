@@ -10,10 +10,10 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/projectdiscovery/dnsx v1.1.2
 	github.com/projectdiscovery/fastdialer v0.0.23
-	github.com/projectdiscovery/goflags v0.1.6
+	github.com/projectdiscovery/goflags v0.1.7
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/mapcidr v1.1.0
-	github.com/projectdiscovery/utils v0.0.9
+	github.com/projectdiscovery/utils v0.0.10
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
@@ -132,7 +132,7 @@ require (
 	github.com/projectdiscovery/iputil v0.0.2
 	github.com/projectdiscovery/networkpolicy v0.0.3 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.21 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.10
+	github.com/projectdiscovery/retryablehttp-go v1.0.11
 	github.com/projectdiscovery/stringsutil v0.0.2
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
