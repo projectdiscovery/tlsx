@@ -245,7 +245,8 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 			all = append(all, ct.Secure...)
 			all = append(all, ct.Unknown...)
 			if len(all) > 0 {
-				builder.WriteString(fmt.Sprintf("[%v] [%v]\n", w.aurora.Magenta(v.Version), strings.Join(all, ",")))
+				builder.WriteString(outputPrefix)
+				builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.Magenta(v.Version), strings.Join(all, ",")))
 			}
 		}
 	} else if w.options.TlsVersionsEnum {

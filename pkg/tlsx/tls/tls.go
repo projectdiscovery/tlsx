@@ -55,15 +55,16 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
-	if options.AllCiphers {
-		c.tlsConfig.CipherSuites = AllCiphers
-	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toTLSCiphers(options.Ciphers); err != nil {
 			return nil, errorutil.NewWithTag("ctls", "could not get tls ciphers").Wrap(err)
 		} else {
 			c.tlsConfig.CipherSuites = customCiphers
 		}
+	} else {
+		// unless explicitly specified client should advertise all supported ciphers
+		// Note: Go stdlib by default only advertises a safe/default list of ciphers
+		c.tlsConfig.CipherSuites = AllCiphers
 	}
 	if options.CACertificate != "" {
 		caCert, err := os.ReadFile(options.CACertificate)
