@@ -3,12 +3,15 @@
 package auto
 
 import (
+	"sync"
+
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
 	errorutils "github.com/projectdiscovery/utils/errors"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 	"go.uber.org/multierr"
 )
 
@@ -60,6 +63,37 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		}
 	}
 	return nil, multierr.Combine(err, ztlsErr, opensslErr)
+}
+
+func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
+	wg := &sync.WaitGroup{}
+	ciphersFound := []string{}
+	cipherMutex := &sync.Mutex{}
+	allClients := []clients.Implementation{}
+	if c.opensslClient != nil {
+		allClients = append(allClients, c.opensslClient)
+	}
+	if c.ztlsClient != nil {
+		allClients = append(allClients, c.ztlsClient)
+	}
+	if c.tlsClient != nil {
+		allClients = append(allClients, c.tlsClient)
+	}
+
+	for _, v := range allClients {
+		wg.Add(1)
+		go func(clientx clients.Implementation) {
+			defer wg.Done()
+			if res, _ := clientx.EnumerateCiphers(hostname, ip, port, options); len(res) > 0 {
+				cipherMutex.Lock()
+				ciphersFound = append(ciphersFound, res...)
+				cipherMutex.Unlock()
+			}
+		}(v)
+	}
+	wg.Wait()
+	//Dedupe and return
+	return sliceutil.Dedupe(ciphersFound), nil
 }
 
 // SupportedTLSVersions returns the list of supported tls versions by all engines

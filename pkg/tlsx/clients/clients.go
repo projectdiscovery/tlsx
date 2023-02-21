@@ -14,6 +14,7 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/cloudflare/cfssl/revoke"
+	"github.com/logrusorgru/aurora"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
@@ -31,6 +32,9 @@ import (
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
 	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
+
+	EnumerateCiphers(hostname, ip, port string, options ConnectOptions) ([]string, error)
+
 	// SupportedTLSVersions returns the list of supported tls versions
 	SupportedTLSVersions() ([]string, error)
 	// SupportedTLSCiphers returns the list of supported tls ciphers
@@ -59,7 +63,7 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
-	// AllCiphers enables sending all ciphers as client
+	// Deprecated: AllCiphers exists for historical compatibility and should not be used
 	AllCiphers bool
 	// ProbeStatus enables writing of errors with json output
 	ProbeStatus bool
@@ -136,6 +140,8 @@ type Options struct {
 	TlsVersionsEnum bool
 	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
 	TlsCiphersEnum bool
+	// TLSCipherSecLevel
+	TLsCipherLevel string
 	// ClientHello include client hello (only ztls)
 	ClientHello bool
 	// ServerHello include server hello (only ztls)
@@ -183,8 +189,51 @@ type Response struct {
 }
 
 type TlsCiphers struct {
-	Version string   `json:"version,omitempty"`
-	Ciphers []string `json:"ciphers,omitempty"`
+	Version string      `json:"version,omitempty"`
+	Ciphers CipherTypes `json:"ciphers,omitempty"`
+}
+
+type CipherTypes struct {
+	Weak     []string `json:"weak,omitempty"`
+	Insecure []string `json:"insecure,omitempty"`
+	Secure   []string `json:"secure,omitempty"`
+	Unknown  []string `json:"unknown,omitempty"` // cipher type not know to tlsx
+}
+
+// ColorCode returns a clone of CipherTypes with Colored Strings
+func (c *CipherTypes) ColorCode(a aurora.Aurora) CipherTypes {
+	ct := CipherTypes{}
+	for _, v := range c.Weak {
+		ct.Weak = append(ct.Weak, a.BrightYellow(v).String())
+	}
+	for _, v := range c.Insecure {
+		ct.Insecure = append(ct.Insecure, a.BrightRed(v).String())
+	}
+	for _, v := range c.Secure {
+		ct.Secure = append(ct.Secure, a.BrightGreen(v).String())
+	}
+	for _, v := range c.Unknown {
+		ct.Unknown = append(ct.Unknown, a.BrightMagenta(v).String())
+	}
+	return ct
+}
+
+// IdentifyCiphers identifies type of ciphers from given cipherList
+func IdentifyCiphers(cipherList []string) CipherTypes {
+	ct := CipherTypes{}
+	for _, v := range cipherList {
+		switch GetCipherLevel(v) {
+		case Insecure:
+			ct.Insecure = append(ct.Insecure, v)
+		case Secure:
+			ct.Secure = append(ct.Secure, v)
+		case Weak:
+			ct.Weak = append(ct.Weak, v)
+		default:
+			ct.Unknown = append(ct.Unknown, v)
+		}
+	}
+	return ct
 }
 
 // CertificateResponse is the response for a certificate
@@ -395,10 +444,11 @@ const (
 )
 
 type ConnectOptions struct {
-	SNI        string
-	VersionTLS string
-	Ciphers    []string
-	EnumMode   EnumMode // Enumeration Mode (version or ciphers)
+	SNI         string
+	VersionTLS  string
+	Ciphers     []string
+	CipherLevel CipherSecLevel // Only used in cipher enum mode
+	EnumMode    EnumMode       // Enumeration Mode (version or ciphers)
 }
 
 // ParseASN1DNSequenceWithZpkixOrDefault return the parsed value of ASN1DNSequence or a default string value

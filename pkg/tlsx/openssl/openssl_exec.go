@@ -45,13 +45,14 @@ func execOpenSSL(ctx context.Context, args []string) (*CMDOUT, error) {
 	cmd.Stdin = &inbuff
 	inbuff.WriteString("Q")
 
+	cmdstring := BinaryPath + " " + strings.Join(args, " ")
 	if err := cmd.Start(); err != nil {
-		return &CMDOUT{Stderr: errbuff.String(), Stdout: outbuff.String()}, fmt.Errorf("failed to start openssl: %v", err)
+		return &CMDOUT{Command: cmdstring, Stderr: errbuff.String(), Stdout: outbuff.String()}, fmt.Errorf("failed to start openssl: %v", err)
 	}
 	if err := cmd.Wait(); err != nil && errbuff.Len() == 0 {
-		return &CMDOUT{Stderr: errbuff.String(), Stdout: outbuff.String()}, err
+		return &CMDOUT{Command: cmdstring, Stderr: errbuff.String(), Stdout: outbuff.String()}, err
 	}
-	return &CMDOUT{Stderr: errbuff.String(), Stdout: outbuff.String()}, nil
+	return &CMDOUT{Command: cmdstring, Stderr: errbuff.String(), Stdout: outbuff.String()}, nil
 }
 
 // getCiphers returns openssl ciphers
@@ -85,7 +86,9 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	var errParseCertificates, errParseSessionData error
 	// openssl s_client returns lot of data however most of
 	// it can be obtained from parse Certificate
-	response.AllCerts, errParseCertificates = parseCertificates(result.Stdout)
+	if !opts.SkipCertParse {
+		response.AllCerts, errParseCertificates = parseCertificates(result.Stdout)
+	}
 	// Parse Session Data
 	response.Session, errParseSessionData = readSessionData(result.Stdout)
 
@@ -97,7 +100,7 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	case errParseSessionData != nil:
 		allerrors = Wrap(allerrors, errorutils.NewWithErr(errParseSessionData).WithTag(PkgTag).Msgf("failed to parse session data from response"))
 		fallthrough
-	case len(response.AllCerts) == 0:
+	case !opts.SkipCertParse && len(response.AllCerts) == 0:
 		allerrors = Wrap(allerrors, errorutils.NewWithTag(PkgTag, "no server certificates found"))
 		fallthrough
 	case allerrors != nil:

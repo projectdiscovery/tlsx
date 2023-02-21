@@ -238,8 +238,16 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 
 	if w.options.TlsCiphersEnum {
 		for _, v := range output.TlsCiphers {
-			builder.WriteString(outputPrefix)
-			builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.BrightBlue(v.Version), w.aurora.BrightGreen(strings.Join(v.Ciphers, ","))))
+			ct := v.Ciphers.ColorCode(w.aurora)
+			all := []string{}
+			all = append(all, ct.Insecure...)
+			all = append(all, ct.Weak...)
+			all = append(all, ct.Secure...)
+			all = append(all, ct.Unknown...)
+			if len(all) > 0 {
+				builder.WriteString(outputPrefix)
+				builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.Magenta(v.Version), strings.Join(all, ",")))
+			}
 		}
 	} else if w.options.TlsVersionsEnum {
 		builder.WriteString(" [")

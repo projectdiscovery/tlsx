@@ -80,6 +80,12 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
 		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
+		flagSet.EnumVarP(&options.TLsCipherLevel, "cipher-type", "ct", goflags.EnumVariable(0), "ciphers types to enumerate (all/secure/insecure/weak)", goflags.AllowdTypes{
+			"all":      goflags.EnumVariable(clients.All),
+			"weak":     goflags.EnumVariable(clients.Weak),
+			"insecure": goflags.EnumVariable(clients.Insecure),
+			"secure":   goflags.EnumVariable(clients.Secure),
+		}),
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
 	)
@@ -101,7 +107,6 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ReversePtrSNI, "rev-ptr-sni", "rps", false, "perform reverse PTR to retrieve SNI from IP"),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
-		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", true, "send all ciphers as accepted inputs"),
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),

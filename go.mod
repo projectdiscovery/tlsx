@@ -3,6 +3,7 @@ module github.com/projectdiscovery/tlsx
 go 1.19
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
@@ -22,6 +23,7 @@ require (
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -127,11 +129,11 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4 // indirect
 	github.com/projectdiscovery/cdncheck v0.0.3 // indirect
 	github.com/projectdiscovery/hmap v0.0.8 // indirect
-	github.com/projectdiscovery/iputil v0.0.2 // indirect
+	github.com/projectdiscovery/iputil v0.0.2
 	github.com/projectdiscovery/networkpolicy v0.0.4 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.21 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.11
-	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
+	github.com/projectdiscovery/stringsutil v0.0.2
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect

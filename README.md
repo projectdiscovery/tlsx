@@ -88,6 +88,7 @@ PROBES:
    -tps, -probe-status  display tls probe status
    -ve, -version-enum   enumerate and display supported tls versions
    -ce, -cipher-enum    enumerate and display supported cipher
+   -ct, -cipher-type    ciphers types to enumerate (all/secure/insecure/weak) (default 0)
    -ch, -client-hello   include client hello in json output (ztls mode only)
    -sh, -server-hello   include server hello in json output (ztls mode only)
 
@@ -531,6 +532,7 @@ This program optionally uses:
 
 - [zcrypto](https://github.com/zmap/zcrypto) library from the zmap team.
 - [cfssl](https://github.com/cloudflare/cfssl) library from the cloudflare team
+- cipher data from [ciphersuite.info](https://ciphersuite.info) for ciphersuite classification
 
 --------
 
