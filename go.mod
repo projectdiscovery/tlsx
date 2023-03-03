@@ -13,7 +13,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.7
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/mapcidr v1.1.0
-	github.com/projectdiscovery/utils v0.0.10
+	github.com/projectdiscovery/utils v0.0.13
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
