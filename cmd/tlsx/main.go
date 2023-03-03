@@ -125,7 +125,7 @@ func readFlags() error {
 	)
 
 	flagSet.CreateGroup("update", "Update",
-		flagSet.CallbackVarP(pdtmutils.GetUpdaterCallback(toolName), "update", "up", fmt.Sprintf("update %v to the latest released version", toolName)),
+		flagSet.CallbackVarP(pdtmutils.GetUpdaterCallback(toolName), "update", "up", fmt.Sprintf("update %v to the latest version", toolName)),
 		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic update check"),
 	)
 
