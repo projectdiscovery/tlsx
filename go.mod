@@ -3,7 +3,7 @@ module github.com/projectdiscovery/tlsx
 go 1.19
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
@@ -147,7 +147,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
