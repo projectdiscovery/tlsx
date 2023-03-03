@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/projectdiscovery/goflags"
+	pdtmutils "github.com/projectdiscovery/pdtm/pkg/utils"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
@@ -45,6 +47,7 @@ func process() error {
 }
 
 func readFlags() error {
+	toolName := "tlsx"
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`TLSX is a tls data gathering and analysis toolkit.`)
 
@@ -119,6 +122,11 @@ func readFlags() error {
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
 		flagSet.IntVar(&options.Retries, "retry", 3, "number of retries to perform for failures"),
 		flagSet.StringVar(&options.Delay, "delay", "", "duration to wait between each connection per thread (eg: 200ms, 1s)"),
+	)
+
+	flagSet.CreateGroup("update", "Update",
+		flagSet.CallbackVarP(pdtmutils.GetUpdaterCallback(toolName), "update", "up", fmt.Sprintf("update %v to the latest released version", toolName)),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic update check"),
 	)
 
 	flagSet.CreateGroup("output", "Output",

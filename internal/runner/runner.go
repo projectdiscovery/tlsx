@@ -25,6 +25,7 @@ import (
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	pdtmutils "github.com/projectdiscovery/pdtm/pkg/utils"
 )
 
 // Runner is a client for running the enumeration process
@@ -58,6 +59,12 @@ func New(options *clients.Options) (*Runner, error) {
 		gologger.Info().Msgf("Current version: %s", version)
 		return nil, nil
 	}
+
+	if !options.DisableUpdateCheck {
+		checkVersion := pdtmutils.GetVersionCheckCallback("tlsx")
+		gologger.Info().Msgf(checkVersion())
+	}
+
 	runner := &Runner{options: options}
 	if err := runner.validateOptions(); err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("could not validate options")

@@ -151,6 +151,9 @@ type Options struct {
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
+
+	// DisableUpdateCheck disables checking update
+	DisableUpdateCheck bool
 }
 
 // Response is the response returned for a TLS grab event
