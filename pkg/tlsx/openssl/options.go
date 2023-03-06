@@ -72,7 +72,7 @@ func getProtocol(versionTLS string) Protocols {
 type Options struct {
 	Address       string    // host:port address to connect
 	Cipher        []string  // Cipher to use while connecting
-	ServerName    string    //  Set TLS extension servername in ClientHello (SNI)
+	ServerName    string    // Set TLS extension servername in ClientHello (SNI)
 	CertChain     bool      // Show Certificate Chain
 	Protocol      Protocols // protocol to use
 	CAFile        string    // CA Certificate File

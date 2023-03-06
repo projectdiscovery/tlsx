@@ -137,10 +137,21 @@ func (c *Client) SupportedTLSCiphers() ([]string, error) {
 }
 
 func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.ConnectOptions) (*Options, errorutils.Error) {
+	var protocolVersion string
+	switch {
+	case options.VersionTLS != "":
+		protocolVersion = options.VersionTLS
+	case c.options.MinVersion != "":
+		protocolVersion = c.options.MinVersion
+	case c.options.MaxVersion != "":
+		protocolVersion = c.options.MaxVersion
+	}
+	protocol := getProtocol(protocolVersion)
+
 	// Note: CLI options are omitted if given value is empty
 	opensslOptions := &Options{
 		ServerName: options.SNI,
-		Protocol:   getProtocol(options.VersionTLS),
+		Protocol:   protocol,
 		CAFile:     c.options.CACertificate,
 	}
 	if (ip != "" && iputil.IsIP(ip)) || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
@@ -148,7 +159,7 @@ func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.Conne
 	} else {
 		opensslOptions.Address = net.JoinHostPort(hostname, port)
 	}
-	//validation
+	// validation
 	if (hostname == "" && ip == "") || port == "" {
 		return nil, errorutils.NewWithTag("openssl", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
 	}
