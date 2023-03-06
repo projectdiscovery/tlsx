@@ -62,7 +62,7 @@ func New(options *clients.Options) (*Runner, error) {
 
 	if !options.DisableUpdateCheck {
 		checkVersion := pdtmutils.GetVersionCheckCallback("tlsx")
-		gologger.Info().Msgf(checkVersion())
+		gologger.Info().Msgf("Current version: " + checkVersion())
 	}
 
 	runner := &Runner{options: options}
