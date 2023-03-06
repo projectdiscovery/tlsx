@@ -145,8 +145,13 @@ func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.Conne
 		protocolVersion = c.options.MinVersion
 	case c.options.MaxVersion != "":
 		protocolVersion = c.options.MaxVersion
+	default:
+		protocolVersion = "tls12"
 	}
-	protocol := getProtocol(protocolVersion)
+	protocol, err := getProtocol(protocolVersion)
+	if err != nil {
+		return nil, errorutils.NewWithTag("openssl", err.Error())
+	}
 
 	// Note: CLI options are omitted if given value is empty
 	opensslOptions := &Options{
