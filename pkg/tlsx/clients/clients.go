@@ -115,6 +115,8 @@ type Options struct {
 	Expired bool
 	// SelfSigned displays if cert is self-signed
 	SelfSigned bool
+	// Untrusted displays if cert is untrusted
+	Untrusted bool
 	// MisMatched displays if the cert is mismatched
 	MisMatched bool
 	// Revoked displays if the cert is revoked
@@ -246,6 +248,8 @@ type CertificateResponse struct {
 	MisMatched bool `json:"mismatched,omitempty"`
 	// Revoked returns true if the certificate is revoked
 	Revoked bool `json:"revoked,omitempty"`
+	// Untrusted is true if the certificate is untrusted
+	Untrusted bool `json:"untrusted,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -272,6 +276,8 @@ type CertificateResponse struct {
 	Certificate string `json:"certificate,omitempty"`
 	// WildCardCert is true if tls certificate is a wildcard certificate
 	WildCardCert bool `json:"wildcard_certificate,omitempty"`
+	// IsCA is true if the certificate is a CA certificate
+	IsCA bool `json:"is_ca,omitempty"`
 }
 
 // CertificateDistinguishedName is a distinguished certificate name
