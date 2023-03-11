@@ -7,6 +7,8 @@ import (
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetCipherSuites(t *testing.T) {
@@ -79,9 +81,11 @@ func TestCertChain(t *testing.T) {
 func TestSessionData(t *testing.T) {
 	versions := []string{"tls10", "tls11", "tls12"}
 	for _, v := range versions {
+		prot, err := getProtocol(v)
+		require.Nil(t, err)
 		opts := &Options{
 			Address:  "scanme.sh:443",
-			Protocol: getProtocol(v),
+			Protocol: prot,
 		}
 		resp, err := getResponse(context.TODO(), opts)
 		if err != nil {
