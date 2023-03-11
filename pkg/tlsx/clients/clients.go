@@ -148,12 +148,11 @@ type Options struct {
 	ServerHello bool
 	// HealthCheck performs a capabilities healthcheck
 	HealthCheck bool
+	// DisableUpdateCheck disables checking update
+	DisableUpdateCheck bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
-
-	// DisableUpdateCheck disables checking update
-	DisableUpdateCheck bool
 }
 
 // Response is the response returned for a TLS grab event

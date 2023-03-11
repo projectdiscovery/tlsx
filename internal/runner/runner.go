@@ -17,6 +17,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/mapcidr/asn"
+	pdtm "github.com/projectdiscovery/pdtm/pkg/utils"
 	"github.com/projectdiscovery/tlsx/pkg/output"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
@@ -25,7 +26,6 @@ import (
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
-	pdtmutils "github.com/projectdiscovery/pdtm/pkg/utils"
 )
 
 // Runner is a client for running the enumeration process
@@ -56,13 +56,12 @@ func New(options *clients.Options) (*Runner, error) {
 	showBanner()
 
 	if options.Version {
-		gologger.Info().Msgf("Current version: %s", version)
+		gologger.Info().Msgf("Current version: %s", Version)
 		return nil, nil
 	}
 
 	if !options.DisableUpdateCheck {
-		checkVersion := pdtmutils.GetVersionCheckCallback("tlsx")
-		gologger.Info().Msgf("Current version: " + checkVersion())
+		gologger.Info().Msgf("Current version: %v", pdtm.GetVersionCheckCallback("tlsx")())
 	}
 
 	runner := &Runner{options: options}
