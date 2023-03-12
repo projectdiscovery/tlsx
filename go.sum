@@ -747,8 +747,8 @@ github.com/pmezard/go-difflib v0.0.0-20151028094244-d8ed2627bdf0/go.mod h1:iKH77
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
-github.com/projectdiscovery/asnmap v1.0.0 h1:h9aUEHT3gEWgeTxDCd0UMxBw1yPthDwL1ogqUWnkBXo=
-github.com/projectdiscovery/asnmap v1.0.0/go.mod h1:m+qedSAZERz7Ds942hWANjU9kg4ADAikFHfwSXN1Ey8=
+github.com/projectdiscovery/asnmap v1.0.1 h1:mRFrFulfI5ZjYx0uyWcWKyCPRExDXInmBKpZlwxwRgE=
+github.com/projectdiscovery/asnmap v1.0.1/go.mod h1:qEowdtLF9JQqQ4/tHTt1HGAY0RnanLfU9DcAvrLic0o=
 github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4 h1:EsrQ/zkotVodSJLOch3pV/UYt1vQcwyIs5HX0sm1ljE=
 github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4/go.mod h1:5tNGQP9kOfW+X5+40pZP8aqPYLHs45nJkFaSHLxdeH8=
 github.com/projectdiscovery/cdncheck v0.0.3 h1:li2/rUJmhVXSqRFyhJMqi6pdBX6ZxMnwzBfE0Kifj/g=
