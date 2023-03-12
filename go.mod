@@ -25,14 +25,20 @@ require (
 	aead.dev/minisign v0.2.0 // indirect
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
+	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
+	github.com/charmbracelet/glamour v0.6.0 // indirect
+	github.com/cheggaaa/pb/v3 v3.1.2 // indirect
 	github.com/cncf/udpa/go v0.0.0-20210322005330-6414d713912e // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210217033140-668b12f5399d // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.1 // indirect
 	github.com/fatih/color v1.14.1 // indirect
@@ -51,9 +57,14 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jhump/protoreflect v1.8.2 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/selfupdate v0.6.0 // indirect
+	github.com/muesli/reflow v0.3.0 // indirect
+	github.com/muesli/termenv v0.15.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/projectdiscovery/asnmap v1.0.1 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
@@ -77,6 +88,8 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
+	github.com/yuin/goldmark v1.5.4 // indirect
+	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0 // indirect
 	go.etcd.io/etcd/client/v2 v2.305.0-alpha.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0 // indirect
