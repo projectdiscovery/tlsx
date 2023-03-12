@@ -13,8 +13,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.8-0.20230228104313-262b4665b8fe
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/mapcidr v1.1.0
-	github.com/projectdiscovery/pdtm v0.0.4
-	github.com/projectdiscovery/utils v0.0.15-0.20230311211838-0c7c9e4f6d9d
+	github.com/projectdiscovery/utils v0.0.15-0.20230312150239-2528d5ff811d
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
@@ -36,13 +35,13 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210217033140-668b12f5399d // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.1 // indirect
+	github.com/fatih/color v1.14.1 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fullstorydev/grpcurl v1.8.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.5.0 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/certificate-transparency-go v1.1.2-0.20210511102531-373a877eec92 // indirect
-	github.com/google/go-github v17.0.0+incompatible // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -52,8 +51,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jhump/protoreflect v1.8.2 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
-	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
-	github.com/mattn/go-runewidth v0.0.12 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/selfupdate v0.6.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
@@ -62,7 +60,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
@@ -127,7 +125,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
-	github.com/microcosm-cc/bluemonday v1.0.22 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect

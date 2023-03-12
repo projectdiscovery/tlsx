@@ -10,7 +10,6 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	errorutils "github.com/projectdiscovery/utils/errors"
-	updateutils "github.com/projectdiscovery/utils/update"
 )
 
 var (
@@ -123,7 +122,7 @@ func readFlags() error {
 	)
 
 	flagSet.CreateGroup("update", "Update",
-		flagSet.CallbackVarP(updateutils.GetUpdateToolCallback("tlsx", runner.Version), "update", "ut", "update tlsx to latest version"),
+		flagSet.CallbackVarP(runner.GetUpdateCallback(), "update", "up", "update tlsx to latest version"),
 		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic tlsx update check"),
 	)
 
