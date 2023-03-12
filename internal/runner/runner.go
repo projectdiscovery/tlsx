@@ -63,13 +63,9 @@ func New(options *clients.Options) (*Runner, error) {
 	if !options.DisableUpdateCheck {
 		latestVersion, err := updateutils.GetVersionCheckCallback("tlsx")()
 		if err != nil {
-			gologger.Error().MsgFunc(func() string {
-				msg := "tlsx version check failed"
-				if options.Verbose {
-					msg += " " + err.Error()
-				}
-				return msg
-			})
+			if options.Verbose {
+				gologger.Error().Msgf("tlsx version check failed: %v", err.Error())
+			}
 		} else {
 			gologger.Info().Msgf("Current tlsx version %v %v", version, updateutils.GetVersionDescription(version, latestVersion))
 		}
