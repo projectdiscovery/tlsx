@@ -121,7 +121,7 @@ OPTIMIZATIONS:
    -delay string         duration to wait between each connection per thread (eg: 200ms, 1s)
 
 UPDATE:
-   -ut, -update                 update tlsx to latest version
+   -up, -update                 update tlsx to latest version
    -duc, -disable-update-check  disable automatic tlsx update check
 
 OUTPUT:
