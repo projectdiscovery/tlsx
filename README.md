@@ -97,6 +97,7 @@ MISCONFIGURATIONS:
    -ss, -self-signed  display host with self-signed certificate
    -mm, -mismatched   display host with mismatched certificate
    -re, -revoked      display host with revoked certificate
+   -un, -untrusted    display host with untrusted certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -322,12 +323,12 @@ support.hackerone.com:443 [TLS1.2] [TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256]
 
 # TLS Misconfiguration
 
-### Expired / Self Signed / Mismatched / Revoked Certificate
+### Expired / Self Signed / Mismatched / Revoked / Untrusted Certificate
 
-A list of host can be provided to tlsx to detect **expired / self-signed / mismatched / revoked** certificates.
+A list of host can be provided to tlsx to detect **expired / self-signed / mismatched / revoked / untrusted** certificates.
 
 ```console
-$ tlsx -l hosts.txt -expired -self-signed -mismatched -revoked
+$ tlsx -l hosts.txt -expired -self-signed -mismatched -revoked -untrusted
   
 
   _____ _    _____  __
@@ -344,6 +345,7 @@ wrong.host.badssl.com:443 [mismatched]
 self-signed.badssl.com:443 [self-signed]
 expired.badssl.com:443 [expired]
 revoked.badssl.com:443 [revoked]
+untrusted-root.badssl.com:443 [untrusted]
 ```
 
 ### [JARM](https://engineering.salesforce.com/easily-identify-malicious-servers-on-the-internet-with-jarm-e095edac525a/) TLS Fingerprint
