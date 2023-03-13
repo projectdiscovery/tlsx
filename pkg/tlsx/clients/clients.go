@@ -371,22 +371,14 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 
 // IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
-	revoke.HardFail = options.HardFail
 	if cert == nil {
-		gologger.Debug().Msgf("IsTLSRevoked: got nil certificate skipping revocation check")
 		return options.HardFail
-	}
-	if options.Timeout > 0 {
-		revoke.HTTPClient.Timeout = time.Duration(options.Timeout)
 	}
 	// - false, false: an error was encountered while checking revocations.
 	// - false, true:  the certificate was checked successfully, and it is not revoked.
 	// - true, true:   the certificate was checked successfully, and it is revoked.
 	// - true, false:  failure to check revocation status causes verification to fail
-	revoked, ok := revoke.VerifyCertificate(cert)
-	if !ok {
-		gologger.Debug().Msgf("IsTLSRevoked: failed to check revocation status")
-	}
+	revoked, _ := revoke.VerifyCertificate(cert)
 	return revoked
 }
 
@@ -476,7 +468,8 @@ func ParseASN1DNSequenceWithZpkix(data []byte) string {
 }
 
 func init() {
-	// asssign default values to cfssl
+	// assign default values to cfssl
 	log.Level = log.LevelError
-	revoke.HTTPClient = retryablehttp.DefaultPooledClient()
+	revoke.HTTPClient = retryablehttp.DefaultClient()
+	revoke.HTTPClient.Timeout = time.Duration(5) * time.Second
 }
