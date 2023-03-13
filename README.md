@@ -61,7 +61,7 @@ This will display help for the tool. Here are all the switches it supports.
 TLSX is a tls data gathering and analysis toolkit.
 
 Usage:
-  ./tlsx [flags]
+  tlsx [flags]
 
 Flags:
 INPUT:
