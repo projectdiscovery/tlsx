@@ -61,6 +61,7 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 			SHA1:   clients.SHA1Fingerprint(cert.Raw),
 			SHA256: clients.SHA256Fingerprint(cert.Raw),
 		},
+		Serial: clients.FormatToSerialNumber(cert.SerialNumber),
 	}
 	if options.Cert {
 		response.Certificate = clients.PemEncode(cert.Raw)

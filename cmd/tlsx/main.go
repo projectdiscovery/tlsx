@@ -88,6 +88,7 @@ func readFlags() error {
 		}),
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
+		flagSet.BoolVarP(&options.Serial, "serial", "ser", false, "display certificate serial number"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",

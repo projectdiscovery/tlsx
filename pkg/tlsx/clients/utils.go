@@ -3,7 +3,10 @@ package clients
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
+	"math/big"
 	"net"
+	"strings"
 
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
@@ -29,6 +32,7 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 			SHA1:   SHA1Fingerprint(cert.Raw),
 			SHA256: SHA256Fingerprint(cert.Raw),
 		},
+		Serial: FormatToSerialNumber(cert.SerialNumber),
 	}
 	response.IssuerDN = ParseASN1DNSequenceWithZpkixOrDefault(cert.RawIssuer, cert.Issuer.String())
 	response.SubjectDN = ParseASN1DNSequenceWithZpkixOrDefault(cert.RawSubject, cert.Subject.String())
@@ -84,4 +88,25 @@ func GetConn(ctx context.Context, hostname, ip, port string, inputOpts *Options)
 		return nil, errorutil.New("could not connect to %s", address)
 	}
 	return rawConn, nil
+}
+
+// formatToSerialNumber converts big.Int to colon seperated hex string
+// Example: 17034156255497985825694118641198758684 -> 0C:D0:A8:BE:C6:32:CF:E6:45:EC:A0:A9:B0:84:FB:1C
+func FormatToSerialNumber(serialNumber *big.Int) string {
+	hexSerialNumber := fmt.Sprintf("%X", serialNumber)
+	if len(hexSerialNumber) < 32 {
+		hexSerialNumber = strings.Repeat("0", 32-len(hexSerialNumber)) + hexSerialNumber
+	}
+	return addCharAtInterval(hexSerialNumber, ':', 2)
+}
+
+func addCharAtInterval(s string, char rune, interval int) string {
+	var builder strings.Builder
+	for i, r := range s {
+		builder.WriteRune(r)
+		if (i+1)%interval == 0 && i < len(s)-1 {
+			builder.WriteRune(char)
+		}
+	}
+	return builder.String()
 }
