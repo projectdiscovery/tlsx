@@ -76,21 +76,21 @@ SCAN-MODE:
    -iv, -ip-version string[]  ip version to use (4, 6) (default 4)
 
 PROBES:
-   -san                 display subject alternative names
-   -cn                  display subject common names
-   -so                  display subject organization name
-   -tv, -tls-version    display used tls version
-   -cipher              display used cipher
-   -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
-   -jarm                display jarm fingerprint hash
-   -ja3                 display ja3 fingerprint hash (using ztls)
-   -wc, -wildcard-cert  display host with wildcard ssl certificate
-   -tps, -probe-status  display tls probe status
-   -ve, -version-enum   enumerate and display supported tls versions
-   -ce, -cipher-enum    enumerate and display supported cipher
-   -ct, -cipher-type    ciphers types to enumerate (all/secure/insecure/weak) (default 0)
-   -ch, -client-hello   include client hello in json output (ztls mode only)
-   -sh, -server-hello   include server hello in json output (ztls mode only)
+   -san                     display subject alternative names
+   -cn                      display subject common names
+   -so                      display subject organization name
+   -tv, -tls-version        display used tls version
+   -cipher                  display used cipher
+   -hash string             display certificate fingerprint hashes (md5,sha1,sha256)
+   -jarm                    display jarm fingerprint hash
+   -ja3                     display ja3 fingerprint hash (using ztls)
+   -wc, -wildcard-cert      display host with wildcard ssl certificate
+   -tps, -probe-status      display tls probe status
+   -ve, -version-enum       enumerate and display supported tls versions
+   -ce, -cipher-enum        enumerate and display supported cipher
+   -ct, -cipher-type value  ciphers types to enumerate (all/secure/insecure/weak) (default all)
+   -ch, -client-hello       include client hello in json output (ztls mode only)
+   -sh, -server-hello       include server hello in json output (ztls mode only)
 
 MISCONFIGURATIONS:
    -ex, -expired      display host with host expired certificate
@@ -108,17 +108,21 @@ CONFIGURATIONS:
    -rps, -rev-ptr-sni           perform reverse PTR to retrieve SNI from IP
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
-   -ac, -all-ciphers            send all ciphers as accepted inputs (default true)
    -cert, -certificate          include certificates in json output (PEM format)
    -tc, -tls-chain              include certificates chain in json output
    -vc, -verify-cert            enable verification of server certificate
    -ob, -openssl-binary string  OpenSSL Binary Path
+   -hf, -hardfail               strategy to use if encountered errors while checking revocation status
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
    -timeout int          tls connection timeout in seconds (default 5)
    -retry int            number of retries to perform for failures (default 3)
    -delay string         duration to wait between each connection per thread (eg: 200ms, 1s)
+
+UPDATE:
+   -up, -update                 update tlsx to latest version
+   -duc, -disable-update-check  disable automatic tlsx update check
 
 OUTPUT:
    -o, -output string  file to write output to
