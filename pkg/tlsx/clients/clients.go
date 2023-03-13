@@ -16,6 +16,7 @@ import (
 	"github.com/cloudflare/cfssl/revoke"
 	"github.com/logrusorgru/aurora"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/tls"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
 	zx509 "github.com/zmap/zcrypto/x509"
@@ -402,6 +403,27 @@ func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 		return options.HardFail
 	}
 	return IsTLSRevoked(options, xcert)
+}
+
+// IsUntrustedCA returns true if the certificate is a self-signed CA
+func IsUntrustedCA(certs []*x509.Certificate) bool {
+	for _, c := range certs {
+		if c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsZTLSUntrustedCA returns true if the certificate is a self-signed CA
+func IsZTLSUntrustedCA(certs []tls.SimpleCertificate) bool {
+	for _, cert := range certs {
+		parsedCert, _ := x509.ParseCertificate(cert.Raw)
+		if parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
+			return true
+		}
+	}
+	return false
 }
 
 // matchWildCardToken matches the wildcardName token and host token
