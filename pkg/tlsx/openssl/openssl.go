@@ -97,6 +97,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		}
 		response.Chain = responses
 	}
+	if c.options.Untrusted {
+		certs := getCertChain(ctx, opensslOpts)
+		for _, cert := range certs {
+			if cert.IsCA && clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId) {
+				response.Untrusted = true
+				break
+			}
+		}
+	}
 	return response, nil
 }
 

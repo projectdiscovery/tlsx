@@ -29,7 +29,6 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 			SHA1:   SHA1Fingerprint(cert.Raw),
 			SHA256: SHA256Fingerprint(cert.Raw),
 		},
-		IsCA: cert.IsCA,
 	}
 	response.IssuerDN = ParseASN1DNSequenceWithZpkixOrDefault(cert.RawIssuer, cert.Issuer.String())
 	response.SubjectDN = ParseASN1DNSequenceWithZpkixOrDefault(cert.RawSubject, cert.Subject.String())

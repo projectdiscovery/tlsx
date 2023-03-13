@@ -158,6 +158,15 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
 		}
 	}
+	if c.options.Untrusted {
+		for _, cert := range hl.ServerCertificates.Chain {
+			parsedCert := ParseSimpleTLSCertificate(cert)
+			if parsedCert.IsCA && clients.IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
+				response.Untrusted = true
+				break
+			}
+		}
+	}
 	if c.options.Ja3 {
 		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
 	}

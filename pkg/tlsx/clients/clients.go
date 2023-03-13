@@ -276,8 +276,6 @@ type CertificateResponse struct {
 	Certificate string `json:"certificate,omitempty"`
 	// WildCardCert is true if tls certificate is a wildcard certificate
 	WildCardCert bool `json:"wildcard_certificate,omitempty"`
-	// IsCA is true if the certificate is a CA certificate
-	IsCA bool `json:"is_ca,omitempty"`
 }
 
 // CertificateDistinguishedName is a distinguished certificate name
