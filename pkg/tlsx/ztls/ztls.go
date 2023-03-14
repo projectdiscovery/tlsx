@@ -11,6 +11,7 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
 	errorutil "github.com/projectdiscovery/utils/errors"
@@ -57,15 +58,16 @@ func New(options *clients.Options) (*Client, error) {
 		options: options,
 	}
 
-	if options.AllCiphers {
-		c.tlsConfig.CipherSuites = AllCiphers
-	}
 	if len(options.Ciphers) > 0 {
 		if customCiphers, err := toZTLSCiphers(options.Ciphers); err != nil {
 			return nil, errorutil.NewWithTag("ztls", "could not get ztls ciphers").Wrap(err)
 		} else {
 			c.tlsConfig.CipherSuites = customCiphers
 		}
+	} else {
+		// unless explicitly specified client should advertise all supported ciphers
+		// Note: Go stdlib by default only advertises a safe/default list of ciphers
+		c.tlsConfig.CipherSuites = AllCiphers
 	}
 	if options.CACertificate != "" {
 		caCert, err := os.ReadFile(options.CACertificate)
@@ -97,118 +99,38 @@ func New(options *clients.Options) (*Client, error) {
 	return c, nil
 }
 
-type timeoutError struct{}
-
-func (timeoutError) Error() string   { return "tls: DialWithDialer timed out" }
-func (timeoutError) Timeout() bool   { return true }
-func (timeoutError) Temporary() bool { return true }
-
 // Connect connects to a host and grabs the response data
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
-	var address string
-	if ip != "" || c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
-		address = net.JoinHostPort(ip, port)
-	} else {
-		address = net.JoinHostPort(hostname, port)
-	}
-
-	//validation
-	if (hostname == "" && ip == "") || port == "" {
-		return nil, errorutil.NewWithTag("ztls", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
-	}
-
-	// In enum mode return if given options are not supported
-	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...)) {
-		// version not supported
-		return nil, errorutil.NewWithTag("ztls", "tlsversion `%v` not supported in ctls", options.VersionTLS)
-	}
-	if options.EnumMode == clients.Cipher {
-		if len(options.Ciphers) == 0 {
-			return nil, errorutil.NewWithTag("ztls", "missing cipher value in cipher enum mode")
-		}
-		if _, err := toZTLSCiphers(options.Ciphers); err != nil {
-			return nil, errorutil.NewWithErr(err).WithTag("ztls")
-		}
-	}
-
-	if c.options.ScanAllIPs || len(c.options.IPVersion) > 0 {
-		address = net.JoinHostPort(ip, port)
-	}
-	timeout := time.Duration(c.options.Timeout) * time.Second
-
-	var errChannel chan error
-	if timeout != 0 {
-		errChannel = make(chan error, 2)
-		time.AfterFunc(timeout, func() {
-			errChannel <- timeoutError{}
-		})
+	// Get ztls config using input
+	config, err := c.getConfig(hostname, ip, port, options)
+	if err != nil {
+		return nil, errorutil.NewWithErr(err).Msgf("failed to create ztls config")
 	}
 
 	ctx := context.Background()
 	if c.options.Timeout != 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout)
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
 		defer cancel()
 	}
 
-	conn, err := c.dialer.Dial(ctx, "tcp", address)
+	// setup tcp connection
+	conn, err := clients.GetConn(ctx, hostname, ip, port, c.options)
 	if err != nil {
-		return nil, errorutil.NewWithTag("ztls", "could not connect to address").Wrap(err)
+		return nil, errorutil.NewWithErr(err).Msgf("failed to setup connection").WithTag("ztls")
 	}
-	if conn == nil {
-		return nil, fmt.Errorf("could not connect to %s", address)
-	}
+	defer conn.Close() //internally done by conn.Close() so just a placeholder
 
+	// get resolvedIp
 	resolvedIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if err != nil {
 		return nil, err
 	}
 
-	config := c.tlsConfig
-	if config.ServerName == "" {
-		cfg := config.Clone()
-		if options.SNI != "" {
-			cfg.ServerName = options.SNI
-		} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
-			// using a random sni will return the default server certificate
-			cfg.ServerName = xid.New().String()
-		} else {
-			cfg.ServerName = hostname
-		}
-		config = cfg
-	}
-
-	if options.VersionTLS != "" {
-		version, ok := versionStringToTLSVersion[options.VersionTLS]
-		if !ok {
-			return nil, fmt.Errorf("invalid tls version specified: %s", options.VersionTLS)
-		}
-		config.MinVersion = version
-		config.MaxVersion = version
-	}
-
-	if len(options.Ciphers) > 0 {
-		customCiphers, err := toZTLSCiphers(options.Ciphers)
-		if err != nil {
-			return nil, errorutil.NewWithTag("ztls", "could not get tls ciphers").Wrap(err)
-		}
-		c.tlsConfig.CipherSuites = customCiphers
-	}
-
+	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	if timeout == 0 {
-		err = tlsConn.Handshake()
-	} else {
-		go func() {
-			errChannel <- tlsConn.Handshake()
-		}()
-		err = <-errChannel
-	}
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	if err != nil {
-		conn.Close()
+
+	if err := c.tlsHandshakeWithTimeout(tlsConn, ctx); err != nil {
 		return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
 	}
 	defer tlsConn.Close()
@@ -231,6 +153,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		CertificateResponse: ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
+	response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
 			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
@@ -245,47 +169,39 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if c.options.ServerHello {
 		response.ServerHello = hl.ServerHello
 	}
-
 	return response, nil
 }
 
-// ParseSimpleTLSCertificate using zcrypto x509
-func ParseSimpleTLSCertificate(cert tls.SimpleCertificate) *x509.Certificate {
-	parsed, _ := x509.ParseCertificate(cert.Raw)
-	return parsed
-}
+// EnumerateCiphers enumerate target with ciphers supported by ztls
+func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
+	// filter ciphers based on given seclevel
+	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel)
 
-// ConvertCertificateToResponse using zcrypto x509
-func ConvertCertificateToResponse(options *clients.Options, hostname string, cert *x509.Certificate) *clients.CertificateResponse {
-	if cert == nil {
-		return nil
+	enumeratedCiphers := []string{}
+
+	// create ztls base config
+	baseCfg, err := c.getConfig(hostname, ip, port, options)
+	if err != nil {
+		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup cfg")
 	}
-	response := &clients.CertificateResponse{
-		SubjectAN:    cert.DNSNames,
-		Emails:       cert.EmailAddresses,
-		NotBefore:    cert.NotBefore,
-		NotAfter:     cert.NotAfter,
-		Expired:      clients.IsExpired(cert.NotAfter),
-		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
-		Revoked:      clients.IsZTLSRevoked(options, cert),
-		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
-		IssuerDN:     cert.Issuer.String(),
-		IssuerCN:     cert.Issuer.CommonName,
-		IssuerOrg:    cert.Issuer.Organization,
-		SubjectDN:    cert.Subject.String(),
-		SubjectCN:    cert.Subject.CommonName,
-		SubjectOrg:   cert.Subject.Organization,
-		FingerprintHash: clients.CertificateResponseFingerprintHash{
-			MD5:    clients.MD5Fingerprint(cert.Raw),
-			SHA1:   clients.SHA1Fingerprint(cert.Raw),
-			SHA256: clients.SHA256Fingerprint(cert.Raw),
-		},
+	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
+
+	for _, v := range toEnumerate {
+		baseConn, err := clients.GetConn(context.TODO(), hostname, ip, port, c.options)
+		if err != nil {
+			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls")
+		}
+		stats.IncrementZcryptoTLSConnections()
+		conn := tls.Client(baseConn, baseCfg)
+		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
+
+		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+			h1 := conn.GetHandshakeLog()
+			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+		}
+		_ = conn.Close() // also closes baseConn internally
 	}
-	if options.Cert {
-		response.Certificate = clients.PemEncode(cert.Raw)
-	}
-	return response
+	return enumeratedCiphers, nil
 }
 
 // SupportedTLSVersions returns the list of ztls library supported tls versions
@@ -296,4 +212,66 @@ func (c *Client) SupportedTLSVersions() ([]string, error) {
 // SupportedTLSCiphers returns the list of ztls library supported ciphers
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
 	return AllCiphersNames, nil
+}
+
+// getConfig returns tlsconfig for ztls
+func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOptions) (*tls.Config, error) {
+	// In enum mode return if given options are not supported
+	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...)) {
+		// version not supported
+		return nil, errorutil.NewWithTag("ztls", "tlsversion `%v` not supported in ztls", options.VersionTLS)
+	}
+	if options.EnumMode == clients.Cipher && !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...) {
+		return nil, errorutil.NewWithTag("ztls", "cipher enum with version %v not implemented", options.VersionTLS)
+	}
+
+	config := c.tlsConfig
+	if config.ServerName == "" {
+		cfg := config.Clone()
+		if options.SNI != "" {
+			cfg.ServerName = options.SNI
+		} else if iputil.IsIP(hostname) && c.options.RandomForEmptyServerName {
+			// using a random sni will return the default server certificate
+			cfg.ServerName = xid.New().String()
+		} else {
+			cfg.ServerName = hostname
+		}
+		config = cfg
+	}
+
+	if options.VersionTLS != "" {
+		version, ok := versionStringToTLSVersion[options.VersionTLS]
+		if !ok {
+			return nil, errorutil.NewWithTag("ztls", "invalid tls version specified: %s", options.VersionTLS)
+		}
+		config.MinVersion = version
+		config.MaxVersion = version
+	}
+
+	if len(options.Ciphers) > 0 && options.EnumMode != clients.Cipher {
+		customCiphers, err := toZTLSCiphers(options.Ciphers)
+		if err != nil {
+			return nil, errorutil.NewWithTag("ztls", "could not get tls ciphers").Wrap(err)
+		}
+		c.tlsConfig.CipherSuites = customCiphers
+	}
+	return config, nil
+}
+
+// tlsHandshakeWithCtx attempts tls handshake with given timeout
+func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+	errChan := make(chan error, 1)
+	defer close(errChan)
+
+	select {
+	case <-ctx.Done():
+		errChan <- errorutil.NewWithTag("ztls", "timeout while attempting handshake")
+	case errChan <- tlsConn.Handshake():
+	}
+
+	err := <-errChan
+	if err == tls.ErrCertsOnly {
+		err = nil
+	}
+	return err
 }

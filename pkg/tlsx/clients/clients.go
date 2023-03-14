@@ -14,7 +14,9 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/cloudflare/cfssl/revoke"
+	"github.com/logrusorgru/aurora"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/tls"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
 	zx509 "github.com/zmap/zcrypto/x509"
@@ -31,6 +33,9 @@ import (
 type Implementation interface {
 	// Connect connects to a host and grabs the response data
 	ConnectWithOptions(hostname, ip, port string, options ConnectOptions) (*Response, error)
+
+	EnumerateCiphers(hostname, ip, port string, options ConnectOptions) ([]string, error)
+
 	// SupportedTLSVersions returns the list of supported tls versions
 	SupportedTLSVersions() ([]string, error)
 	// SupportedTLSCiphers returns the list of supported tls ciphers
@@ -49,6 +54,8 @@ type Options struct {
 	ServerName goflags.StringSlice
 	// RandomForEmptyServerName in case of empty sni
 	RandomForEmptyServerName bool
+	// ReversePtrSNI performs a reverse PTR query to obtain SNI from IP
+	ReversePtrSNI bool
 	// Verbose enables display of verbose output
 	Verbose bool
 	// Version shows the version of the program
@@ -57,7 +64,7 @@ type Options struct {
 	JSON bool
 	// TLSChain enables printing TLS chain information to output
 	TLSChain bool
-	// AllCiphers enables sending all ciphers as client
+	// Deprecated: AllCiphers exists for historical compatibility and should not be used
 	AllCiphers bool
 	// ProbeStatus enables writing of errors with json output
 	ProbeStatus bool
@@ -109,6 +116,8 @@ type Options struct {
 	Expired bool
 	// SelfSigned displays if cert is self-signed
 	SelfSigned bool
+	// Untrusted displays if cert is untrusted
+	Untrusted bool
 	// MisMatched displays if the cert is mismatched
 	MisMatched bool
 	// Revoked displays if the cert is revoked
@@ -134,15 +143,21 @@ type Options struct {
 	TlsVersionsEnum bool
 	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
 	TlsCiphersEnum bool
+	// TLSCipherSecLevel
+	TLsCipherLevel string
 	// ClientHello include client hello (only ztls)
 	ClientHello bool
 	// ServerHello include server hello (only ztls)
 	ServerHello bool
 	// HealthCheck performs a capabilities healthcheck
 	HealthCheck bool
+	// DisableUpdateCheck disables checking update
+	DisableUpdateCheck bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
+	// Serail displays certiface serial number
+	Serial bool
 }
 
 // Response is the response returned for a TLS grab event
@@ -181,8 +196,51 @@ type Response struct {
 }
 
 type TlsCiphers struct {
-	Version string   `json:"version,omitempty"`
-	Ciphers []string `json:"ciphers,omitempty"`
+	Version string      `json:"version,omitempty"`
+	Ciphers CipherTypes `json:"ciphers,omitempty"`
+}
+
+type CipherTypes struct {
+	Weak     []string `json:"weak,omitempty"`
+	Insecure []string `json:"insecure,omitempty"`
+	Secure   []string `json:"secure,omitempty"`
+	Unknown  []string `json:"unknown,omitempty"` // cipher type not know to tlsx
+}
+
+// ColorCode returns a clone of CipherTypes with Colored Strings
+func (c *CipherTypes) ColorCode(a aurora.Aurora) CipherTypes {
+	ct := CipherTypes{}
+	for _, v := range c.Weak {
+		ct.Weak = append(ct.Weak, a.BrightYellow(v).String())
+	}
+	for _, v := range c.Insecure {
+		ct.Insecure = append(ct.Insecure, a.BrightRed(v).String())
+	}
+	for _, v := range c.Secure {
+		ct.Secure = append(ct.Secure, a.BrightGreen(v).String())
+	}
+	for _, v := range c.Unknown {
+		ct.Unknown = append(ct.Unknown, a.BrightMagenta(v).String())
+	}
+	return ct
+}
+
+// IdentifyCiphers identifies type of ciphers from given cipherList
+func IdentifyCiphers(cipherList []string) CipherTypes {
+	ct := CipherTypes{}
+	for _, v := range cipherList {
+		switch GetCipherLevel(v) {
+		case Insecure:
+			ct.Insecure = append(ct.Insecure, v)
+		case Secure:
+			ct.Secure = append(ct.Secure, v)
+		case Weak:
+			ct.Weak = append(ct.Weak, v)
+		default:
+			ct.Unknown = append(ct.Unknown, v)
+		}
+	}
+	return ct
 }
 
 // CertificateResponse is the response for a certificate
@@ -195,6 +253,8 @@ type CertificateResponse struct {
 	MisMatched bool `json:"mismatched,omitempty"`
 	// Revoked returns true if the certificate is revoked
 	Revoked bool `json:"revoked,omitempty"`
+	// Untrusted is true if the certificate is untrusted
+	Untrusted bool `json:"untrusted,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -207,6 +267,8 @@ type CertificateResponse struct {
 	SubjectOrg []string `json:"subject_org,omitempty"`
 	// SubjectAN is a list of Subject Alternative Names for the certificate
 	SubjectAN []string `json:"subject_an,omitempty"`
+	//Serial is the certificate serial number
+	Serial string `json:"serial,omitempty"`
 	// IssuerDN is the distinguished name for cert
 	IssuerDN string `json:"issuer_dn,omitempty"`
 	// IssuerCN is the common name for cert
@@ -320,22 +382,14 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 
 // IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
-	revoke.HardFail = options.HardFail
 	if cert == nil {
-		gologger.Debug().Msgf("IsTLSRevoked: got nil certificate skipping revocation check")
 		return options.HardFail
-	}
-	if options.Timeout > 0 {
-		revoke.HTTPClient.Timeout = time.Duration(options.Timeout)
 	}
 	// - false, false: an error was encountered while checking revocations.
 	// - false, true:  the certificate was checked successfully, and it is not revoked.
 	// - true, true:   the certificate was checked successfully, and it is revoked.
 	// - true, false:  failure to check revocation status causes verification to fail
-	revoked, ok := revoke.VerifyCertificate(cert)
-	if !ok {
-		gologger.Debug().Msgf("IsTLSRevoked: failed to check revocation status")
-	}
+	revoked, _ := revoke.VerifyCertificate(cert)
 	return revoked
 }
 
@@ -347,6 +401,27 @@ func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 		return options.HardFail
 	}
 	return IsTLSRevoked(options, xcert)
+}
+
+// IsUntrustedCA returns true if the certificate is a self-signed CA
+func IsUntrustedCA(certs []*x509.Certificate) bool {
+	for _, c := range certs {
+		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsZTLSUntrustedCA returns true if the certificate is a self-signed CA
+func IsZTLSUntrustedCA(certs []tls.SimpleCertificate) bool {
+	for _, cert := range certs {
+		parsedCert, _ := x509.ParseCertificate(cert.Raw)
+		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
+			return true
+		}
+	}
+	return false
 }
 
 // matchWildCardToken matches the wildcardName token and host token
@@ -393,10 +468,11 @@ const (
 )
 
 type ConnectOptions struct {
-	SNI        string
-	VersionTLS string
-	Ciphers    []string
-	EnumMode   EnumMode // Enumeration Mode (version or ciphers)
+	SNI         string
+	VersionTLS  string
+	Ciphers     []string
+	CipherLevel CipherSecLevel // Only used in cipher enum mode
+	EnumMode    EnumMode       // Enumeration Mode (version or ciphers)
 }
 
 // ParseASN1DNSequenceWithZpkixOrDefault return the parsed value of ASN1DNSequence or a default string value
@@ -424,7 +500,8 @@ func ParseASN1DNSequenceWithZpkix(data []byte) string {
 }
 
 func init() {
-	// asssign default values to cfssl
+	// assign default values to cfssl
 	log.Level = log.LevelError
-	revoke.HTTPClient = retryablehttp.DefaultPooledClient()
+	revoke.HTTPClient = retryablehttp.DefaultClient()
+	revoke.HTTPClient.Timeout = time.Duration(5) * time.Second
 }

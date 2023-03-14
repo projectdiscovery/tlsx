@@ -74,9 +74,7 @@ func openSSLSetup() errorutils.Error {
 	}
 	// else assume given is openssl
 	OpenSSLVersion := arr[1]
-	/*
-		This config is only valid for openssl and not "LibreSSL"
-	*/
+	// This config is only valid for openssl and not "LibreSSL"
 	if !IsLibreSSL {
 		OPENSSL_CONF = filepath.Join(os.TempDir(), "openssl.cnf")
 		err := os.WriteFile(OPENSSL_CONF, []byte(openSSLConfig), 0600)

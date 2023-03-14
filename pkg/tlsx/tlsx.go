@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
@@ -32,6 +33,7 @@ func New(options *clients.Options) (*Service, error) {
 			return nil, err
 		}
 	}
+
 	var err error
 	switch options.ScanMode {
 	case "ztls":
@@ -45,6 +47,7 @@ func New(options *clients.Options) (*Service, error) {
 	default:
 		// Default mode is TLS
 		service.client, err = tls.New(options)
+		options.ScanMode = "ctls"
 	}
 	if err != nil {
 		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err)
@@ -104,11 +107,15 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	var supportedTlsCiphers []clients.TlsCiphers
 	if s.options.TlsCiphersEnum {
 		options.EnumMode = clients.Cipher
+		if !s.options.Silent {
+			gologger.Info().Msgf("Started TLS Cipher Enumeration using %v mode", s.options.ScanMode)
+		}
 		for _, supportedTlsVersion := range resp.VersionEnum {
 			options.VersionTLS = supportedTlsVersion
-			enumeratedTlsVersions, _ := s.enumTlsCiphers(host, ip, port, options)
-			enumeratedTlsVersions = sliceutil.Dedupe(enumeratedTlsVersions)
-			supportedTlsCiphers = append(supportedTlsCiphers, clients.TlsCiphers{Version: supportedTlsVersion, Ciphers: enumeratedTlsVersions})
+			enumeratedTlsCiphers, _ := s.enumTlsCiphers(host, ip, port, options)
+			enumeratedTlsCiphers = sliceutil.Dedupe(enumeratedTlsCiphers)
+			cipherTypes := clients.IdentifyCiphers(enumeratedTlsCiphers)
+			supportedTlsCiphers = append(supportedTlsCiphers, clients.TlsCiphers{Version: supportedTlsVersion, Ciphers: cipherTypes})
 		}
 		resp.TlsCiphers = supportedTlsCiphers
 	}
@@ -131,16 +138,16 @@ func (s *Service) enumTlsVersions(host, ip, port string, options clients.Connect
 }
 
 func (s *Service) enumTlsCiphers(host, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	var enumeratedTlsCiphers []string
-	clientSupportedCiphers, err := s.client.SupportedTLSCiphers()
-	if err != nil {
-		return nil, err
+	options.EnumMode = clients.Cipher
+	switch s.options.TLsCipherLevel {
+	case "weak":
+		options.CipherLevel = clients.Weak
+	case "secure":
+		options.CipherLevel = clients.Secure
+	case "insecure":
+		options.CipherLevel = clients.Insecure
+	default:
+		options.CipherLevel = clients.All
 	}
-	for _, cipher := range clientSupportedCiphers {
-		options.Ciphers = []string{cipher}
-		if resp, err := s.client.ConnectWithOptions(host, ip, port, options); err == nil && resp != nil {
-			enumeratedTlsCiphers = append(enumeratedTlsCiphers, cipher)
-		}
-	}
-	return enumeratedTlsCiphers, nil
+	return s.client.EnumerateCiphers(host, ip, port, options)
 }

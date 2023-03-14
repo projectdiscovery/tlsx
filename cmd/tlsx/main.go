@@ -80,8 +80,15 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
 		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
+		flagSet.EnumVarP(&options.TLsCipherLevel, "cipher-type", "ct", goflags.EnumVariable(0), "ciphers types to enumerate (all/secure/insecure/weak)", goflags.AllowdTypes{
+			"all":      goflags.EnumVariable(clients.All),
+			"weak":     goflags.EnumVariable(clients.Weak),
+			"insecure": goflags.EnumVariable(clients.Insecure),
+			"secure":   goflags.EnumVariable(clients.Secure),
+		}),
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
+		flagSet.BoolVarP(&options.Serial, "serial", "se", false, "display certificate serial number"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
@@ -89,6 +96,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),
 		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display host with mismatched certificate"),
 		flagSet.BoolVarP(&options.Revoked, "revoked", "re", false, "display host with revoked certificate"),
+		flagSet.BoolVarP(&options.Untrusted, "untrusted", "un", false, "display host with untrusted certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -98,9 +106,9 @@ func readFlags() error {
 		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.BoolVarP(&options.RandomForEmptyServerName, "random-sni", "rs", false, "use random sni when empty"),
+		flagSet.BoolVarP(&options.ReversePtrSNI, "rev-ptr-sni", "rps", false, "perform reverse PTR to retrieve SNI from IP"),
 		flagSet.StringVar(&options.MinVersion, "min-version", "", "minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
 		flagSet.StringVar(&options.MaxVersion, "max-version", "", "maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)"),
-		flagSet.BoolVarP(&options.AllCiphers, "all-ciphers", "ac", true, "send all ciphers as accepted inputs"),
 		flagSet.BoolVarP(&options.Cert, "certificate", "cert", false, "include certificates in json output (PEM format)"),
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
@@ -113,6 +121,11 @@ func readFlags() error {
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
 		flagSet.IntVar(&options.Retries, "retry", 3, "number of retries to perform for failures"),
 		flagSet.StringVar(&options.Delay, "delay", "", "duration to wait between each connection per thread (eg: 200ms, 1s)"),
+	)
+
+	flagSet.CreateGroup("update", "Update",
+		flagSet.CallbackVarP(runner.GetUpdateCallback(), "update", "up", "update tlsx to latest version"),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic tlsx update check"),
 	)
 
 	flagSet.CreateGroup("output", "Output",
