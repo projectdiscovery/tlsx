@@ -153,6 +153,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,
 	}
+	response.Untrusted = clients.IsUntrustedCA(certificateChain)
 	if c.options.TLSChain {
 		for _, cert := range certificateChain {
 			response.Chain = append(response.Chain, clients.Convertx509toResponse(c.options, hostname, cert, c.options.Cert))

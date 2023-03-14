@@ -153,6 +153,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		CertificateResponse: ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
+	response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {
 			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
