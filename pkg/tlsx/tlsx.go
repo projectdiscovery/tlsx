@@ -33,6 +33,7 @@ func New(options *clients.Options) (*Service, error) {
 			return nil, err
 		}
 	}
+
 	var err error
 	switch options.ScanMode {
 	case "ztls":
