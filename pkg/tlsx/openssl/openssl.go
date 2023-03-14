@@ -87,11 +87,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		TLSConnection:       "openssl",
 		ServerName:          opensslOpts.ServerName,
 	}
+	certs := getCertChain(ctx, opensslOpts)
+	response.Untrusted = clients.IsUntrustedCA(certs)
 
 	// Note: openssl s_client does not return server certificate if certificate chain is requested
 	if c.options.TLSChain {
 		responses := []*clients.CertificateResponse{}
-		certs := getCertChain(ctx, opensslOpts)
 		for _, v := range certs {
 			responses = append(responses, clients.Convertx509toResponse(c.options, hostname, v, c.options.Cert))
 		}
