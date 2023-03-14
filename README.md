@@ -98,6 +98,7 @@ MISCONFIGURATIONS:
    -ss, -self-signed  display host with self-signed certificate
    -mm, -mismatched   display host with mismatched certificate
    -re, -revoked      display host with revoked certificate
+   -un, -untrusted    display host with untrusted certificate
 
 CONFIGURATIONS:
    -config string               path to the tlsx configuration file
@@ -109,17 +110,21 @@ CONFIGURATIONS:
    -rps, -rev-ptr-sni           perform reverse PTR to retrieve SNI from IP
    -min-version string          minimum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
    -max-version string          maximum tls version to accept (ssl30,tls10,tls11,tls12,tls13)
-   -ac, -all-ciphers            send all ciphers as accepted inputs (default true)
    -cert, -certificate          include certificates in json output (PEM format)
    -tc, -tls-chain              include certificates chain in json output
    -vc, -verify-cert            enable verification of server certificate
    -ob, -openssl-binary string  OpenSSL Binary Path
+   -hf, -hardfail               strategy to use if encountered errors while checking revocation status
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
    -timeout int          tls connection timeout in seconds (default 5)
    -retry int            number of retries to perform for failures (default 3)
    -delay string         duration to wait between each connection per thread (eg: 200ms, 1s)
+
+UPDATE:
+   -up, -update                 update tlsx to latest version
+   -duc, -disable-update-check  disable automatic tlsx update check
 
 OUTPUT:
    -o, -output string  file to write output to
@@ -323,12 +328,12 @@ support.hackerone.com:443 [TLS1.2] [TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256]
 
 # TLS Misconfiguration
 
-### Expired / Self Signed / Mismatched / Revoked Certificate
+### Expired / Self Signed / Mismatched / Revoked / Untrusted Certificate
 
-A list of host can be provided to tlsx to detect **expired / self-signed / mismatched / revoked** certificates.
+A list of host can be provided to tlsx to detect **expired / self-signed / mismatched / revoked / untrusted** certificates.
 
 ```console
-$ tlsx -l hosts.txt -expired -self-signed -mismatched -revoked
+$ tlsx -l hosts.txt -expired -self-signed -mismatched -revoked -untrusted
   
 
   _____ _    _____  __
@@ -345,6 +350,7 @@ wrong.host.badssl.com:443 [mismatched]
 self-signed.badssl.com:443 [self-signed]
 expired.badssl.com:443 [expired]
 revoked.badssl.com:443 [revoked]
+untrusted-root.badssl.com:443 [untrusted]
 ```
 
 ### [JARM](https://engineering.salesforce.com/easily-identify-malicious-servers-on-the-internet-with-jarm-e095edac525a/) TLS Fingerprint

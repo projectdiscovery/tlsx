@@ -16,6 +16,7 @@ import (
 	"github.com/cloudflare/cfssl/revoke"
 	"github.com/logrusorgru/aurora"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
+	"github.com/zmap/zcrypto/tls"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
 	zx509 "github.com/zmap/zcrypto/x509"
@@ -115,6 +116,8 @@ type Options struct {
 	Expired bool
 	// SelfSigned displays if cert is self-signed
 	SelfSigned bool
+	// Untrusted displays if cert is untrusted
+	Untrusted bool
 	// MisMatched displays if the cert is mismatched
 	MisMatched bool
 	// Revoked displays if the cert is revoked
@@ -148,6 +151,8 @@ type Options struct {
 	ServerHello bool
 	// HealthCheck performs a capabilities healthcheck
 	HealthCheck bool
+	// DisableUpdateCheck disables checking update
+	DisableUpdateCheck bool
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
@@ -248,6 +253,8 @@ type CertificateResponse struct {
 	MisMatched bool `json:"mismatched,omitempty"`
 	// Revoked returns true if the certificate is revoked
 	Revoked bool `json:"revoked,omitempty"`
+	// Untrusted is true if the certificate is untrusted
+	Untrusted bool `json:"untrusted,omitempty"`
 	// NotBefore is the not-before time for certificate
 	NotBefore time.Time `json:"not_before,omitempty"`
 	// NotAfter is the not-after time for certificate
@@ -375,22 +382,14 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 
 // IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
-	revoke.HardFail = options.HardFail
 	if cert == nil {
-		gologger.Debug().Msgf("IsTLSRevoked: got nil certificate skipping revocation check")
 		return options.HardFail
-	}
-	if options.Timeout > 0 {
-		revoke.HTTPClient.Timeout = time.Duration(options.Timeout)
 	}
 	// - false, false: an error was encountered while checking revocations.
 	// - false, true:  the certificate was checked successfully, and it is not revoked.
 	// - true, true:   the certificate was checked successfully, and it is revoked.
 	// - true, false:  failure to check revocation status causes verification to fail
-	revoked, ok := revoke.VerifyCertificate(cert)
-	if !ok {
-		gologger.Debug().Msgf("IsTLSRevoked: failed to check revocation status")
-	}
+	revoked, _ := revoke.VerifyCertificate(cert)
 	return revoked
 }
 
@@ -402,6 +401,27 @@ func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 		return options.HardFail
 	}
 	return IsTLSRevoked(options, xcert)
+}
+
+// IsUntrustedCA returns true if the certificate is a self-signed CA
+func IsUntrustedCA(certs []*x509.Certificate) bool {
+	for _, c := range certs {
+		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsZTLSUntrustedCA returns true if the certificate is a self-signed CA
+func IsZTLSUntrustedCA(certs []tls.SimpleCertificate) bool {
+	for _, cert := range certs {
+		parsedCert, _ := x509.ParseCertificate(cert.Raw)
+		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
+			return true
+		}
+	}
+	return false
 }
 
 // matchWildCardToken matches the wildcardName token and host token
@@ -480,7 +500,8 @@ func ParseASN1DNSequenceWithZpkix(data []byte) string {
 }
 
 func init() {
-	// asssign default values to cfssl
+	// assign default values to cfssl
 	log.Level = log.LevelError
-	revoke.HTTPClient = retryablehttp.DefaultPooledClient()
+	revoke.HTTPClient = retryablehttp.DefaultClient()
+	revoke.HTTPClient.Timeout = time.Duration(5) * time.Second
 }

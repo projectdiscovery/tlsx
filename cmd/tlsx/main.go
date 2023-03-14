@@ -96,6 +96,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),
 		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display host with mismatched certificate"),
 		flagSet.BoolVarP(&options.Revoked, "revoked", "re", false, "display host with revoked certificate"),
+		flagSet.BoolVarP(&options.Untrusted, "untrusted", "un", false, "display host with untrusted certificate"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -120,6 +121,11 @@ func readFlags() error {
 		flagSet.IntVar(&options.Timeout, "timeout", 5, "tls connection timeout in seconds"),
 		flagSet.IntVar(&options.Retries, "retry", 3, "number of retries to perform for failures"),
 		flagSet.StringVar(&options.Delay, "delay", "", "duration to wait between each connection per thread (eg: 200ms, 1s)"),
+	)
+
+	flagSet.CreateGroup("update", "Update",
+		flagSet.CallbackVarP(runner.GetUpdateCallback(), "update", "up", "update tlsx to latest version"),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic tlsx update check"),
 	)
 
 	flagSet.CreateGroup("output", "Output",

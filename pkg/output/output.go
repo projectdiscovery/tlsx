@@ -201,6 +201,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Red("revoked").String())
 		builder.WriteString("]")
 	}
+	if w.options.Untrusted && cert.Untrusted {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Yellow("untrusted").String())
+		builder.WriteString("]")
+	}
 	if w.options.WildcardCertCheck && cert.WildCardCert {
 		builder.WriteString(" [")
 		builder.WriteString(w.aurora.Yellow("wildcard").String())

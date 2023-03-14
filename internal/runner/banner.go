@@ -7,6 +7,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	errorutils "github.com/projectdiscovery/utils/errors"
 	fileutil "github.com/projectdiscovery/utils/file"
+	updateutils "github.com/projectdiscovery/utils/update"
 )
 
 var banner = fmt.Sprintf(`  
@@ -17,7 +18,7 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-var version = "v1.0.5"
+const version = "v1.0.5"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
@@ -60,4 +61,12 @@ func (r *Runner) validateOptions() error {
 func showBanner() {
 	gologger.Print().Msgf("%s\n", banner)
 	gologger.Print().Msgf("\t\tprojectdiscovery.io\n\n")
+}
+
+// GetUpdateCallback returns a callback function that updates tlsx
+func GetUpdateCallback() func() {
+	return func() {
+		showBanner()
+		updateutils.GetUpdateToolCallback("tlsx", version)()
+	}
 }

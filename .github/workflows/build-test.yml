@@ -30,7 +30,7 @@ jobs:
         working-directory: .
         
       - name: Race Condition Tests
-        run: go build -race .
+        run: go run -race . -u scanme.sh
         working-directory: cmd/tlsx/
       
       - name: Test Example Code
