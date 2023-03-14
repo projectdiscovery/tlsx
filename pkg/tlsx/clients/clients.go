@@ -408,7 +408,7 @@ func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 // IsUntrustedCA returns true if the certificate is a self-signed CA
 func IsUntrustedCA(certs []*x509.Certificate) bool {
 	for _, c := range certs {
-		if c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) {
+		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) {
 			return true
 		}
 	}
@@ -419,7 +419,7 @@ func IsUntrustedCA(certs []*x509.Certificate) bool {
 func IsZTLSUntrustedCA(certs []tls.SimpleCertificate) bool {
 	for _, cert := range certs {
 		parsedCert, _ := x509.ParseCertificate(cert.Raw)
-		if parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
+		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
 			return true
 		}
 	}
