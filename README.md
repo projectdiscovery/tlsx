@@ -91,6 +91,7 @@ PROBES:
    -ct, -cipher-type    ciphers types to enumerate (all/secure/insecure/weak) (default 0)
    -ch, -client-hello   include client hello in json output (ztls mode only)
    -sh, -server-hello   include server hello in json output (ztls mode only)
+   -se, -serial             display certificate serial number
 
 MISCONFIGURATIONS:
    -ex, -expired      display host with host expired certificate
@@ -122,7 +123,7 @@ OPTIMIZATIONS:
 
 OUTPUT:
    -o, -output string  file to write output to
-   -j, -json           display json format output
+   -j, -json           display output in jsonline format
    -ro, -resp-only     display tls response only
    -silent             display silent output
    -nc, -no-color      disable colors in cli output
