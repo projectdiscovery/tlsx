@@ -3,7 +3,7 @@ package clients
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
+	"encoding/hex"
 	"math/big"
 	"net"
 	"strings"
@@ -93,20 +93,12 @@ func GetConn(ctx context.Context, hostname, ip, port string, inputOpts *Options)
 // formatToSerialNumber converts big.Int to colon seperated hex string
 // Example: 17034156255497985825694118641198758684 -> 0C:D0:A8:BE:C6:32:CF:E6:45:EC:A0:A9:B0:84:FB:1C
 func FormatToSerialNumber(serialNumber *big.Int) string {
-	hexSerialNumber := fmt.Sprintf("%X", serialNumber)
-	if len(hexSerialNumber) < 32 {
-		hexSerialNumber = strings.Repeat("0", 32-len(hexSerialNumber)) + hexSerialNumber
+	b := serialNumber.Bytes()
+	buf := make([]byte, 0, 3*len(b))
+	x := buf[1*len(b) : 3*len(b)]
+	hex.Encode(x, b)
+	for i := 0; i < len(x); i += 2 {
+		buf = append(buf, x[i], x[i+1], ':')
 	}
-	return addCharAtInterval(hexSerialNumber, ':', 2)
-}
-
-func addCharAtInterval(s string, char rune, interval int) string {
-	var builder strings.Builder
-	for i, r := range s {
-		builder.WriteRune(r)
-		if (i+1)%interval == 0 && i < len(s)-1 {
-			builder.WriteRune(char)
-		}
-	}
-	return builder.String()
+	return strings.ToUpper(string(buf[:len(buf)-1]))
 }
