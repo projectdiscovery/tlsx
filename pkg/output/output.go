@@ -211,6 +211,11 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString(w.aurora.Yellow("wildcard").String())
 		builder.WriteString("]")
 	}
+	if w.options.Serial {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.BrightCyan(cert.Serial).String())
+		builder.WriteString("]")
+	}
 	if w.options.Hash != "" {
 		hashOpts := strings.Split(w.options.Hash, ",")
 

@@ -76,21 +76,22 @@ SCAN-MODE:
    -iv, -ip-version string[]  ip version to use (4, 6) (default 4)
 
 PROBES:
-   -san                     display subject alternative names
-   -cn                      display subject common names
-   -so                      display subject organization name
-   -tv, -tls-version        display used tls version
-   -cipher                  display used cipher
-   -hash string             display certificate fingerprint hashes (md5,sha1,sha256)
-   -jarm                    display jarm fingerprint hash
-   -ja3                     display ja3 fingerprint hash (using ztls)
-   -wc, -wildcard-cert      display host with wildcard ssl certificate
-   -tps, -probe-status      display tls probe status
-   -ve, -version-enum       enumerate and display supported tls versions
-   -ce, -cipher-enum        enumerate and display supported cipher
-   -ct, -cipher-type value  ciphers types to enumerate (all/secure/insecure/weak) (default all)
-   -ch, -client-hello       include client hello in json output (ztls mode only)
-   -sh, -server-hello       include server hello in json output (ztls mode only)
+   -san                 display subject alternative names
+   -cn                  display subject common names
+   -so                  display subject organization name
+   -tv, -tls-version    display used tls version
+   -cipher              display used cipher
+   -hash string         display certificate fingerprint hashes (md5,sha1,sha256)
+   -jarm                display jarm fingerprint hash
+   -ja3                 display ja3 fingerprint hash (using ztls)
+   -wc, -wildcard-cert  display host with wildcard ssl certificate
+   -tps, -probe-status  display tls probe status
+   -ve, -version-enum   enumerate and display supported tls versions
+   -ce, -cipher-enum    enumerate and display supported cipher
+   -ct, -cipher-type    ciphers types to enumerate (all/secure/insecure/weak) (default 0)
+   -ch, -client-hello   include client hello in json output (ztls mode only)
+   -sh, -server-hello   include server hello in json output (ztls mode only)
+   -se, -serial             display certificate serial number
 
 MISCONFIGURATIONS:
    -ex, -expired      display host with host expired certificate
@@ -127,7 +128,7 @@ UPDATE:
 
 OUTPUT:
    -o, -output string  file to write output to
-   -j, -json           display json format output
+   -j, -json           display output in jsonline format
    -ro, -resp-only     display tls response only
    -silent             display silent output
    -nc, -no-color      disable colors in cli output

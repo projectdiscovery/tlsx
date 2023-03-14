@@ -156,6 +156,8 @@ type Options struct {
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer
+	// Serail displays certiface serial number
+	Serial bool
 }
 
 // Response is the response returned for a TLS grab event
@@ -265,6 +267,8 @@ type CertificateResponse struct {
 	SubjectOrg []string `json:"subject_org,omitempty"`
 	// SubjectAN is a list of Subject Alternative Names for the certificate
 	SubjectAN []string `json:"subject_an,omitempty"`
+	//Serial is the certificate serial number
+	Serial string `json:"serial,omitempty"`
 	// IssuerDN is the distinguished name for cert
 	IssuerDN string `json:"issuer_dn,omitempty"`
 	// IssuerCN is the common name for cert
