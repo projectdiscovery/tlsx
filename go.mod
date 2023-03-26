@@ -12,13 +12,13 @@ require (
 	github.com/projectdiscovery/fastdialer v0.0.24
 	github.com/projectdiscovery/goflags v0.1.8
 	github.com/projectdiscovery/gologger v1.1.8
-	github.com/projectdiscovery/mapcidr v1.1.0
+	github.com/projectdiscovery/mapcidr v1.1.1
 	github.com/projectdiscovery/utils v0.0.17
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
 	go.uber.org/multierr v1.10.0
-	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 
 require (
@@ -158,11 +158,11 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
-	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/protobuf v1.29.0 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
