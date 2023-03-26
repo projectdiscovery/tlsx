@@ -1,8 +1,15 @@
-FROM golang:1.18.2-alpine3.14 AS build-env
+# Base
+FROM golang:1.20.1-alpine AS builder
 RUN apk add --no-cache build-base
-RUN go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
+WORKDIR /app
+COPY . /app
+RUN go mod download
+RUN go build ./cmd/tlsx
 
+# Release
 FROM alpine:3.17.2
-RUN apk add --no-cache bind-tools ca-certificates
-COPY --from=build-env /go/bin/tlsx /usr/local/bin/tlsx
+RUN apk -U upgrade --no-cache \
+    && apk add --no-cache bind-tools ca-certificates
+COPY --from=builder /app/tlsx /usr/local/bin/
+
 ENTRYPOINT ["tlsx"]
