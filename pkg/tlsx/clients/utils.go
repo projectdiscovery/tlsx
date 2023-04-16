@@ -93,7 +93,13 @@ func GetConn(ctx context.Context, hostname, ip, port string, inputOpts *Options)
 // FormatToSerialNumber converts big.Int to colon seperated hex string
 // Example: 17034156255497985825694118641198758684 -> 0C:D0:A8:BE:C6:32:CF:E6:45:EC:A0:A9:B0:84:FB:1C
 func FormatToSerialNumber(serialNumber *big.Int) string {
+	if serialNumber == nil || serialNumber.Cmp(big.NewInt(0)) == 0 {
+		return ""
+	}
 	b := serialNumber.Bytes()
+	if len(b) == 0 {
+		return ""
+	}
 	buf := make([]byte, 0, 3*len(b))
 	x := buf[1*len(b) : 3*len(b)]
 	hex.Encode(x, b)
