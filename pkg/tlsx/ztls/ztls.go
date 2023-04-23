@@ -18,9 +18,14 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/rs/xid"
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
 )
+
+func init() {
+	asn1.AllowPermissiveParsing = true
+}
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
