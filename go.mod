@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/mapcidr v1.1.1
 	github.com/projectdiscovery/utils v0.0.20
-	github.com/rs/xid v1.4.0
+	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.2
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
 	go.uber.org/multierr v1.11.0
