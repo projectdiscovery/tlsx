@@ -354,23 +354,26 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 			// try to match the wildcard name with host
 			nameTokens := strings.Split(alternativeName, ".")
 			if len(hostTokens) == len(nameTokens) {
+				matched := false
 				for i, token := range nameTokens {
 					if i == 0 {
 						// match leftmost token
-						matched := matchWildCardToken(token, hostTokens[i])
+						matched = matchWildCardToken(token, hostTokens[i])
 						if !matched {
-							continue
+							break
 						}
 					} else {
 						// match all other tokens
-						matched := stringsutil.EqualFoldAny(token, hostTokens[i])
+						matched = stringsutil.EqualFoldAny(token, hostTokens[i])
 						if !matched {
-							continue
+							break
 						}
 					}
 				}
 				// return false if all the name tokens matched the host tokens
-				return false
+				if matched {
+					return false
+				}
 			}
 		}
 	}
