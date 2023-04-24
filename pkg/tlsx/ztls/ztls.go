@@ -18,9 +18,14 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/rs/xid"
+	"github.com/zmap/zcrypto/encoding/asn1"
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
 )
+
+func init() {
+	asn1.AllowPermissiveParsing = true
+}
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
@@ -153,7 +158,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		CertificateResponse: ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
 		ServerName:          config.ServerName,
 	}
-	response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+	if response.CertificateResponse != nil {
+		response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+	}
 
 	if c.options.TLSChain {
 		for _, cert := range hl.ServerCertificates.Chain {

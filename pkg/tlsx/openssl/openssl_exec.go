@@ -93,17 +93,16 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 	response.Session, errParseSessionData = readSessionData(result.Stdout)
 
 	var allerrors errorutils.Error
-	switch {
-	case errParseCertificates != nil:
+	if errParseCertificates != nil {
 		allerrors = Wrap(allerrors, errorutils.NewWithErr(errParseCertificates).WithTag(PkgTag).Msgf("failed to parse server certificate from response"))
-		fallthrough
-	case errParseSessionData != nil:
+	}
+	if errParseSessionData != nil {
 		allerrors = Wrap(allerrors, errorutils.NewWithErr(errParseSessionData).WithTag(PkgTag).Msgf("failed to parse session data from response"))
-		fallthrough
-	case !opts.SkipCertParse && len(response.AllCerts) == 0:
+	}
+	if !opts.SkipCertParse && len(response.AllCerts) == 0 {
 		allerrors = Wrap(allerrors, errorutils.NewWithTag(PkgTag, "no server certificates found"))
-		fallthrough
-	case allerrors != nil:
+	}
+	if allerrors != nil {
 		// if any of above case is successful
 		// add openssl response
 		return nil, allerrors.Msgf("failed to parse openssl response. original response is:\n%v", *result).Msgf(commadFormat, result.Command)
