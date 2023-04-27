@@ -360,13 +360,13 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 						// match leftmost token
 						matched = matchWildCardToken(token, hostTokens[i])
 						if !matched {
-							return true
+							break
 						}
 					} else {
 						// match all other tokens
 						matched = stringsutil.EqualFoldAny(token, hostTokens[i])
 						if !matched {
-							return true
+							break
 						}
 					}
 				}
