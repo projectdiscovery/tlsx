@@ -28,7 +28,7 @@ func TestIsMisMatchedCert(t *testing.T) {
 		{args{host: "foobaz.example.net", names: []string{"*baz.example.net"}}, false},
 		{args{host: "buzz.example.net", names: []string{"b*z.example.net"}}, false},
 
-		// mutlilevel domains
+		// multilevel domains
 		{args{host: "xyz.subdomain.target.com", names: []string{"*.target.com"}}, true},
 		{args{host: "xyz.subdomain.target.com", names: []string{"*.subdomain.target.com"}}, false},
 
