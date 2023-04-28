@@ -145,6 +145,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	tlsVersion := versionToTLSVersionString[uint16(hl.ServerHello.Version)]
 	tlsCipher := hl.ServerHello.CipherSuite.String()
 
+	var certificateResponse *clients.CertificateResponse
+
+	if hl != nil && hl.ServerCertificates != nil {
+		certificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
+	}
+
 	now := time.Now()
 	response := &clients.Response{
 		Timestamp:           &now,
@@ -155,7 +161,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		TLSConnection:       "ztls",
-		CertificateResponse: ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate)),
+		CertificateResponse: certificateResponse,
 		ServerName:          config.ServerName,
 	}
 	if response.CertificateResponse != nil {
