@@ -142,30 +142,26 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	hl := tlsConn.GetHandshakeLog()
 
-	tlsVersion := versionToTLSVersionString[uint16(hl.ServerHello.Version)]
-	tlsCipher := hl.ServerHello.CipherSuite.String()
-
-	var certificateResponse *clients.CertificateResponse
-
-	if hl != nil && hl.ServerCertificates != nil {
-		certificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
-	}
-
 	now := time.Now()
 	response := &clients.Response{
-		Timestamp:           &now,
-		Host:                hostname,
-		IP:                  resolvedIP,
-		ProbeStatus:         true,
-		Port:                port,
-		Version:             tlsVersion,
-		Cipher:              tlsCipher,
-		TLSConnection:       "ztls",
-		CertificateResponse: certificateResponse,
-		ServerName:          config.ServerName,
+		Timestamp:     &now,
+		Host:          hostname,
+		IP:            resolvedIP,
+		ProbeStatus:   true,
+		Port:          port,
+		TLSConnection: "ztls",
+		ServerName:    config.ServerName,
 	}
-	if response.CertificateResponse != nil {
-		response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+	if hl != nil && hl.ServerCertificates != nil {
+		response.CertificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
+		if response.CertificateResponse != nil {
+			response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+		}
+	}
+	if hl.ServerHello != nil {
+		response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
+		response.Cipher = hl.ServerHello.CipherSuite.String()
+
 	}
 
 	if c.options.TLSChain {
