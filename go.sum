@@ -151,8 +151,8 @@ github.com/projectdiscovery/cdncheck v1.0.1 h1:kv1LRsHJl8TY5zMOhhcpGaBrBAdu01nmM
 github.com/projectdiscovery/cdncheck v1.0.1/go.mod h1:5l2DFwQNbR3uDYiyUpUQLN0I37+JnE8rSeBpd7WQR/Y=
 github.com/projectdiscovery/dnsx v1.1.4 h1:hdvIPU8W1rwNAi6sjjN1rCtCVOhS1/cM3OgmOLFvAm8=
 github.com/projectdiscovery/dnsx v1.1.4/go.mod h1:wYz+2E97h0j25FLiqpUJyVY6NW7cEDODyUAsIoXsDsA=
-github.com/projectdiscovery/fastdialer v0.0.25 h1:/j7M8sL35ZqpRYmz9hDjnWNBnN8Yj5iL0kab7qzp1nQ=
-github.com/projectdiscovery/fastdialer v0.0.25/go.mod h1:jQLHYaNsDc3MhpySVjKIo4o0GaUb07ISlDdkKURAxSo=
+github.com/projectdiscovery/fastdialer v0.0.26 h1:7dihwvnm76GU/cw0ViZvIlAB7dLHppifRYlVdJdMnRw=
+github.com/projectdiscovery/fastdialer v0.0.26/go.mod h1:kcWKnyh/H6iyZKlzQXSMZ4cDSZJpB4zdZV9W6PNty1k=
 github.com/projectdiscovery/goflags v0.1.8 h1:Urhm2Isq2BdRt8h4h062lHKYXO65RHRjGTDSkUwex/g=
 github.com/projectdiscovery/goflags v0.1.8/go.mod h1:Yxi9tclgwGczzDU65ntrwaIql5cXeTvW5j2WxFuF+Jk=
 github.com/projectdiscovery/gologger v1.1.10 h1:XNRdtzLTdxiFGuK9gutoL752mykzXDoii4P2yDovqck=
@@ -161,8 +161,8 @@ github.com/projectdiscovery/hmap v0.0.11 h1:nA3qCFzWPcOw27T8PII5IWI3ZP0ys7TGCi2n
 github.com/projectdiscovery/hmap v0.0.11/go.mod h1:5sbLn2OHexvpVupStNOhusWO9jLCyEm5jcHwWB2nOkI=
 github.com/projectdiscovery/mapcidr v1.1.1 h1:68Xvw9cKugNeAVxHE3Nl1Ej26nm1taWq6e1WPXpluc0=
 github.com/projectdiscovery/mapcidr v1.1.1/go.mod h1:yyp9ghqmmC0+r5DySgDBXE4cf2QW8SBloVESCteWiAg=
-github.com/projectdiscovery/networkpolicy v0.0.5 h1:yiW1+nqtZmVB4RRt20Rhxs0tAO7ghPy+OY5kv3iaAG8=
-github.com/projectdiscovery/networkpolicy v0.0.5/go.mod h1:egI9+HL+Q80AzXs1PrOfARWZm1bAn6n3HMONM49uWS8=
+github.com/projectdiscovery/networkpolicy v0.0.6 h1:yDvm0XCrS9HeemRrBS+J+22surzVczM94W5nHiOy/1o=
+github.com/projectdiscovery/networkpolicy v0.0.6/go.mod h1:8HJQ/33Pi7v3a3MRWIQGXzpj+zHw2d60TysEL4qdoQk=
 github.com/projectdiscovery/retryabledns v1.0.23 h1:8X6HECevl6n7K7kxqfHLTcsCVXDdz9HR+1hS6fto7sw=
 github.com/projectdiscovery/retryabledns v1.0.23/go.mod h1:tj8BEe0jWCB4m3aAhHq4S2dqfpod0h+BiCZmXkXAGac=
 github.com/projectdiscovery/retryablehttp-go v1.0.16 h1:xrEK9VVkLf0eN4bYOTc2Pg0qRqz47g8T823vqpCIsl8=
