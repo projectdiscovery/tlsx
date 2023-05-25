@@ -134,7 +134,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-
+	// set read deadline
+	tlsConn.SetReadDeadline(time.Now().Add(time.Duration(c.options.Timeout) * time.Second))
 	if err := c.tlsHandshakeWithTimeout(tlsConn, ctx); err != nil {
 		return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
 	}
