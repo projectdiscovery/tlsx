@@ -134,10 +134,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	// set read deadline
-	if err := tlsConn.SetReadDeadline(time.Now().Add(time.Duration(c.options.Timeout) * time.Second)); err != nil {
-		return nil, errorutil.NewWithTag("ztls", "could not set read deadline").Wrap(err)
-	}
 	if err := c.tlsHandshakeWithTimeout(tlsConn, ctx); err != nil {
 		return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
 	}
@@ -272,6 +268,10 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+	// set read deadline
+	if err := tlsConn.SetReadDeadline(time.Now().Add(time.Duration(c.options.Timeout) * time.Second)); err != nil {
+		return errorutil.NewWithTag("ztls", "could not set read deadline").Wrap(err)
+	}
 	errChan := make(chan error, 1)
 	defer close(errChan)
 
