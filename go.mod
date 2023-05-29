@@ -9,11 +9,11 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.54
 	github.com/projectdiscovery/dnsx v1.1.4
-	github.com/projectdiscovery/fastdialer v0.0.26
+	github.com/projectdiscovery/fastdialer v0.0.27
 	github.com/projectdiscovery/goflags v0.1.8
 	github.com/projectdiscovery/gologger v1.1.10
 	github.com/projectdiscovery/mapcidr v1.1.1
-	github.com/projectdiscovery/utils v0.0.26
+	github.com/projectdiscovery/utils v0.0.32
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.3
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
@@ -55,7 +55,7 @@ require (
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/yuin/goldmark v1.5.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
-	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/oauth2 v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 )
 
@@ -85,7 +85,7 @@ require (
 	github.com/projectdiscovery/cdncheck v1.0.1 // indirect
 	github.com/projectdiscovery/hmap v0.0.11 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.23 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.26 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.16
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
@@ -98,8 +98,8 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/tools v0.8.0 // indirect
 	google.golang.org/protobuf v1.29.1 // indirect
