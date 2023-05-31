@@ -273,17 +273,23 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 		return errorutil.NewWithTag("ztls", "could not set read deadline").Wrap(err)
 	}
 	errChan := make(chan error, 1)
-	defer close(errChan)
+	done := make(chan struct{})
+	defer close(done)
+
+	go func() {
+		select {
+		case errChan <- tlsConn.Handshake():
+		case <-done:
+		}
+	}()
 
 	select {
 	case <-ctx.Done():
-		errChan <- errorutil.NewWithTag("ztls", "timeout while attempting handshake")
-	case errChan <- tlsConn.Handshake():
+		return errorutil.NewWithTag("ztls", "timeout while attempting handshake")
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			err = nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }
