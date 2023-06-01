@@ -12,7 +12,7 @@ require (
 	github.com/projectdiscovery/fastdialer v0.0.27
 	github.com/projectdiscovery/goflags v0.1.8
 	github.com/projectdiscovery/gologger v1.1.10
-	github.com/projectdiscovery/mapcidr v1.1.1
+	github.com/projectdiscovery/mapcidr v1.1.2
 	github.com/projectdiscovery/utils v0.0.32
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.3
@@ -43,14 +43,14 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/projectdiscovery/asnmap v1.0.3 // indirect
+	github.com/projectdiscovery/asnmap v1.0.4 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	github.com/tidwall/btree v1.4.3 // indirect
+	github.com/tidwall/btree v1.6.0 // indirect
 	github.com/tidwall/buntdb v1.2.10 // indirect
-	github.com/tidwall/gjson v1.14.3 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/yuin/goldmark v1.5.4 // indirect
