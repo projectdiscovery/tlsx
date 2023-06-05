@@ -9,7 +9,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.54
 	github.com/projectdiscovery/dnsx v1.1.4
-	github.com/projectdiscovery/fastdialer v0.0.27
+	github.com/projectdiscovery/fastdialer v0.0.28
 	github.com/projectdiscovery/goflags v0.1.8
 	github.com/projectdiscovery/gologger v1.1.10
 	github.com/projectdiscovery/mapcidr v1.1.2
@@ -46,7 +46,7 @@ require (
 	github.com/projectdiscovery/asnmap v1.0.4 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/tidwall/btree v1.6.0 // indirect
-	github.com/tidwall/buntdb v1.2.10 // indirect
+	github.com/tidwall/buntdb v1.3.0 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.0.1 // indirect
-	github.com/projectdiscovery/hmap v0.0.11 // indirect
+	github.com/projectdiscovery/hmap v0.0.12 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.26 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.17
