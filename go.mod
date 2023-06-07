@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/mapcidr v1.1.2
 	github.com/projectdiscovery/utils v0.0.36
 	github.com/rs/xid v1.5.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb
