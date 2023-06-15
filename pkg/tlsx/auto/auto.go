@@ -49,7 +49,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		return nil, errorutils.New("no tls client available available for auto mode")
 	}
 	var errStack error
-	for retrycounter < c.options.Retries {
+	for retrycounter < maxretires {
 		if c.tlsClient != nil {
 			if response, err = c.tlsClient.ConnectWithOptions(hostname, ip, port, options); err == nil {
 				response.TLSConnection = "ctls"
