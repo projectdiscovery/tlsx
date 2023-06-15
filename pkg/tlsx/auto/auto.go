@@ -39,10 +39,11 @@ func New(options *clients.Options) (*Client, error) {
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	var response *clients.Response
 	var err, ztlsErr, opensslErr error
-	retrycounter := 0
-	if c.options.Retries < 3 {
-		c.options.Retries = 3
+	maxretires := c.options.Retries
+	if maxretires < 3 {
+		maxretires = 3
 	}
+	retrycounter := 0
 	if c.tlsClient == nil && c.ztlsClient == nil && c.opensslClient == nil {
 		// logic to avoid infinite loop
 		return nil, errorutils.New("no tls client available available for auto mode")
