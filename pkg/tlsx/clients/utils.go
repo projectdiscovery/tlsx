@@ -92,8 +92,8 @@ func GetConn(ctx context.Context, hostname, ip, port string, inputOpts *Options)
 		inputOpts.Timeout = 5
 	}
 	// will set both read and write deadline
-	rawConn.SetDeadline(time.Now().Add(time.Duration(inputOpts.Timeout) * time.Second))
-	return rawConn, nil
+	err = rawConn.SetDeadline(time.Now().Add(time.Duration(inputOpts.Timeout) * time.Second))
+	return rawConn, err
 }
 
 // FormatToSerialNumber converts big.Int to colon seperated hex string
