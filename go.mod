@@ -8,7 +8,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.54
-	github.com/projectdiscovery/dnsx v1.1.1-0.20230607215837-f36efcc87ced
+	github.com/projectdiscovery/dnsx v1.1.4
 	github.com/projectdiscovery/fastdialer v0.0.28
 	github.com/projectdiscovery/goflags v0.1.9
 	github.com/projectdiscovery/gologger v1.1.10
