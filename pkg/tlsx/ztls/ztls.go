@@ -268,28 +268,18 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
-	// set read deadline
-	if err := tlsConn.SetReadDeadline(time.Now().Add(time.Duration(c.options.Timeout) * time.Second)); err != nil {
-		return errorutil.NewWithTag("ztls", "could not set read deadline").Wrap(err)
-	}
 	errChan := make(chan error, 1)
-	done := make(chan struct{})
-	defer close(done)
-
-	go func() {
-		select {
-		case errChan <- tlsConn.Handshake():
-		case <-done:
-		}
-	}()
+	defer close(errChan)
 
 	select {
 	case <-ctx.Done():
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake")
-	case err := <-errChan:
-		if err == tls.ErrCertsOnly {
-			err = nil
-		}
-		return err
+	case errChan <- tlsConn.Handshake():
 	}
+
+	err := <-errChan
+	if err == tls.ErrCertsOnly {
+		err = nil
+	}
+	return err
 }

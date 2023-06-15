@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"net"
 	"strings"
+	"time"
 
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
@@ -87,6 +88,11 @@ func GetConn(ctx context.Context, hostname, ip, port string, inputOpts *Options)
 	if rawConn == nil {
 		return nil, errorutil.New("could not connect to %s", address)
 	}
+	if inputOpts.Timeout == 0 {
+		inputOpts.Timeout = 5
+	}
+	// will set both read and write deadline
+	rawConn.SetDeadline(time.Now().Add(time.Duration(inputOpts.Timeout) * time.Second))
 	return rawConn, nil
 }
 
