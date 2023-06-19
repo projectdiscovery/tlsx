@@ -26,12 +26,6 @@ builds:
   binary: '{{ .ProjectName }}'
   main: cmd/tlsx/main.go
 
-# release options (https://goreleaser.com/customization/release/)
-
-release:
-  draft: true
-  prerelease: auto
-
 archives:
 - format: zip
   replacements:

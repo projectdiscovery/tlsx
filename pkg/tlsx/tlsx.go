@@ -70,10 +70,18 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		return nil, errorutil.NewWithTag("tlsx", "tlsx requires valid address got port=%v,hostname=%v,ip=%v", port, host, ip)
 	}
 
-	for i := 0; i < s.options.Retries; i++ {
+	if s.options.ScanMode != "auto" && s.options.ScanMode != "" {
+		// auto mode uses different modes as fallback
+		// hence that can be considered as retry
+		for i := 0; i < s.options.Retries; i++ {
+			if resp, err = s.client.ConnectWithOptions(host, ip, port, options); resp != nil {
+				err = nil
+				break
+			}
+		}
+	} else {
 		if resp, err = s.client.ConnectWithOptions(host, ip, port, options); resp != nil {
 			err = nil
-			break
 		}
 	}
 	if resp == nil && err == nil {

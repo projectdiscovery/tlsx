@@ -134,7 +134,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-
 	if err := c.tlsHandshakeWithTimeout(tlsConn, ctx); err != nil {
 		return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
 	}
@@ -274,7 +273,7 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 
 	select {
 	case <-ctx.Done():
-		errChan <- errorutil.NewWithTag("ztls", "timeout while attempting handshake")
+		return errorutil.NewWithTag("ztls", "timeout while attempting handshake")
 	case errChan <- tlsConn.Handshake():
 	}
 
