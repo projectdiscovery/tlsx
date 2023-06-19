@@ -39,24 +39,24 @@ func New(options *clients.Options) (*Client, error) {
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	var response *clients.Response
 	var err, ztlsErr, opensslErr error
-	maxretires := c.options.Retries
-	if maxretires < 3 {
-		maxretires = 3
+	maxRetries := c.options.Retries
+	if maxRetries < 3 {
+		maxRetries = 3
 	}
-	retrycounter := 0
+	retryCounter := 0
 	if c.tlsClient == nil && c.ztlsClient == nil && c.opensslClient == nil {
 		// logic to avoid infinite loop
 		return nil, errorutils.New("no tls client available available for auto mode")
 	}
 	var errStack error
-	for retrycounter < maxretires {
+	for retryCounter < maxRetries {
 		if c.tlsClient != nil {
 			if response, err = c.tlsClient.ConnectWithOptions(hostname, ip, port, options); err == nil {
 				response.TLSConnection = "ctls"
 				stats.IncrementCryptoTLSConnections()
 				return response, nil
 			}
-			retrycounter = retrycounter + 1
+			retryCounter++
 		}
 		if c.ztlsClient != nil {
 			if response, ztlsErr = c.ztlsClient.ConnectWithOptions(hostname, ip, port, options); ztlsErr == nil {
@@ -64,7 +64,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 				stats.IncrementZcryptoTLSConnections()
 				return response, nil
 			}
-			retrycounter = retrycounter + 1
+			retryCounter++
 		}
 		if c.opensslClient != nil {
 			if response, opensslErr = c.opensslClient.ConnectWithOptions(hostname, ip, port, options); opensslErr == nil {
@@ -75,7 +75,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			if errorutils.IsAny(opensslErr, openssl.ErrNotAvailable) {
 				opensslErr = nil
 			}
-			retrycounter = retrycounter + 1
+			retryCounter++
 		}
 		errStack = multierr.Combine(errStack, err, ztlsErr, opensslErr)
 	}
