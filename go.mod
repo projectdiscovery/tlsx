@@ -7,7 +7,7 @@ require (
 	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.54
+	github.com/miekg/dns v1.1.55
 	github.com/projectdiscovery/dnsx v1.1.4
 	github.com/projectdiscovery/fastdialer v0.0.29
 	github.com/projectdiscovery/goflags v0.1.10
