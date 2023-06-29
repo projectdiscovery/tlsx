@@ -1,17 +1,123 @@
 package clients
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/hex"
+	"encoding/pem"
+	"fmt"
+	"io"
 	"math/big"
 	"net"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/projectdiscovery/gologger"
 	errorutil "github.com/projectdiscovery/utils/errors"
+	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
 )
+
+var rootCerts []*x509.Certificate
+
+func init() {
+	var rootCertFile, deafultRootCertFile string
+	deafultRootCertFile = "root-certs.pem"
+	rootCertFile = os.Getenv("SSL_CERT_FILE")
+	if rootCertFile != "" {
+		if !fileutil.FileExists(rootCertFile) {
+			gologger.Warning().Msgf("file %s does not exist", rootCertFile)
+			return
+		}
+		data, err := os.ReadFile(rootCertFile)
+		if err != nil {
+			gologger.Warning().Label("SSL_CERT_FILE").Msg(err.Error())
+			return
+		}
+		if rootCerts, err = parseCertificates(data); err != nil {
+			gologger.Warning().Msg(err.Error())
+		}
+		return
+	}
+
+	if !fileutil.FileExists(deafultRootCertFile) {
+		if _, err := os.Create(deafultRootCertFile); err != nil {
+			gologger.Warning().Label("Root Cert").Msg(err.Error())
+		}
+	}
+	oldCerts, err := os.ReadFile(deafultRootCertFile)
+	if err != nil {
+		gologger.Warning().Msg("could not read default root cert file")
+		return
+	}
+	newCerts, err := fetchRootCerts()
+	if err != nil {
+		gologger.Warning().Msg(err.Error())
+		if len(oldCerts) == 0 {
+			return
+		}
+		newCerts = oldCerts
+	}
+	// check root certifcates are changed at https://curl.se/docs/caextract.html
+	if len(newCerts) != len(oldCerts) {
+		if err := os.WriteFile(deafultRootCertFile, newCerts, 0644); err != nil {
+			gologger.Warning().Msg(err.Error())
+			return
+		}
+	}
+	if rootCerts, err = parseCertificates(newCerts); err != nil {
+		gologger.Warning().Msg(err.Error())
+	}
+}
+
+func fetchRootCerts() ([]byte, error) {
+	// references:
+	// - https://ccadb.my.salesforce-sites.com/mozilla/CACertificatesInFirefoxReport
+	// - https://curl.se/docs/caextract.html
+	resp, err := http.Get("https://curl.se/ca/cacert.pem")
+	if err != nil {
+		return nil, errorutil.New("could not fetch root certs").Wrap(err)
+	}
+	defer resp.Body.Close()
+	certs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read root certs: %v", err)
+	}
+	return certs, nil
+}
+
+func parseCertificates(data []byte) ([]*x509.Certificate, error) {
+	var parsedCerts []*x509.Certificate
+	var err error
+	block, rest := pem.Decode(data)
+	for block != nil {
+		if block.Type == "CERTIFICATE" {
+			cert, errx := x509.ParseCertificate(block.Bytes)
+			if errx != nil {
+				err = errorutil.New("could not parse certificate").Wrap(errx)
+				continue
+			}
+			parsedCerts = append(parsedCerts, cert)
+		}
+		if len(rest) == 0 {
+			break
+		}
+		block, rest = pem.Decode(rest)
+	}
+	return parsedCerts, err
+}
+
+func IsRootCert(cert *x509.Certificate) bool {
+	for _, c := range rootCerts {
+		if bytes.Equal(c.Raw, cert.Raw) {
+			return true
+		}
+	}
+	return false
+}
 
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
 	response := &CertificateResponse{
