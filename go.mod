@@ -7,13 +7,13 @@ require (
 	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.54
+	github.com/miekg/dns v1.1.55
 	github.com/projectdiscovery/dnsx v1.1.4
-	github.com/projectdiscovery/fastdialer v0.0.29
-	github.com/projectdiscovery/goflags v0.1.10
+	github.com/projectdiscovery/fastdialer v0.0.32
+	github.com/projectdiscovery/goflags v0.1.11
 	github.com/projectdiscovery/gologger v1.1.10
 	github.com/projectdiscovery/mapcidr v1.1.2
-	github.com/projectdiscovery/utils v0.0.38
+	github.com/projectdiscovery/utils v0.0.40
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
 	github.com/zmap/zcrypto v0.0.0-20230113044912-682e75113af0
@@ -89,8 +89,8 @@ require (
 	github.com/projectdiscovery/cdncheck v1.0.6 // indirect
 	github.com/projectdiscovery/hmap v0.0.13 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.29 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.17
+	github.com/projectdiscovery/retryabledns v1.0.30 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.18
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
