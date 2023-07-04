@@ -1,4 +1,4 @@
-name: Root Certificates Update
+name: 📝 RootCA Update
 
 on:
   workflow_dispatch:
@@ -6,42 +6,45 @@ on:
     - cron: '0 0 * * 0'
 
 jobs:
-  build:
+  rootca:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-
-      - name: Setup golang
+      - uses: actions/checkout@master
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.19
 
-      - name: Installing Update binary
+      - name: install update-rootcerts
         run: |
           go install github.com/projectdiscovery/tlsx/cmd/update-rootcerts
-        shell: bash
 
-      - name: Downloading latest root certificate changes
+      - name: update root certificate changes
+        id: cert
         run: |
           update-rootcerts -out-root-certs ./assets/root-certs.pem
-        shell: bash
         working-directory: .
 
-      - name: Create local changes
+      - name: create local changes
         run: |
           git add ./assets/root-certs.pem
 
+      - name: check for local changes
+        id: change
+        run: |
+          git diff --quiet && echo "No changes to commit" || echo "CHANGED=true" >> $GITHUB_ENV
+
       - name: Commit files
+        if: steps.change.outputs.CHANGED = 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -m "Weekly root certifacte update [$(date)] :robot:" -a --allow-empty
 
       - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+        if: steps.change.outputs.CHANGED = 'true'
+        run: |
+          git pull --rebase
+          git push origin ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
