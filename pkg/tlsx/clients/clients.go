@@ -16,7 +16,6 @@ import (
 	"github.com/cloudflare/cfssl/revoke"
 	"github.com/logrusorgru/aurora"
 	zasn1 "github.com/zmap/zcrypto/encoding/asn1"
-	"github.com/zmap/zcrypto/tls"
 	zpkix "github.com/zmap/zcrypto/x509/pkix"
 
 	zx509 "github.com/zmap/zcrypto/x509"
@@ -25,6 +24,7 @@ import (
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/retryablehttp-go"
+	"github.com/projectdiscovery/tlsx/assets"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	ztls "github.com/zmap/zcrypto/tls"
 )
@@ -406,7 +406,7 @@ func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 // IsUntrustedCA returns true if the certificate is a self-signed CA
 func IsUntrustedCA(certs []*x509.Certificate) bool {
 	for _, c := range certs {
-		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) {
+		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) && !assets.IsRootCert(c) {
 			return true
 		}
 	}
@@ -414,10 +414,10 @@ func IsUntrustedCA(certs []*x509.Certificate) bool {
 }
 
 // IsZTLSUntrustedCA returns true if the certificate is a self-signed CA
-func IsZTLSUntrustedCA(certs []tls.SimpleCertificate) bool {
+func IsZTLSUntrustedCA(certs []ztls.SimpleCertificate) bool {
 	for _, cert := range certs {
 		parsedCert, _ := x509.ParseCertificate(cert.Raw)
-		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) {
+		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) && !assets.IsRootCert(parsedCert) {
 			return true
 		}
 	}
