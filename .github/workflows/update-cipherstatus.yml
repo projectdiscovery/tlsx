@@ -1,4 +1,4 @@
-name: 📝 RootCA Update
+name: 📝 CipherStatus Update
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     - cron: '0 0 * * 0'
 
 jobs:
-  rootca:
+  cipherstatus:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -18,18 +18,18 @@ jobs:
         with:
           go-version: 1.19
 
-      - name: install update-rootcerts
+      - name: install update-cipherstatus
         run: |
-          go install github.com/projectdiscovery/tlsx/cmd/update-rootcerts
+          go install github.com/projectdiscovery/tlsx/cmd/update-cipherstatus
 
-      - name: update root certificate changes
+      - name: update cipherstatus changes
         run: |
-          update-rootcerts -out-root-certs ./assets/root-certs.pem
+          update-cipherstatus -out-ciphers ./assets/cipherstatus_data.json
         working-directory: .
 
       - name: create local changes
         run: |
-          git add ./assets/root-certs.pem
+          git add ./assets/cipherstatus_data.json
 
       - name: check for local changes
         id: change
@@ -41,7 +41,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -m "Weekly root certifacte update [$(date)] :robot:" -a --allow-empty
+          git commit -m "Weekly cipherstatus update [$(date)] :robot:" -a --allow-empty
 
       - name: Push changes
         if: steps.change.outputs.CHANGES > 0
