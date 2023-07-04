@@ -26,12 +26,13 @@ jobs:
 
       - name: Downloading latest root certificate changes
         run: |
-          update-rootcerts
+          update-rootcerts -out-root-certs ./assets/root-certs.pem
         shell: bash
+        working-directory: .
 
       - name: Create local changes
         run: |
-          git add ../assets/root-certs.pem
+          git add ./assets/root-certs.pem
 
       - name: Commit files
         run: |
