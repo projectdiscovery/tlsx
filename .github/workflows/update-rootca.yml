@@ -35,14 +35,14 @@ jobs:
           git diff --quiet && echo "No changes to commit" || echo "CHANGED=true" >> $GITHUB_ENV
 
       - name: Commit files
-        if: steps.change.outputs.CHANGED = 'true'
+        if: steps.change.outputs.CHANGED == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -m "Weekly root certifacte update [$(date)] :robot:" -a --allow-empty
 
       - name: Push changes
-        if: steps.change.outputs.CHANGED = 'true'
+        if: steps.change.outputs.CHANGED == 'true'
         run: |
           git pull --rebase
           git push origin ${{ github.ref }}
