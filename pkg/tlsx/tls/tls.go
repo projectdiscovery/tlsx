@@ -164,7 +164,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
 	// filter ciphers based on given seclevel
-	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel)
+	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel...)
 
 	if options.VersionTLS == "tls13" {
 		return nil, errorutil.NewWithTag("ctls", "cipher enum not supported in ctls with tls1.3")

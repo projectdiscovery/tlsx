@@ -144,7 +144,7 @@ type Options struct {
 	// TlsCiphersEnum enumerates supported ciphers per TLS protocol
 	TlsCiphersEnum bool
 	// TLSCipherSecLevel
-	TLsCipherLevel string
+	TLsCipherLevel []string
 	// ClientHello include client hello (only ztls)
 	ClientHello bool
 	// ServerHello include server hello (only ztls)
@@ -471,8 +471,8 @@ type ConnectOptions struct {
 	SNI         string
 	VersionTLS  string
 	Ciphers     []string
-	CipherLevel CipherSecLevel // Only used in cipher enum mode
-	EnumMode    EnumMode       // Enumeration Mode (version or ciphers)
+	CipherLevel []CipherSecLevel // Only used in cipher enum mode
+	EnumMode    EnumMode         // Enumeration Mode (version or ciphers)
 }
 
 // ParseASN1DNSequenceWithZpkixOrDefault return the parsed value of ASN1DNSequence or a default string value
