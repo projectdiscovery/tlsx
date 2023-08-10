@@ -18,7 +18,7 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-const version = "v1.1.1"
+const version = "v1.1.2"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
