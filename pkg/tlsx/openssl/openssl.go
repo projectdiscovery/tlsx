@@ -104,7 +104,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 // EnumerateCiphers enumerates all supported ciphers of openssl on target
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
 	// filter ciphers based on given seclevel
-	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel)
+	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel...)
 
 	enumeratedCiphers := []string{}
 

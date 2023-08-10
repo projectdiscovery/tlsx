@@ -15,3 +15,5 @@
 # vendor/
 cmd/tlsx/tlsx
 dist/*
+
+.devcontainer
