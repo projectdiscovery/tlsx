@@ -80,7 +80,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ProbeStatus, "probe-status", "tps", false, "display tls probe status"),
 		flagSet.BoolVarP(&options.TlsVersionsEnum, "version-enum", "ve", false, "enumerate and display supported tls versions"),
 		flagSet.BoolVarP(&options.TlsCiphersEnum, "cipher-enum", "ce", false, "enumerate and display supported cipher"),
-		flagSet.EnumVarP(&options.TLsCipherLevel, "cipher-type", "ct", goflags.EnumVariable(0), "ciphers types to enumerate (all/secure/insecure/weak)", goflags.AllowdTypes{
+		flagSet.EnumSliceVarP(&options.TLsCipherLevel, "cipher-type", "ct", []goflags.EnumVariable{goflags.EnumVariable(0)}, "ciphers types to enumerate. possible values: all/secure/insecure/weak (comma-separated)", goflags.AllowdTypes{
 			"all":      goflags.EnumVariable(clients.All),
 			"weak":     goflags.EnumVariable(clients.Weak),
 			"insecure": goflags.EnumVariable(clients.Insecure),
