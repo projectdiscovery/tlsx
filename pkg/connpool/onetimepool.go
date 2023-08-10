@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/gologger"
 )
 
 // OneTimePool is a pool designed to create continous bare connections that are for one time only usage
@@ -48,11 +49,14 @@ func (p *OneTimePool) Acquire(c context.Context) (net.Conn, error) {
 	}
 }
 
-func (p *OneTimePool) Run() error {
+func (p *OneTimePool) Run() {
 	for {
 		select {
 		case <-p.ctx.Done():
-			return p.ctx.Err()
+			if p.ctx.Err() != nil {
+				gologger.Verbose().Msgf("OneTimePool: %v", p.ctx.Err())
+			}
+			return
 		default:
 			var (
 				conn net.Conn
