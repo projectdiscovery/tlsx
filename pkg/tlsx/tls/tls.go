@@ -198,7 +198,11 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup connection pool")
 	}
 	pool.Dialer = c.dialer
-	go pool.Run()
+	go func() {
+		if err := pool.Run(); err != nil {
+			gologger.Error().Msgf("tlsx: ctls: failed to run connection pool: %v", err)
+		}
+	}()
 	defer pool.Close()
 
 	for _, v := range toEnumerate {

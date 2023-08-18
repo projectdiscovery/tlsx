@@ -9,6 +9,7 @@ import (
 
 	gojarm "github.com/hdm/jarm-go"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/utils/conn/connpool"
 )
 
@@ -31,7 +32,11 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	pool.Dialer = dialer
 
 	defer pool.Close() //nolint
-	go pool.Run()      //nolint
+	go func() {
+		if err := pool.Run(); err != nil {
+			gologger.Error().Msgf("tlsx: jarm: failed to run connection pool: %v", err)
+		}
+	}() //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
 		conn, err := pool.Acquire(ctx)
