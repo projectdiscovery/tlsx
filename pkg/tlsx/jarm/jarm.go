@@ -9,7 +9,7 @@ import (
 
 	gojarm "github.com/hdm/jarm-go"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/tlsx/pkg/connpool"
+	"github.com/projectdiscovery/utils/conn/connpool"
 )
 
 const poolCount = 3
@@ -28,7 +28,7 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	if err != nil {
 		return "", err
 	}
-	pool.FastDialer = dialer
+	pool.Dialer = dialer
 
 	defer pool.Close() //nolint
 	go pool.Run()      //nolint

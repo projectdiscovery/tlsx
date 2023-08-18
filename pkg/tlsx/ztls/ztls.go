@@ -11,10 +11,10 @@ import (
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/tlsx/pkg/connpool"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls/ja3"
+	"github.com/projectdiscovery/utils/conn/connpool"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
@@ -206,7 +206,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	if err != nil {
 		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup connection pool")
 	}
-	pool.FastDialer = c.dialer
+	pool.Dialer = c.dialer
 	go pool.Run()
 	defer pool.Close()
 
