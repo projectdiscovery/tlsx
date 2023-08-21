@@ -21,11 +21,9 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 
 	timeout := time.Duration(duration) * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), (time.Duration(duration*poolCount) * time.Second))
-	defer cancel()
 
 	// using connection pool as we need multiple probes
-	pool, err := connpool.NewOneTimePool(ctx, addr, poolCount)
+	pool, err := connpool.NewOneTimePool(context.Background(), addr, poolCount)
 	if err != nil {
 		return "", err
 	}
@@ -39,7 +37,7 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	}() //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
-		conn, err := pool.Acquire(ctx)
+		conn, err := pool.Acquire(context.TODO())
 		if err != nil {
 			continue
 		}
