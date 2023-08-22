@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"net"
 	"os"
 	"time"
@@ -199,7 +200,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}
 	pool.Dialer = c.dialer
 	go func() {
-		if err := pool.Run(); err != nil {
+		if err := pool.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			gologger.Error().Msgf("tlsx: ctls: failed to run connection pool: %v", err)
 		}
 	}()
