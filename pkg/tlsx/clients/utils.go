@@ -14,6 +14,8 @@ import (
 )
 
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
+	domainNames := []string{cert.Subject.CommonName}
+	domainNames = append(domainNames, cert.DNSNames...)
 	response := &CertificateResponse{
 		SubjectAN:    cert.DNSNames,
 		Emails:       cert.EmailAddresses,
@@ -21,9 +23,9 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 		NotAfter:     cert.NotAfter,
 		Expired:      IsExpired(cert.NotAfter),
 		SelfSigned:   IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
-		MisMatched:   IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		MisMatched:   IsMisMatchedCert(hostname, domainNames),
 		Revoked:      IsTLSRevoked(options, cert),
-		WildCardCert: IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
+		WildCardCert: IsWildCardCert(domainNames),
 		IssuerCN:     cert.Issuer.CommonName,
 		IssuerOrg:    cert.Issuer.Organization,
 		SubjectCN:    cert.Subject.CommonName,
