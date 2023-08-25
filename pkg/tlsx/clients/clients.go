@@ -153,6 +153,8 @@ type Options struct {
 	HealthCheck bool
 	// DisableUpdateCheck disables checking update
 	DisableUpdateCheck bool
+	// CipherConcurrency
+	CipherConcurrency int
 
 	// Fastdialer is a fastdialer dialer instance
 	Fastdialer *fastdialer.Dialer

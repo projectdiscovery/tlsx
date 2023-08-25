@@ -2,6 +2,9 @@ name: 🔨 Build Test
 
 on:
   pull_request:
+    paths:
+      - '**.go'
+      - '**.mod'
   workflow_dispatch:
 
 jobs:
@@ -11,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-12]
-        go-version: [1.19.x, 1.20.x]
+        go-version: [1.20.x]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v4

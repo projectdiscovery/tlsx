@@ -9,7 +9,8 @@ import (
 
 	gojarm "github.com/hdm/jarm-go"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/tlsx/pkg/connpool"
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/utils/conn/connpool"
 )
 
 const poolCount = 3
@@ -20,21 +21,23 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 
 	timeout := time.Duration(duration) * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), (time.Duration(duration*poolCount) * time.Second))
-	defer cancel()
 
 	// using connection pool as we need multiple probes
-	pool, err := connpool.NewOneTimePool(ctx, addr, poolCount)
+	pool, err := connpool.NewOneTimePool(context.Background(), addr, poolCount)
 	if err != nil {
 		return "", err
 	}
-	pool.FastDialer = dialer
+	pool.Dialer = dialer
 
 	defer pool.Close() //nolint
-	go pool.Run()      //nolint
+	go func() {
+		if err := pool.Run(); err != nil {
+			gologger.Error().Msgf("tlsx: jarm: failed to run connection pool: %v", err)
+		}
+	}() //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
-		conn, err := pool.Acquire(ctx)
+		conn, err := pool.Acquire(context.TODO())
 		if err != nil {
 			continue
 		}
