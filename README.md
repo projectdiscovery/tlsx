@@ -118,6 +118,7 @@ CONFIGURATIONS:
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
+   -cec, -cipher-concurrency int  cipher enum concurrency for each target (default 10)
    -timeout int          tls connection timeout in seconds (default 5)
    -retry int            number of retries to perform for failures (default 3)
    -delay string         duration to wait between each connection per thread (eg: 200ms, 1s)
