@@ -17,6 +17,8 @@ updates:
       include: "scope"
     labels:
       - "Type: Maintenance"
+    allow:
+      - dependency-name: "github.com/projectdiscovery/*"
 
 #  # Maintain dependencies for docker
 #  - package-ecosystem: "docker"
