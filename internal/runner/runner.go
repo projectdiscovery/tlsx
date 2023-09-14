@@ -200,7 +200,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 				uniqueHostnames := getUniqueHostnamesPerInput(response.CertificateResponse)
 				response.CertificateResponse.Hostname = uniqueHostnames
 				for _, hostname := range uniqueHostnames {
-					hostnames.Set(hostname, struct{}{})
+					_ = hostnames.Set(hostname, struct{}{})
 				}
 			}
 
