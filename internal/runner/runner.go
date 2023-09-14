@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bufio"
+	"bytes"
 	"net"
 	"net/url"
 	"os"
@@ -130,6 +131,8 @@ func (t taskInput) Address() string {
 	return net.JoinHostPort(t.host, t.port)
 }
 
+var hostnames = mapsutil.NewSyncLockMap[string, struct{}]()
+
 // Execute executes the main data collection loop
 func (r *Runner) Execute() error {
 	// Create the worker goroutines for processing
@@ -147,6 +150,16 @@ func (r *Runner) Execute() error {
 
 	close(inputs)
 	wg.Wait()
+
+	//FIXME: this is a hack to print deduplicated hostnames
+	if r.options.DisplayDns && !r.options.JSON {
+		builder := &bytes.Buffer{}
+		for hostname := range hostnames.GetAll() {
+			builder.WriteString(hostname)
+			builder.WriteString("\n")
+		}
+		_, _ = os.Stdout.Write(builder.Bytes())
+	}
 
 	// Print the stats if auto fallback mode is used
 	if r.options.ScanMode == "auto" {
@@ -184,7 +197,11 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 
 		if response != nil {
 			if r.options.DisplayDns && response.CertificateResponse != nil {
-				response.CertificateResponse.Hostname = getUniqueHostnames(response.CertificateResponse)
+				uniqueHostnames := getUniqueHostnamesPerInput(response.CertificateResponse)
+				response.CertificateResponse.Hostname = uniqueHostnames
+				for _, hostname := range uniqueHostnames {
+					hostnames.Set(hostname, struct{}{})
+				}
 			}
 
 			if err := r.outputWriter.Write(response); err != nil {
@@ -194,7 +211,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 	}
 }
 
-func getUniqueHostnames(certResponse *clients.CertificateResponse) []string {
+func getUniqueHostnamesPerInput(certResponse *clients.CertificateResponse) []string {
 	hostnameSet := map[string]struct{}{}
 	if certResponse.SubjectCN != "" {
 		hostnameSet[trimWildcardPrefix(certResponse.SubjectCN)] = struct{}{}

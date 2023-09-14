@@ -265,14 +265,6 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString("]")
 	}
 
-	if w.options.DisplayDns {
-		builder.WriteString("\n")
-		for _, hn := range output.Hostname {
-			builder.WriteString(hn)
-			builder.WriteString("\n")
-		}
-	}
-
 	outputdata := builder.Bytes()
 	return outputdata, nil
 }
