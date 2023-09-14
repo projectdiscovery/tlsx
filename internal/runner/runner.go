@@ -16,6 +16,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
+	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/tlsx/pkg/output"
@@ -29,6 +30,8 @@ import (
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
+
+var hostnamesHm *hybrid.HybridMap
 
 // Runner is a client for running the enumeration process
 type Runner struct {
@@ -110,6 +113,11 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	runner.outputWriter = outputWriter
 
+	hostnamesHm, err = hybrid.New(hybrid.DefaultDiskOptions)
+	if err != nil {
+		return nil, errorutil.NewWithErr(err).Msgf("could not create hmap for hostnames")
+	}
+
 	return runner, nil
 }
 
@@ -130,8 +138,6 @@ type taskInput struct {
 func (t taskInput) Address() string {
 	return net.JoinHostPort(t.host, t.port)
 }
-
-var hostnames = mapsutil.NewSyncLockMap[string, struct{}]()
 
 // Execute executes the main data collection loop
 func (r *Runner) Execute() error {
@@ -154,10 +160,11 @@ func (r *Runner) Execute() error {
 	//FIXME: this is a hack to print deduplicated hostnames
 	if r.options.DisplayDns && !r.options.JSON {
 		builder := &bytes.Buffer{}
-		for hostname := range hostnames.GetAll() {
-			builder.WriteString(hostname)
+		hostnamesHm.Scan(func(k, _ []byte) error {
+			builder.WriteString(string(k))
 			builder.WriteString("\n")
-		}
+			return nil
+		})
 		_, _ = os.Stdout.Write(builder.Bytes())
 	}
 
@@ -200,7 +207,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 				uniqueHostnames := getUniqueHostnamesPerInput(response.CertificateResponse)
 				response.CertificateResponse.Hostname = uniqueHostnames
 				for _, hostname := range uniqueHostnames {
-					_ = hostnames.Set(hostname, struct{}{})
+					hostnamesHm.Set(hostname, nil)
 				}
 			}
 
