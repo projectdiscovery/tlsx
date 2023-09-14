@@ -24,6 +24,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
@@ -180,12 +181,33 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 		if err != nil {
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
 		}
+
+		if r.options.DisplayDns && response.CertificateResponse != nil {
+			response.CertificateResponse.Hostname = getUniqueHostnames(response.CertificateResponse)
+		}
+
 		if response != nil {
 			if err := r.outputWriter.Write(response); err != nil {
 				gologger.Warning().Msgf("Could not write output %s: %s", task.Address(), err)
 			}
 		}
 	}
+}
+
+func getUniqueHostnames(certResponse *clients.CertificateResponse) []string {
+	hostnameSet := map[string]struct{}{}
+	if certResponse.SubjectCN != "" {
+		hostnameSet[trimWildcardPrefix(certResponse.SubjectCN)] = struct{}{}
+	}
+	for _, hostname := range certResponse.SubjectAN {
+		hostnameSet[trimWildcardPrefix(hostname)] = struct{}{}
+	}
+
+	return mapsutil.GetKeys(hostnameSet)
+}
+
+func trimWildcardPrefix(hostname string) string {
+	return strings.TrimPrefix(hostname, "*.")
 }
 
 // normalizeAndQueueInputs normalizes the inputs and queues them for execution
