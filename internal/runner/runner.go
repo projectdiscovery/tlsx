@@ -182,11 +182,11 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
 		}
 
-		if r.options.DisplayDns && response.CertificateResponse != nil {
-			response.CertificateResponse.Hostname = getUniqueHostnames(response.CertificateResponse)
-		}
-
 		if response != nil {
+			if r.options.DisplayDns && response.CertificateResponse != nil {
+				response.CertificateResponse.Hostname = getUniqueHostnames(response.CertificateResponse)
+			}
+
 			if err := r.outputWriter.Write(response); err != nil {
 				gologger.Warning().Msgf("Could not write output %s: %s", task.Address(), err)
 			}
