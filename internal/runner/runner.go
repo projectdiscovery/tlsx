@@ -212,7 +212,9 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			for _, hostname := range uniqueHostnames {
 				_ = hostnamesHm.Set(hostname, nil)
 			}
-			continue
+			if !r.options.JSON {
+				continue
+			}
 		}
 
 		if err := r.outputWriter.Write(response); err != nil {
