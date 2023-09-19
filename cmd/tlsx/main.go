@@ -132,6 +132,7 @@ func readFlags() error {
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output to"),
 		flagSet.BoolVarP(&options.JSON, "json", "j", false, "display json format output"),
+		flagSet.BoolVar(&options.DisplayDns, "dns", false, "display unique hostname from SSL certificate response"),
 		flagSet.BoolVarP(&options.RespOnly, "resp-only", "ro", false, "display tls response only"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "display silent output"),
 		flagSet.BoolVarP(&options.NoColor, "no-color", "nc", false, "disable colors in cli output"),
