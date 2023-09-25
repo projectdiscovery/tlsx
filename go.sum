@@ -162,8 +162,8 @@ github.com/projectdiscovery/blackrock v0.0.1 h1:lHQqhaaEFjgf5WkuItbpeCZv2DUIE45k
 github.com/projectdiscovery/blackrock v0.0.1/go.mod h1:ANUtjDfaVrqB453bzToU+YB4cUbvBRpLvEwoWIwlTss=
 github.com/projectdiscovery/cdncheck v1.0.9 h1:BS15gzj9gb5AVSKqTDzPamfSgStu7nJQOocUvrssFlg=
 github.com/projectdiscovery/cdncheck v1.0.9/go.mod h1:18SSl1w7rMj53CGeRIZTbDoa286a6xZIxGbaiEo4Fxs=
-github.com/projectdiscovery/dnsx v1.1.4 h1:hdvIPU8W1rwNAi6sjjN1rCtCVOhS1/cM3OgmOLFvAm8=
-github.com/projectdiscovery/dnsx v1.1.4/go.mod h1:wYz+2E97h0j25FLiqpUJyVY6NW7cEDODyUAsIoXsDsA=
+github.com/projectdiscovery/dnsx v1.1.5 h1:9pm4PfmVaroonw0dxPZPWIHpFD21hDI8KLu9wotYO+0=
+github.com/projectdiscovery/dnsx v1.1.5/go.mod h1:k7Zx9XV4umvI+m86/+F8bfUAuBBcRvSzYsEsOGhB+Fc=
 github.com/projectdiscovery/fastdialer v0.0.37 h1:GEn0VYD/Q+KWiUlQDPP5stvIauN8+gE/eooPzrwidic=
 github.com/projectdiscovery/fastdialer v0.0.37/go.mod h1:e4Rg9mQ5mNCDFV37njgGCognM0PdLq5f8CcljBqTkRw=
 github.com/projectdiscovery/goflags v0.1.21 h1:g/uoeoNse9LWlO7Gw4cPdnOkrnwPZJJT5tdGb51UpV4=
