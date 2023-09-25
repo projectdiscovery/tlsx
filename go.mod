@@ -12,7 +12,7 @@ require (
 	github.com/projectdiscovery/fastdialer v0.0.37
 	github.com/projectdiscovery/goflags v0.1.20
 	github.com/projectdiscovery/gologger v1.1.11
-	github.com/projectdiscovery/mapcidr v1.1.2
+	github.com/projectdiscovery/mapcidr v1.1.9
 	github.com/projectdiscovery/utils v0.0.55
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
@@ -47,7 +47,7 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/projectdiscovery/asnmap v1.0.4 // indirect
+	github.com/projectdiscovery/asnmap v1.0.5 // indirect
 	github.com/quic-go/quic-go v0.37.4 // indirect
 	github.com/refraction-networking/utls v1.5.2 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
@@ -89,7 +89,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.0.9 // indirect
-	github.com/projectdiscovery/hmap v0.0.19 // indirect
+	github.com/projectdiscovery/hmap v0.0.19
 	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.35 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.27
