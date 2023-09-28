@@ -130,6 +130,7 @@ UPDATE:
 OUTPUT:
    -o, -output string  file to write output to
    -j, -json           display output in jsonline format
+   -dns                display unique hostname from SSL certificate response
    -ro, -resp-only     display tls response only
    -silent             display silent output
    -nc, -no-color      disable colors in cli output
