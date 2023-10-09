@@ -9,7 +9,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.1.5
-	github.com/projectdiscovery/fastdialer v0.0.37
+	github.com/projectdiscovery/fastdialer v0.0.39
 	github.com/projectdiscovery/goflags v0.1.22
 	github.com/projectdiscovery/gologger v1.1.11
 	github.com/projectdiscovery/mapcidr v1.1.11
@@ -50,7 +50,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/projectdiscovery/asnmap v1.0.5 // indirect
 	github.com/quic-go/quic-go v0.37.4 // indirect
-	github.com/refraction-networking/utls v1.5.2 // indirect
+	github.com/refraction-networking/utls v1.5.3 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/tidwall/btree v1.6.0 // indirect
 	github.com/tidwall/buntdb v1.3.0 // indirect
