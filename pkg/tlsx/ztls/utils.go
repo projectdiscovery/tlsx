@@ -63,6 +63,9 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 		},
 		Serial: clients.FormatToSerialNumber(cert.SerialNumber),
 	}
+	if options.DisplayDns {
+		response.Domains = clients.GetUniqueDomainsFromCert(response)
+	}
 	if options.Cert {
 		response.Certificate = clients.PemEncode(cert.Raw)
 	}
