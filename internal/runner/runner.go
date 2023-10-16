@@ -2,7 +2,6 @@ package runner
 
 import (
 	"bufio"
-	"bytes"
 	"net"
 	"net/url"
 	"os"
@@ -16,7 +15,6 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
-	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/tlsx/pkg/output"
@@ -26,12 +24,9 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
-	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
-
-var hostnamesHm *hybrid.HybridMap
 
 // Runner is a client for running the enumeration process
 type Runner struct {
@@ -113,11 +108,6 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	runner.outputWriter = outputWriter
 
-	hostnamesHm, err = hybrid.New(hybrid.DefaultDiskOptions)
-	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("could not create hmap for hostnames")
-	}
-
 	return runner, nil
 }
 
@@ -157,17 +147,6 @@ func (r *Runner) Execute() error {
 	close(inputs)
 	wg.Wait()
 
-	//FIXME: this is a hack to print deduplicated hostnames
-	if r.options.DisplayDns && !r.options.JSON {
-		builder := &bytes.Buffer{}
-		hostnamesHm.Scan(func(k, _ []byte) error {
-			builder.WriteString(string(k))
-			builder.WriteString("\n")
-			return nil
-		})
-		_, _ = os.Stdout.Write(builder.Bytes())
-	}
-
 	// Print the stats if auto fallback mode is used
 	if r.options.ScanMode == "auto" {
 		gologger.Info().Msgf("Connections made using crypto/tls: %d, zcrypto/tls: %d, openssl: %d", stats.LoadCryptoTLSConnections(), stats.LoadZcryptoTLSConnections(), stats.LoadOpensslTLSConnections())
@@ -206,38 +185,11 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			continue
 		}
 
-		if r.options.DisplayDns && response.CertificateResponse != nil {
-			uniqueHostnames := getUniqueHostnamesPerInput(response.CertificateResponse)
-			response.CertificateResponse.Hostname = uniqueHostnames
-			for _, hostname := range uniqueHostnames {
-				_ = hostnamesHm.Set(hostname, nil)
-			}
-			if !r.options.JSON {
-				continue
-			}
-		}
-
 		if err := r.outputWriter.Write(response); err != nil {
 			gologger.Warning().Msgf("Could not write output %s: %s", task.Address(), err)
 			continue
 		}
 	}
-}
-
-func getUniqueHostnamesPerInput(certResponse *clients.CertificateResponse) []string {
-	hostnameSet := map[string]struct{}{}
-	if certResponse.SubjectCN != "" {
-		hostnameSet[trimWildcardPrefix(certResponse.SubjectCN)] = struct{}{}
-	}
-	for _, hostname := range certResponse.SubjectAN {
-		hostnameSet[trimWildcardPrefix(hostname)] = struct{}{}
-	}
-
-	return mapsutil.GetKeys(hostnameSet)
-}
-
-func trimWildcardPrefix(hostname string) string {
-	return strings.TrimPrefix(hostname, "*.")
 }
 
 // normalizeAndQueueInputs normalizes the inputs and queues them for execution

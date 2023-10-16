@@ -11,6 +11,7 @@ import (
 
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 )
 
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
@@ -42,7 +43,26 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 	if showcert {
 		response.Certificate = PemEncode(cert.Raw)
 	}
+	if options.DisplayDns {
+		response.Domains = GetUniqueDomainsFromCert(response)
+	}
 	return response
+}
+
+// GetUniqueDomainsFromCert returns unique domains extracted from certificate response
+func GetUniqueDomainsFromCert(resp *CertificateResponse) []string {
+	domains := map[string]struct{}{}
+	for _, domain := range resp.SubjectAN {
+		domains[trimWildcardPrefix(domain)] = struct{}{}
+	}
+	if resp.SubjectCN != "" {
+		domains[trimWildcardPrefix(resp.SubjectCN)] = struct{}{}
+	}
+	return mapsutil.GetKeys(domains)
+}
+
+func trimWildcardPrefix(hostname string) string {
+	return strings.TrimPrefix(hostname, "*.")
 }
 
 // IntersectStringSlices returns intersection of two string slices

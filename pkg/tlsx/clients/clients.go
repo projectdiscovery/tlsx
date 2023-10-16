@@ -271,8 +271,8 @@ type CertificateResponse struct {
 	SubjectOrg []string `json:"subject_org,omitempty"`
 	// SubjectAN is a list of Subject Alternative Names for the certificate
 	SubjectAN []string `json:"subject_an,omitempty"`
-	// Hostname is list of  deduplicated subject_cn + subject_an
-	Hostname []string `json:"hostname,omitempty"`
+	// Domains is list of  deduplicated subject_cn + subject_an
+	Domains []string `json:"domains,omitempty"`
 	//Serial is the certificate serial number
 	Serial string `json:"serial,omitempty"`
 	// IssuerDN is the distinguished name for cert
