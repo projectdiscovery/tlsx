@@ -2,6 +2,7 @@ package tlsx
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
@@ -12,6 +13,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
 	errorutil "github.com/projectdiscovery/utils/errors"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
@@ -127,7 +129,28 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 		resp.TlsCiphers = supportedTlsCiphers
 	}
+
+	if s.options.DisplayDns && resp.CertificateResponse != nil {
+		uniqueHostnames := getUniqueHostnamesPerInput(resp.CertificateResponse)
+		resp.CertificateResponse.Domains = uniqueHostnames
+	}
 	return resp, nil
+}
+
+func getUniqueHostnamesPerInput(certResponse *clients.CertificateResponse) []string {
+	hostnameSet := map[string]struct{}{}
+	if certResponse.SubjectCN != "" {
+		hostnameSet[trimWildcardPrefix(certResponse.SubjectCN)] = struct{}{}
+	}
+	for _, hostname := range certResponse.SubjectAN {
+		hostnameSet[trimWildcardPrefix(hostname)] = struct{}{}
+	}
+
+	return mapsutil.GetKeys(hostnameSet)
+}
+
+func trimWildcardPrefix(hostname string) string {
+	return strings.TrimPrefix(hostname, "*.")
 }
 
 func (s *Service) enumTlsVersions(host, ip, port string, options clients.ConnectOptions) ([]string, error) {

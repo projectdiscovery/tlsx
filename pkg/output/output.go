@@ -108,8 +108,17 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	if output.CertificateResponse == nil {
 		return nil, errorutil.New("empty leaf certificate")
 	}
-
+	cert := output.CertificateResponse
 	builder := &bytes.Buffer{}
+
+	if w.options.DisplayDns {
+		for _, hname := range cert.Domains {
+			builder.WriteString(hname)
+			builder.WriteString("\n")
+		}
+		outputdata := builder.Bytes()
+		return outputdata, nil
+	}
 
 	if !w.options.RespOnly {
 		builder.WriteString(output.Host)
@@ -123,8 +132,6 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 	}
 	outputPrefix := builder.String()
 	builder.Reset()
-
-	cert := output.CertificateResponse
 
 	var names []string
 	if w.options.SAN {
