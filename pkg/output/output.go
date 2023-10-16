@@ -12,7 +12,16 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	errorutil "github.com/projectdiscovery/utils/errors"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 	"golang.org/x/exp/maps"
+)
+
+var (
+	// when unique domains are displayed with `-dns` flag. tlsx json/struct already
+	// contains unique domains for each certificate
+	// globalDedupe is meant to be used when running in cli mode with multiple inputs
+	// ex: google.com and youtube.com may have same wildcard certificate or some overlapping domains
+	globalDedupe = mapsutil.NewSyncLockMap[string, struct{}]()
 )
 
 // Writer is an interface which writes output to somewhere for katana events.
@@ -69,6 +78,10 @@ func (w *StandardWriter) Write(event *clients.Response) error {
 		return errorutil.NewWithErr(err).Msgf("could not format output")
 	}
 	data = bytes.TrimSuffix(data, []byte("\n")) // remove last newline
+	if len(data) == 0 {
+		// this happens when -dns flag is used and two domains have same certificate hence deduped
+		return nil
+	}
 
 	w.outputMutex.Lock()
 	defer w.outputMutex.Unlock()
@@ -113,6 +126,10 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 
 	if w.options.DisplayDns {
 		for _, hname := range cert.Domains {
+			if _, ok := globalDedupe.Get(hname); ok {
+				continue
+			}
+			_ = globalDedupe.Set(hname, struct{}{})
 			builder.WriteString(hname)
 			builder.WriteString("\n")
 		}
