@@ -12,7 +12,7 @@ require (
 	github.com/projectdiscovery/fastdialer v0.0.40
 	github.com/projectdiscovery/goflags v0.1.23
 	github.com/projectdiscovery/gologger v1.1.11
-	github.com/projectdiscovery/mapcidr v1.1.11
+	github.com/projectdiscovery/mapcidr v1.1.12
 	github.com/projectdiscovery/utils v0.0.58
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
