@@ -135,6 +135,8 @@ type Options struct {
 	Cert bool
 	// Ja3 displays ja3 fingerprint hash
 	Ja3 bool
+	// Ja3s displays ja3s fingerprint hash
+	Ja3s bool
 	// Scan all IP's
 	ScanAllIPs bool
 	// IP Version to use for scanning
@@ -192,6 +194,7 @@ type Response struct {
 	Chain       []*CertificateResponse `json:"chain,omitempty"`
 	JarmHash    string                 `json:"jarm_hash,omitempty"`
 	Ja3Hash     string                 `json:"ja3_hash,omitempty"`
+	Ja3sHash    string                 `json:"ja3s_hash,omitempty"`
 	ServerName  string                 `json:"sni,omitempty"`
 	VersionEnum []string               `json:"version_enum,omitempty"`
 	TlsCiphers  []TlsCiphers           `json:"cipher_enum,omitempty"`

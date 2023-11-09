@@ -270,6 +270,12 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 		builder.WriteString("]")
 	}
 
+	if w.options.Ja3s && output.Ja3sHash != "" {
+		builder.WriteString(" [")
+		builder.WriteString(w.aurora.Magenta(output.Ja3sHash).String())
+		builder.WriteString("]")
+	}
+
 	if w.options.TlsCiphersEnum {
 		for _, v := range output.TlsCiphers {
 			ct := v.Ciphers.ColorCode(w.aurora)
