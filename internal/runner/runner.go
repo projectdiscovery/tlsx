@@ -107,6 +107,9 @@ func New(options *clients.Options) (*Runner, error) {
 		return nil, errorutil.NewWithErr(err).Msgf("could not create output writer")
 	}
 	runner.outputWriter = outputWriter
+	if options.TlsCiphersEnum && !options.Silent {
+		gologger.Info().Msgf("Enumerating TLS Ciphers in %s mode", options.ScanMode)
+	}
 
 	return runner, nil
 }
