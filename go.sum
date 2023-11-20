@@ -177,8 +177,8 @@ github.com/projectdiscovery/blackrock v0.0.1 h1:lHQqhaaEFjgf5WkuItbpeCZv2DUIE45k
 github.com/projectdiscovery/blackrock v0.0.1/go.mod h1:ANUtjDfaVrqB453bzToU+YB4cUbvBRpLvEwoWIwlTss=
 github.com/projectdiscovery/cdncheck v1.0.9 h1:BS15gzj9gb5AVSKqTDzPamfSgStu7nJQOocUvrssFlg=
 github.com/projectdiscovery/cdncheck v1.0.9/go.mod h1:18SSl1w7rMj53CGeRIZTbDoa286a6xZIxGbaiEo4Fxs=
-github.com/projectdiscovery/dnsx v1.1.5 h1:9pm4PfmVaroonw0dxPZPWIHpFD21hDI8KLu9wotYO+0=
-github.com/projectdiscovery/dnsx v1.1.5/go.mod h1:k7Zx9XV4umvI+m86/+F8bfUAuBBcRvSzYsEsOGhB+Fc=
+github.com/projectdiscovery/dnsx v1.1.6 h1:QdKVKC0n/fpgaB4q3s6A2wn+qqg75CY0XxNkU9sVjws=
+github.com/projectdiscovery/dnsx v1.1.6/go.mod h1:9rkLQzJHxQ26qiD1PhfoJDrhqCVN8lKLsxiAON1uDxM=
 github.com/projectdiscovery/fastdialer v0.0.43 h1:tL1Ivcx4XVJ5hjPA0OoXy8P3TB5paPTnRjkOm/DSLNs=
 github.com/projectdiscovery/fastdialer v0.0.43/go.mod h1:pPYldB5+HwlRNB69vHOUBx/Uk0NBcSw1y4z3UZyPOiU=
 github.com/projectdiscovery/goflags v0.1.27 h1:ZMyhrh8boaNJyEpDvjoGqM/F7V7cQlPek++o693Oqw0=
@@ -187,8 +187,8 @@ github.com/projectdiscovery/gologger v1.1.11 h1:8vsz9oJlDT9euw6xlj7F7dZ6RWItVIqV
 github.com/projectdiscovery/gologger v1.1.11/go.mod h1:UR2bgXl7zraOxYGnUwuO917hifWrwMJ0feKnVqMQkzY=
 github.com/projectdiscovery/hmap v0.0.25 h1:JXRY+yxm68T/WjDbOJiPL2ZX4eMDqwIlzkWJn9qmKQU=
 github.com/projectdiscovery/hmap v0.0.25/go.mod h1:cxW6KWTFz8rJTES8nf8OK6IW63u5aQa+91hVbx/7kp0=
-github.com/projectdiscovery/mapcidr v1.1.14 h1:5UP2JCYm+vGr71p3mufqiU0oUXOoGJ72VBKWgBvl0WI=
-github.com/projectdiscovery/mapcidr v1.1.14/go.mod h1:q/aK7RR4niZeFCoHhOcUPi+L4KvV0VSIYruRHER70W8=
+github.com/projectdiscovery/mapcidr v1.1.15 h1:rYAgxLvMyxPU0JunE/Y3uSK1n/TcNJHK839d6YM0ms4=
+github.com/projectdiscovery/mapcidr v1.1.15/go.mod h1:s9erRsoZqWcLGhJW+WT1SnbscqzhHRRnSX916xBw5ZM=
 github.com/projectdiscovery/networkpolicy v0.0.6 h1:yDvm0XCrS9HeemRrBS+J+22surzVczM94W5nHiOy/1o=
 github.com/projectdiscovery/networkpolicy v0.0.6/go.mod h1:8HJQ/33Pi7v3a3MRWIQGXzpj+zHw2d60TysEL4qdoQk=
 github.com/projectdiscovery/retryabledns v1.0.42 h1:i0bHWprdWO83JW3WogOqZo2jg3RByICd50z/odY9fWs=
