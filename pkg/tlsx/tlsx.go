@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/auto"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/jarm"
@@ -115,9 +114,6 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	var supportedTlsCiphers []clients.TlsCiphers
 	if s.options.TlsCiphersEnum {
 		options.EnumMode = clients.Cipher
-		if !s.options.Silent {
-			gologger.Info().Msgf("Started TLS Cipher Enumeration using %v mode", s.options.ScanMode)
-		}
 		for _, supportedTlsVersion := range resp.VersionEnum {
 			options.VersionTLS = supportedTlsVersion
 			enumeratedTlsCiphers, _ := s.enumTlsCiphers(host, ip, port, options)
