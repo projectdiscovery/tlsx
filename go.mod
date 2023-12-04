@@ -10,10 +10,10 @@ require (
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.1.6
 	github.com/projectdiscovery/fastdialer v0.0.43
-	github.com/projectdiscovery/goflags v0.1.28
+	github.com/projectdiscovery/goflags v0.1.30
 	github.com/projectdiscovery/gologger v1.1.11
 	github.com/projectdiscovery/mapcidr v1.1.15
-	github.com/projectdiscovery/utils v0.0.63
+	github.com/projectdiscovery/utils v0.0.65
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
 	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968
