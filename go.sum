@@ -179,8 +179,8 @@ github.com/projectdiscovery/cdncheck v1.0.9 h1:BS15gzj9gb5AVSKqTDzPamfSgStu7nJQO
 github.com/projectdiscovery/cdncheck v1.0.9/go.mod h1:18SSl1w7rMj53CGeRIZTbDoa286a6xZIxGbaiEo4Fxs=
 github.com/projectdiscovery/dnsx v1.1.6 h1:QdKVKC0n/fpgaB4q3s6A2wn+qqg75CY0XxNkU9sVjws=
 github.com/projectdiscovery/dnsx v1.1.6/go.mod h1:9rkLQzJHxQ26qiD1PhfoJDrhqCVN8lKLsxiAON1uDxM=
-github.com/projectdiscovery/fastdialer v0.0.46 h1:XoP41jyOBupz4w+hz9WRnvBrml3E0OiNsmfhDPsXiFM=
-github.com/projectdiscovery/fastdialer v0.0.46/go.mod h1:qe6hd6PDUoJhmkAkFGmWIfGWSuezvpClxN80pUAtVfE=
+github.com/projectdiscovery/fastdialer v0.0.48 h1:u85qMrFo/bvFnxcMiazuV5VzGpaFvoxe4C0RtYZkIlw=
+github.com/projectdiscovery/fastdialer v0.0.48/go.mod h1:rIbX7NJSuqhgnyf0fBaFb9VYTYYugzXa4DMEFvrf/Vk=
 github.com/projectdiscovery/goflags v0.1.31 h1:r2FaFFr3cd/dmK5lir0Vwx4kHwiwZZkXYKi5fsJ0jcY=
 github.com/projectdiscovery/goflags v0.1.31/go.mod h1:VJ8BmwtOK3/uEJtNOsuIQx8UNLfk03FpxQ5uLugv7zU=
 github.com/projectdiscovery/gologger v1.1.11 h1:8vsz9oJlDT9euw6xlj7F7dZ6RWItVIqVwn4Mr6uzky8=
