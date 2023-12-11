@@ -10,7 +10,7 @@ require (
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.1.6
 	github.com/projectdiscovery/fastdialer v0.0.46
-	github.com/projectdiscovery/goflags v0.1.30
+	github.com/projectdiscovery/goflags v0.1.31
 	github.com/projectdiscovery/gologger v1.1.11
 	github.com/projectdiscovery/mapcidr v1.1.15
 	github.com/projectdiscovery/utils v0.0.66
