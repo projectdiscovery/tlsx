@@ -91,7 +91,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.0.9 // indirect
 	github.com/projectdiscovery/hmap v0.0.33 // indirect
-	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
+	github.com/projectdiscovery/networkpolicy v0.0.7 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.50 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.42
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
