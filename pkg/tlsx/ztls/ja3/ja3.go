@@ -34,7 +34,8 @@ const (
 	extensionHeartbeat            uint16 = 15
 )
 
-// GetJa3SHash returns the JA3 fingerprint hash of the tls client hello.
+// GetJa3Hash computes the JA3 fingerprint hash from a TLS ClientHello message.
+// It structures the fingerprint as: SSLVersion,Cipher,SSLExtension,EllipticCurve,EllipticCurvePointFormat
 func GetJa3Hash(clientHello *tls.ClientHello) string {
 	byteString := make([]byte, 0)
 
@@ -141,6 +142,76 @@ func GetJa3Hash(clientHello *tls.ClientHello) string {
 		}
 		// Remove last dash
 		byteString = byteString[:len(byteString)-1]
+	}
+
+	h := md5.Sum(byteString)
+	return hex.EncodeToString(h[:])
+}
+
+// GetJa3sHash computes the JA3S fingerprint hash from a TLS ServerHello message.
+// JA3S is the server-side counterpart to JA3, profiling how servers react to client hellos in SSL/TLS communication.
+// It structures the fingerprint as: SSLVersion,Cipher,SSLExtension.
+func GetJa3sHash(serverHello *tls.ServerHello) string {
+	// NOTE: The original JA3S implementation only uses the extensions that are present,
+	// as demonstrated in the Python implementation at salesforce/ja3 (https://github.com/salesforce/ja3/blob/421dd4f3616b533e6971bb700289c6bb8355e707/python/ja3s.py#L39).
+	// Keep an eye on updates in the ZCrypto library for potential inclusion of additional fields in the future.
+	// For current implementation details, see: https://github.com/zmap/zcrypto/blob/master/tls/tls_handshake.go#L56
+
+	byteString := make([]byte, 0)
+
+	// Version
+	byteString = strconv.AppendUint(byteString, uint64(serverHello.Version), 10)
+	byteString = append(byteString, commaByte)
+
+	// Cipher Suites
+	if len(serverHello.CipherSuite.Bytes()) != 0 {
+		byteString = strconv.AppendUint(byteString, uint64(serverHello.CipherSuite), 10)
+		byteString = append(byteString, commaByte)
+	} else {
+		byteString = append(byteString, commaByte)
+	}
+
+	// Extensions
+	if serverHello.NextProtoNeg {
+		byteString = appendExtension(byteString, extensionNextProtoNeg)
+	}
+
+	if serverHello.OcspStapling {
+		byteString = appendExtension(byteString, extensionStatusRequest)
+	}
+
+	if serverHello.TicketSupported {
+		byteString = appendExtension(byteString, extensionSessionTicket)
+	}
+
+	if serverHello.SecureRenegotiation {
+		byteString = appendExtension(byteString, extensionRenegotiationInfo)
+	}
+
+	if serverHello.HeartbeatSupported {
+		byteString = appendExtension(byteString, extensionHeartbeat)
+	}
+
+	if len(serverHello.ExtendedRandom) > 0 {
+		byteString = appendExtension(byteString, extensionExtendedRandom)
+	}
+
+	if serverHello.ExtendedMasterSecret {
+		byteString = appendExtension(byteString, extensionExtendedMasterSecret)
+	}
+
+	if len(serverHello.UnknownExtensions) > 0 {
+		for _, ext := range serverHello.UnknownExtensions {
+			exType := uint16(ext[0])<<8 | uint16(ext[1])
+			byteString = appendExtension(byteString, exType)
+		}
+	}
+	// If dash found replace it with a comma
+	if byteString[len(byteString)-1] == dashByte {
+		byteString[len(byteString)-1] = commaByte
+	} else {
+		// else add a comma (no extension present)
+		byteString = append(byteString, commaByte)
 	}
 
 	h := md5.Sum(byteString)

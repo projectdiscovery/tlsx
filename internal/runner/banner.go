@@ -44,7 +44,7 @@ func (r *Runner) validateOptions() error {
 	if r.options.CertsOnly && !(r.options.ScanMode == "ztls" || r.options.ScanMode == "auto") {
 		return errorutils.New("scan-mode must be ztls or auto with certs-only option")
 	}
-	if r.options.CertsOnly || r.options.Ja3 {
+	if r.options.CertsOnly || r.options.Ja3 || r.options.Ja3s {
 		r.options.ScanMode = "ztls" // force setting ztls when using certs-only
 	}
 	if r.options.Verbose {
