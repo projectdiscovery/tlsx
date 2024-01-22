@@ -9,7 +9,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.1.6
-	github.com/projectdiscovery/fastdialer v0.0.52
+	github.com/projectdiscovery/fastdialer v0.0.55
 	github.com/projectdiscovery/goflags v0.1.36
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/mapcidr v1.1.16
@@ -24,6 +24,7 @@ require (
 require (
 	aead.dev/minisign v0.2.0 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/Mzack9999/gcache v0.0.0-20230410081825-519e28eab057 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
@@ -34,6 +35,7 @@ require (
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
@@ -90,9 +92,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.0.9 // indirect
-	github.com/projectdiscovery/hmap v0.0.33 // indirect
+	github.com/projectdiscovery/hmap v0.0.34 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.7 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.50 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.51 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.42
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
