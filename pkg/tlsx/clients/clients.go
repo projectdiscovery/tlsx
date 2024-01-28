@@ -388,7 +388,7 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 
 // IsTLSRevoked returns true if the certificate has been revoked or failed to parse
 func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
-	if cert == nil {
+	if !options.Revoked || cert == nil {
 		return options.HardFail
 	}
 	// - false, false: an error was encountered while checking revocations.
