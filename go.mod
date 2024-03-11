@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/mapcidr v1.1.16
 	github.com/projectdiscovery/utils v0.0.82
 	github.com/rs/xid v1.5.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb
@@ -101,7 +101,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.0.9 // indirect
 	github.com/projectdiscovery/hmap v0.0.41 // indirect
-	github.com/projectdiscovery/networkpolicy v0.0.7 // indirect
+	github.com/projectdiscovery/networkpolicy v0.0.8 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.58 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.49
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
