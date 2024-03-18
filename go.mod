@@ -9,7 +9,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.1.6
-	github.com/projectdiscovery/fastdialer v0.0.61
+	github.com/projectdiscovery/fastdialer v0.0.62
 	github.com/projectdiscovery/goflags v0.1.43
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/mapcidr v1.1.16
@@ -103,11 +103,10 @@ require (
 	github.com/projectdiscovery/hmap v0.0.41 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.8 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.58 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.51
+	github.com/projectdiscovery/retryablehttp-go v1.0.52
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
-	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
