@@ -9,11 +9,11 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.1.6
-	github.com/projectdiscovery/fastdialer v0.0.64
+	github.com/projectdiscovery/fastdialer v0.0.66
 	github.com/projectdiscovery/goflags v0.1.45
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/mapcidr v1.1.16
-	github.com/projectdiscovery/utils v0.0.85
+	github.com/projectdiscovery/utils v0.0.86
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968
@@ -57,7 +57,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/projectdiscovery/asnmap v1.0.6 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
-	github.com/quic-go/quic-go v0.37.7 // indirect
+	github.com/quic-go/quic-go v0.42.0 // indirect
 	github.com/refraction-networking/utls v1.5.4 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.7 // indirect
