@@ -1,11 +1,12 @@
 package ja3
 
 import (
-	"crypto/md5"
-	"encoding/hex"
-	"strconv"
+    "crypto/md5"
+    "encoding/hex"
+    "sort"
+    "strconv"
 
-	"github.com/zmap/zcrypto/tls"
+    "github.com/zmap/zcrypto/tls"
 )
 
 const (
@@ -34,124 +35,81 @@ const (
 	extensionHeartbeat            uint16 = 15
 )
 
+
 // GetJa3SHash returns the JA3 fingerprint hash of the tls client hello.
-func GetJa3Hash(clientHello *tls.ClientHello) string {
-	byteString := make([]byte, 0)
+func GetJa3Hash(serverHello *tls.ServerHello, clientHello *tls.ClientHello) string {
+    byteString := make([]byte, 0)
 
-	// Version
-	byteString = strconv.AppendUint(byteString, uint64(clientHello.Version), 10)
-	byteString = append(byteString, commaByte)
+    // Version
+    tlsVersion := strconv.FormatUint(uint64(serverHello.Version), 10)
+//  fmt.Printf("TLS Version (Decimal): %s\n", tlsVersion)
+    byteString = append(byteString, []byte(tlsVersion)...)
 
-	// Cipher Suites
-	if len(clientHello.CipherSuites) != 0 {
-		for _, val := range clientHello.CipherSuites {
-			byteString = strconv.AppendUint(byteString, uint64(val), 10)
-			byteString = append(byteString, dashByte)
-		}
-		// Replace last dash with a comma
-		byteString[len(byteString)-1] = commaByte
-	} else {
-		byteString = append(byteString, commaByte)
-	}
+    byteString = append(byteString, commaByte)
 
-	// Extensions
-	if len(clientHello.ServerName) > 0 {
-		byteString = appendExtension(byteString, extensionServerName)
-	}
+    // Chosen Cipher Suite
+    cipherBytes := strconv.AppendUint(nil, uint64(serverHello.CipherSuite), 10)
+//  fmt.Printf("Chosen Cipher Suite (Bytes): %v\n", cipherBytes)
+    byteString = append(byteString, cipherBytes...)
 
-	if clientHello.NextProtoNeg {
-		byteString = appendExtension(byteString, extensionNextProtoNeg)
-	}
+    byteString = append(byteString, commaByte)
 
-	if clientHello.OcspStapling {
-		byteString = appendExtension(byteString, extensionStatusRequest)
-	}
+    // Collect extensions
+    extensions := make([]uint16, 0)
 
-	if len(clientHello.SupportedCurves) > 0 {
-		byteString = appendExtension(byteString, extensionSupportedCurves)
-	}
+    // Append the ALPN extension if present
+    if len(serverHello.AlpnProtocol) > 0 {
+        extensions = append(extensions, extensionALPN)
+    }
 
-	if len(clientHello.SupportedPoints) > 0 {
-		byteString = appendExtension(byteString, extensionSupportedPoints)
-	}
+    // Append other extensions based on serverHello flags
+    if serverHello.OcspStapling {
+        extensions = append(extensions, extensionStatusRequest)
+    }
+    if serverHello.TicketSupported {
+        extensions = append(extensions, extensionSessionTicket)
+    }
+    if serverHello.SecureRenegotiation {
+        extensions = append(extensions, extensionRenegotiationInfo)
+    }
+    if serverHello.HeartbeatSupported {
+        extensions = append(extensions, extensionHeartbeat)
+    }
+    if serverHello.ExtendedMasterSecret {
+        extensions = append(extensions, extensionExtendedMasterSecret)
+    }
+    if len(serverHello.ExtendedRandom) > 0 {
+        extensions = append(extensions, extensionExtendedRandom)
+    }
 
-	if clientHello.TicketSupported {
-		byteString = appendExtension(byteString, extensionSessionTicket)
-	}
+    // Sort extensions
+    sort.Slice(extensions, func(i, j int) bool {
+        return extensions[i] < extensions[j]
+    })
 
-	if len(clientHello.SignatureAndHashes) > 0 {
-		byteString = appendExtension(byteString, extensionSignatureAlgorithms)
-	}
+    // Append sorted extensions to byteString
+    for _, exType := range extensions {
+        byteString = appendExtension(byteString, exType)
+    }
 
-	if clientHello.SecureRenegotiation {
-		byteString = appendExtension(byteString, extensionRenegotiationInfo)
-	}
+    // Remove trailing comma if present
+    if len(byteString) > 0 && byteString[len(byteString)-1] == dashByte {
+        byteString = byteString[:len(byteString)-1]
+    }
 
-	if len(clientHello.AlpnProtocols) > 0 {
-		byteString = appendExtension(byteString, extensionALPN)
-	}
 
-	if clientHello.HeartbeatSupported {
-		byteString = appendExtension(byteString, extensionHeartbeat)
-	}
+//  fmt.Println("Fingerprint before hashing:", string(byteString))
 
-	if len(clientHello.ExtendedRandom) > 0 {
-		byteString = appendExtension(byteString, extensionExtendedRandom)
-	}
-
-	if clientHello.ExtendedMasterSecret {
-		byteString = appendExtension(byteString, extensionExtendedMasterSecret)
-	}
-
-	if clientHello.SctEnabled {
-		byteString = appendExtension(byteString, extensionSCT)
-	}
-
-	if len(clientHello.UnknownExtensions) > 0 {
-		for _, ext := range clientHello.UnknownExtensions {
-			exType := uint16(ext[0])<<8 | uint16(ext[1])
-			byteString = appendExtension(byteString, exType)
-		}
-	}
-	// If dash found replace it with a comma
-	if byteString[len(byteString)-1] == dashByte {
-		byteString[len(byteString)-1] = commaByte
-	} else {
-		// else add a comma (no extension present)
-		byteString = append(byteString, commaByte)
-	}
-
-	// Suppported Elliptic Curves
-	if len(clientHello.SupportedCurves) > 0 {
-		for _, val := range clientHello.SupportedCurves {
-			byteString = strconv.AppendUint(byteString, uint64(val), 10)
-			byteString = append(byteString, dashByte)
-		}
-		// Replace last dash with a comma
-		byteString[len(byteString)-1] = commaByte
-	} else {
-		byteString = append(byteString, commaByte)
-	}
-
-	// Elliptic Curve Point Formats
-	if len(clientHello.SupportedPoints) > 0 {
-		for _, val := range clientHello.SupportedPoints {
-			byteString = strconv.AppendUint(byteString, uint64(val), 10)
-			byteString = append(byteString, dashByte)
-		}
-		// Remove last dash
-		byteString = byteString[:len(byteString)-1]
-	}
-
-	h := md5.Sum(byteString)
-	return hex.EncodeToString(h[:])
+    // Hash and return the byteString
+    h := md5.Sum(byteString)
+    return hex.EncodeToString(h[:])
 }
 
 func appendExtension(byteString []byte, exType uint16) []byte {
-	// Ignore any GREASE extensions
-	if exType&greaseBitmask != 0x0A0A {
-		byteString = strconv.AppendUint(byteString, uint64(exType), 10)
-		byteString = append(byteString, dashByte)
-	}
-	return byteString
+    // Ignore any GREASE extensions
+    if exType&greaseBitmask != 0x0A0A {
+        byteString = strconv.AppendUint(byteString, uint64(exType), 10)
+        byteString = append(byteString, dashByte)
+    }
+    return byteString
 }
