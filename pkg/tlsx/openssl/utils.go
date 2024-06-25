@@ -1,7 +1,6 @@
 package openssl
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/projectdiscovery/gologger"
@@ -53,7 +52,6 @@ var certRequiredAlerts = []string{
 // isClientCertRequired checks openssl output to see if the error is due to a client certificate being required by the server
 func isClientCertRequired(data string) bool {
 	for _, line := range strings.Split(data, "\n") {
-		fmt.Printf("%s\n", line)
 		for _, alert := range certRequiredAlerts {
 			if strings.Contains(line, alert) {
 				return true
