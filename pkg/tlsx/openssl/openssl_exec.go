@@ -107,6 +107,7 @@ func getResponse(ctx context.Context, opts *Options) (*Response, errorutils.Erro
 		// add openssl response
 		return nil, allerrors.Msgf("failed to parse openssl response. original response is:\n%v", *result).Msgf(commadFormat, result.Command)
 	}
+	response.ClientCertRequired = isClientCertRequired(result.Stderr)
 	return response, nil
 }
 

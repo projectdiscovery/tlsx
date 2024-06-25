@@ -120,10 +120,17 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	// defer rawConn.Close() //internally done by conn.Close() so just a placeholder
 
+	var clientCertRequired bool
+
 	conn := tls.Client(rawConn, config)
-	if err := conn.HandshakeContext(ctx); err != nil {
-		rawConn.Close()
-		return nil, errorutil.NewWithTag("ctls", "could not do handshake").Wrap(err)
+	err = conn.HandshakeContext(ctx)
+	if err != nil {
+		if clients.IsClientCertRequiredError(err) {
+			clientCertRequired = true
+		} else {
+			rawConn.Close()
+			return nil, errorutil.NewWithTag("ctls", "could not do handshake").Wrap(err)
+		}
 	}
 	defer conn.Close()
 
@@ -160,6 +167,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		for _, cert := range certificateChain {
 			response.Chain = append(response.Chain, clients.Convertx509toResponse(c.options, hostname, cert, c.options.Cert))
 		}
+	}
+
+	// crypto/tls allows for completing the handshake without a client certificate being provided even if one is required
+	// and doesn't return an error until the underyling connection is actually used. As a result, we will temporarily
+	// skip setting ClientCertRequired for TLS 1.3 servers since we don't yet know at this stage whether or not
+	// a client certificate is required.
+	if response.Version != "tls13" {
+		response.ClientCertRequired = &clientCertRequired
 	}
 	return response, nil
 }
