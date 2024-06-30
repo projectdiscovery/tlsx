@@ -2,6 +2,8 @@ package tls_test
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -61,10 +63,11 @@ func TestClientCertRequired(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			log.SetOutput(io.Discard) // discard logs
+
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, "OK")
 			}))
-
 			server.TLS.ClientAuth = tc.clientAuthConfig
 			server.TLS.MinVersion = ctls.VersionTLS10
 			defer server.Close()
