@@ -86,6 +86,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Cipher:              resp.Session.Cipher,
 		TLSConnection:       "openssl",
 		ServerName:          opensslOpts.ServerName,
+		ClientCertRequired:  &resp.ClientCertRequired,
 	}
 	certs := getCertChain(ctx, opensslOpts)
 	response.Untrusted = clients.IsUntrustedCA(certs)
