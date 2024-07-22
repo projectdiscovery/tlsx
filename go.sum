@@ -193,8 +193,8 @@ github.com/projectdiscovery/cdncheck v1.1.0 h1:qDITidmJsejzpk3rMkauCh6sjI2GH9hW/
 github.com/projectdiscovery/cdncheck v1.1.0/go.mod h1:sZ8U4MjHSsyaTVjBbYWHT1cwUVvUYwDX1W+WvWRicIc=
 github.com/projectdiscovery/dnsx v1.1.6 h1:QdKVKC0n/fpgaB4q3s6A2wn+qqg75CY0XxNkU9sVjws=
 github.com/projectdiscovery/dnsx v1.1.6/go.mod h1:9rkLQzJHxQ26qiD1PhfoJDrhqCVN8lKLsxiAON1uDxM=
-github.com/projectdiscovery/fastdialer v0.2.0 h1:ZEYKA9L5VerrD9LcXH/gtTqUHiBQvTudrbqkZSRMpJo=
-github.com/projectdiscovery/fastdialer v0.2.0/go.mod h1:bwBv51HzxK7DkCjB1EHQJKDzXKGPDLp6MgK8PPjaW/w=
+github.com/projectdiscovery/fastdialer v0.2.1 h1:or3QuGW1jlZKi+IRkwxShSAG/hgR+yamd52RqjaZ28Q=
+github.com/projectdiscovery/fastdialer v0.2.1/go.mod h1:FGPJZIPzAfR7SyDCPTsftaf61lGOqIjrJpwo2IgkNpg=
 github.com/projectdiscovery/goflags v0.1.59 h1:rFScpC57L0Ln0dJmBtstyxHUH7K9H4UmHACXcSkdqqk=
 github.com/projectdiscovery/goflags v0.1.59/go.mod h1:dj67QGp/D81WRLtzU0HsWR20zgoGZ0cnk3Wbt9xJcuo=
 github.com/projectdiscovery/gologger v1.1.15 h1:EgXC9uQkYb5qWcazV6mH0mev23MZ0GLiGyl203nDYbU=
@@ -211,8 +211,8 @@ github.com/projectdiscovery/retryabledns v1.0.67 h1:PUrkoJaMRaoShMNwRg/cSDp5c1Oj
 github.com/projectdiscovery/retryabledns v1.0.67/go.mod h1:2QDtjND4BkSECpMOs5fhgL0FYMk3UmGUnTwa9cqHe4I=
 github.com/projectdiscovery/retryablehttp-go v1.0.68 h1:MN/kfccDnebmp1kNcCnGlGuCfvet6y5eN1Y1hIKBB1I=
 github.com/projectdiscovery/retryablehttp-go v1.0.68/go.mod h1:F3QNCoJExPFT59AACrVgYVhNiDW5Fp8s5HbXc+8CaaU=
-github.com/projectdiscovery/utils v0.2.0 h1:GC9FOq2mVacVYZgD2s6XW7RP6jAC/XjOKclSpLYPUUQ=
-github.com/projectdiscovery/utils v0.2.0/go.mod h1:kOnMoFfuQMY8U+nh8e32odjC00iEbiLVBcDxyAZFwCc=
+github.com/projectdiscovery/utils v0.2.1 h1:XcOUJtR5ReXDWqxDkJWPVpC2lSqIYTs8z8YNILcPiqk=
+github.com/projectdiscovery/utils v0.2.1/go.mod h1:h3o2zmJguUm9FKvel1F9jYCLxoWhFakyytRMjqb7Dg4=
 github.com/refraction-networking/utls v1.6.7 h1:zVJ7sP1dJx/WtVuITug3qYUq034cDq9B2MR1K67ULZM=
 github.com/refraction-networking/utls v1.6.7/go.mod h1:BC3O4vQzye5hqpmDTWUqi4P5DDhzJfkV1tdqtawQIH0=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
