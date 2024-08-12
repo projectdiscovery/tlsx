@@ -191,15 +191,16 @@ type Response struct {
 	// when ran using scan-mode auto.
 	TLSConnection string `json:"tls_connection,omitempty"`
 	// Chain is the chain of certificates
-	Chain       []*CertificateResponse `json:"chain,omitempty"`
-	JarmHash    string                 `json:"jarm_hash,omitempty"`
-	Ja3Hash     string                 `json:"ja3_hash,omitempty"`
+	Chain              []*CertificateResponse `json:"chain,omitempty"`
+	JarmHash           string                 `json:"jarm_hash,omitempty"`
+	Ja3Hash            string                 `json:"ja3_hash,omitempty"`
 	Ja3sHash    string                 `json:"ja3s_hash,omitempty"`
-	ServerName  string                 `json:"sni,omitempty"`
-	VersionEnum []string               `json:"version_enum,omitempty"`
-	TlsCiphers  []TlsCiphers           `json:"cipher_enum,omitempty"`
-	ClientHello *ztls.ClientHello      `json:"client_hello,omitempty"`
-	ServerHello *ztls.ServerHello      `json:"servers_hello,omitempty"`
+	ServerName         string                 `json:"sni,omitempty"`
+	VersionEnum        []string               `json:"version_enum,omitempty"`
+	TlsCiphers         []TlsCiphers           `json:"cipher_enum,omitempty"`
+	ClientHello        *ztls.ClientHello      `json:"client_hello,omitempty"`
+	ServerHello        *ztls.ServerHello      `json:"servers_hello,omitempty"`
+	ClientCertRequired *bool                  `json:"client_cert_required,omitempty"`
 }
 
 type TlsCiphers struct {

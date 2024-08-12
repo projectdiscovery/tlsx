@@ -40,7 +40,7 @@ system_default = system_default_sect
 
 [system_default_sect]
 MinProtocol = SSLv3
-CipherString = DEFAULT:@SECLEVEL=1
+CipherString = DEFAULT:@SECLEVEL=0
 `
 
 func init() {

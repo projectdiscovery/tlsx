@@ -2,9 +2,14 @@ package openssl
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -127,6 +132,74 @@ func TestParsing(t *testing.T) {
 	// where connection is established but certificate is not sent to openssl client
 	if len(certs) > 0 && certs != nil && err == nil {
 		t.Fatalf("openssl: should fail but did not for case %v", *result)
+	}
+}
+
+func TestClientCertRequired(t *testing.T) {
+	cases := []struct {
+		name             string
+		clientAuthConfig tls.ClientAuthType
+		tlsVersion       Protocols
+		expectedResult   bool
+	}{
+		{
+			name:             "tls10_cert_required_by_server",
+			clientAuthConfig: tls.RequireAnyClientCert,
+			tlsVersion:       TLSv1,
+			expectedResult:   true,
+		},
+		{
+			name:             "tls11_cert_required_by_server",
+			clientAuthConfig: tls.RequireAnyClientCert,
+			tlsVersion:       TLSv1_1,
+			expectedResult:   true,
+		},
+		{
+			name:             "tls12_cert_required_by_server",
+			clientAuthConfig: tls.RequireAnyClientCert,
+			tlsVersion:       TLSv1_2,
+			expectedResult:   true,
+		},
+		{
+			name:             "tls12_cert_not_required_by_server",
+			clientAuthConfig: tls.NoClientCert,
+			tlsVersion:       TLSv1_2,
+			expectedResult:   false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			log.SetOutput(io.Discard) // discard logs
+
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, "OK")
+			}))
+
+			server.TLS.ClientAuth = tc.clientAuthConfig
+			server.TLS.MinVersion = tls.VersionTLS10
+			defer server.Close()
+
+			opts := Options{
+				Address:  strings.TrimPrefix(server.URL, "https://"),
+				Protocol: tc.tlsVersion,
+			}
+
+			args, err := opts.Args()
+			if err != nil {
+				t.Errorf(err.Error())
+			}
+
+			result, err := execOpenSSL(context.Background(), args)
+			if err != nil {
+				t.Errorf("failed to execute cmd:%v\ngot error %v", result.Command, err)
+			}
+
+			actualResult := isClientCertRequired(result.Stderr)
+			if actualResult != tc.expectedResult {
+				t.Errorf("expected isClientCertRequired = %t but received %t", tc.expectedResult, actualResult)
+			}
+		})
 	}
 }
 

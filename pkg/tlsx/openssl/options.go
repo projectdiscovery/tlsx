@@ -130,6 +130,7 @@ func (s *Session) getTLSVersion() string {
 
 // Openssl response
 type Response struct {
-	AllCerts []*x509.Certificate
-	Session  *Session
+	AllCerts           []*x509.Certificate
+	Session            *Session
+	ClientCertRequired bool
 }

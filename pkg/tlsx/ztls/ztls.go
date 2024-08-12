@@ -134,15 +134,21 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		return nil, err
 	}
 
+	var clientCertRequired bool
+
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	if err := c.tlsHandshakeWithTimeout(tlsConn, ctx); err != nil {
-		return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
+	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	if err != nil {
+		if clients.IsClientCertRequiredError(err) {
+			clientCertRequired = true
+		} else {
+			return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
+		}
 	}
 	defer tlsConn.Close()
 
 	hl := tlsConn.GetHandshakeLog()
-
 	now := time.Now()
 	response := &clients.Response{
 		Timestamp:     &now,
@@ -162,7 +168,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if hl.ServerHello != nil {
 		response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
 		response.Cipher = hl.ServerHello.CipherSuite.String()
-
 	}
 
 	if c.options.TLSChain {
@@ -182,6 +187,18 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if c.options.ServerHello {
 		response.ServerHello = hl.ServerHello
 	}
+
+	// crypto/tls allows for completing the handshake without a client certificate being provided even if one is required
+	// and doesn't return an error until the underyling connection is actually used. As a result, we will temporarily
+	// skip setting ClientCertRequired for TLS 1.3 servers since we don't yet know at this stage whether or not
+	// a client certificate is required.
+	//
+	// Note: ztls currently doesn't support TLS 1.3 but we are adding this here just to be cautious in case it is added
+	// at a future date.
+	if response.Version != "tls13" {
+		response.ClientCertRequired = &clientCertRequired
+	}
+
 	return response, nil
 }
 
