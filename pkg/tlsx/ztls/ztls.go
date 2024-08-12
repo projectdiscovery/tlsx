@@ -178,6 +178,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if c.options.Ja3 {
 		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
 	}
+	if c.options.Ja3s {
+		response.Ja3sHash = ja3.GetJa3sHash(hl.ServerHello)
+	}
 	if c.options.ClientHello {
 		response.ClientHello = hl.ClientHello
 	}
