@@ -7,6 +7,7 @@ import (
 
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/utils/auth/pdcp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,6 +111,14 @@ func Test_InputCIDR_processInputItem(t *testing.T) {
 }
 
 func Test_InputASN_processInputItem(t *testing.T) {
+
+	// skip if keys are missing
+	h := pdcp.PDCPCredHandler{}
+	_, err := h.GetCreds()
+	if err != nil {
+		t.Skip("skipping ASN test as keys are missing")
+	}
+
 	options := &clients.Options{
 		Ports: []string{"443"},
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"net"
 	"strings"
@@ -135,4 +136,20 @@ func FormatToSerialNumber(serialNumber *big.Int) string {
 		buf = append(buf, x[i], x[i+1], ':')
 	}
 	return strings.ToUpper(string(buf[:len(buf)-1]))
+}
+
+// IsClientCertRequiredError checks if the error is due to a client certificate being required by the server
+func IsClientCertRequiredError(err error) bool {
+	nerr := &net.OpError{}
+	if errors.As(err, &nerr) && nerr.Op == "remote error" {
+		rErr := nerr.Err.Error()
+		rErr = strings.TrimPrefix(rErr, "tls: ")
+		switch rErr {
+		case "bad certificate":
+			return true
+		case "certificate required":
+			return true
+		}
+	}
+	return false
 }

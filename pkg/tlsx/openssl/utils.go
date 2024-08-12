@@ -44,6 +44,23 @@ func Wrap(err1 errorutil.Error, err2 errorutil.Error) errorutil.Error {
 	return err1.Wrap(err2)
 }
 
+var certRequiredAlerts = []string{
+	"SSL alert number 42",  // bad_certificate
+	"SSL alert number 116", // certificate_required
+}
+
+// isClientCertRequired checks openssl output to see if the error is due to a client certificate being required by the server
+func isClientCertRequired(data string) bool {
+	for _, line := range strings.Split(data, "\n") {
+		for _, alert := range certRequiredAlerts {
+			if strings.Contains(line, alert) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func init() {
 	if !IsAvailable() {
 		return
