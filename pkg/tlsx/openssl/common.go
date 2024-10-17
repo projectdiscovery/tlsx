@@ -51,11 +51,11 @@ func init() {
 	}
 	if BinaryPath == "" {
 		// not available or failed to get return
-		gologger.Debug().Label("openssl").Msgf("openssl binary not found skipping")
+		gologger.Debug().Label("openssl").Msg("openssl binary not found skipping")
 		return
 	}
 	if err := openSSLSetup(); err != nil {
-		gologger.Debug().Label("openssl").Msgf(err.Error())
+		gologger.Debug().Label("openssl").Msg(err.Error())
 	}
 }
 
@@ -79,7 +79,7 @@ func openSSLSetup() errorutils.Error {
 		OPENSSL_CONF = filepath.Join(os.TempDir(), "openssl.cnf")
 		err := os.WriteFile(OPENSSL_CONF, []byte(openSSLConfig), 0600)
 		if err != nil {
-			gologger.Debug().Label("openssl").Msgf("Failed to create openssl.cnf file")
+			gologger.Debug().Label("openssl").Msg("Failed to create openssl.cnf file")
 			OPENSSL_CONF = ""
 		}
 		PkgTag = "OpenSSL" + OpenSSLVersion
@@ -100,6 +100,6 @@ func UseOpenSSLBinary(binpath string) {
 	BinaryPath = binpath
 	if err := openSSLSetup(); err != nil {
 		// do not fallback
-		gologger.Fatal().Label("openssl").Msgf(err.Error())
+		gologger.Fatal().Label("openssl").Msg(err.Error())
 	}
 }
