@@ -20,7 +20,7 @@ func TestGetCipherSuites(t *testing.T) {
 	var ciphers []string
 	var err error
 	if ciphers, err = getCiphers(); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	if len(ciphers) < 5 {
 		t.Errorf("Failed to get cipher suites got\n%v", ciphers)
@@ -48,7 +48,7 @@ func TestResponse(t *testing.T) {
 		if v.cert != nil {
 			ocert, err := parseCertificates(result.Stdout)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err.Error())
 			}
 			if ocert[0].Issuer.CommonName != v.cert.Issuer.CommonName {
 				t.Errorf("expected %v but got %v", v.cert.Issuer.CommonName, ocert[0].Issuer.CommonName)
@@ -66,7 +66,7 @@ func TestCertChain(t *testing.T) {
 
 	args, err := opts.Args()
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	result, err := execOpenSSL(context.Background(), args)
@@ -187,7 +187,7 @@ func TestClientCertRequired(t *testing.T) {
 
 			args, err := opts.Args()
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err.Error())
 			}
 
 			result, err := execOpenSSL(context.Background(), args)

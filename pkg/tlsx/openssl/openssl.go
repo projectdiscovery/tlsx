@@ -152,7 +152,7 @@ func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.Conne
 	}
 	protocol, err := getProtocol(protocolVersion)
 	if err != nil {
-		return nil, errorutils.NewWithTag("openssl", err.Error())
+		return nil, errorutils.NewWithTag("openssl", "%s", err.Error())
 	}
 
 	// Note: CLI options are omitted if given value is empty
