@@ -120,7 +120,11 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	for _, v := range toEnumerate {
 		opensslOpts.Cipher = []string{v}
 		stats.IncrementOpensslTLSConnections()
-		if resp, errx := getResponse(context.TODO(), opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
+
+		ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
+		defer cancel()
+
+		if resp, errx := getResponse(ctx, opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
 			// 0000 indicates handshake failure
 			enumeratedCiphers = append(enumeratedCiphers, resp.Session.Cipher)
 		}
