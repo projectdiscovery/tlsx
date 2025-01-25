@@ -9,7 +9,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56
 	github.com/projectdiscovery/dnsx v1.2.1
-	github.com/projectdiscovery/fastdialer v0.2.15
+	github.com/projectdiscovery/fastdialer v0.3.0
 	github.com/projectdiscovery/goflags v0.1.65
 	github.com/projectdiscovery/gologger v1.1.40
 	github.com/projectdiscovery/mapcidr v1.1.34
