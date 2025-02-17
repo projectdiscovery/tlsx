@@ -11,9 +11,9 @@ require (
 	github.com/projectdiscovery/dnsx v1.2.1
 	github.com/projectdiscovery/fastdialer v0.3.0
 	github.com/projectdiscovery/goflags v0.1.70
-	github.com/projectdiscovery/gologger v1.1.43
+	github.com/projectdiscovery/gologger v1.1.44
 	github.com/projectdiscovery/mapcidr v1.1.34
-	github.com/projectdiscovery/utils v0.4.9
+	github.com/projectdiscovery/utils v0.4.11
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zmap/zcrypto v0.0.0-20231106212110-94c8f62efae4
@@ -106,10 +106,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.1.0 // indirect
-	github.com/projectdiscovery/hmap v0.0.78 // indirect
+	github.com/projectdiscovery/hmap v0.0.79 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.94 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.97
+	github.com/projectdiscovery/retryablehttp-go v1.0.99
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
