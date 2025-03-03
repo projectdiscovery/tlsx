@@ -11,9 +11,9 @@ require (
 	github.com/projectdiscovery/dnsx v1.2.2
 	github.com/projectdiscovery/fastdialer v0.3.0
 	github.com/projectdiscovery/goflags v0.1.73
-	github.com/projectdiscovery/gologger v1.1.46
+	github.com/projectdiscovery/gologger v1.1.47
 	github.com/projectdiscovery/mapcidr v1.1.34
-	github.com/projectdiscovery/utils v0.4.11
+	github.com/projectdiscovery/utils v0.4.12
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zmap/zcrypto v0.0.0-20231106212110-94c8f62efae4
