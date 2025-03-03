@@ -105,7 +105,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
-	github.com/projectdiscovery/cdncheck v1.1.7 // indirect
+	github.com/projectdiscovery/cdncheck v1.1.8 // indirect
 	github.com/projectdiscovery/hmap v0.0.81 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.94 // indirect
