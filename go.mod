@@ -106,7 +106,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.1.10 // indirect
-	github.com/projectdiscovery/hmap v0.0.83 // indirect
+	github.com/projectdiscovery/hmap v0.0.84 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.94 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.104
