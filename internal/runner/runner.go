@@ -26,6 +26,7 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
+	"golang.org/x/net/proxy"
 )
 
 // Runner is a client for running the enumeration process
@@ -76,10 +77,31 @@ func New(options *clients.Options) (*Runner, error) {
 		return nil, errorutil.NewWithErr(err).Msgf("could not validate options")
 	}
 
+	dialerTimeout := time.Duration(options.Timeout) * time.Second
+
+	var proxyDialer *proxy.Dialer
+	if options.Proxy != "" {
+		proxyURL, err := url.Parse(options.Proxy)
+		if err != nil {
+			return nil, errorutil.NewWithErr(err).Msgf("could not parse proxy")
+		}
+		dialer, err := proxy.FromURL(proxyURL, &net.Dialer{
+			Timeout:   dialerTimeout,
+			DualStack: true,
+		})
+		if err != nil {
+			return nil, errorutil.NewWithErr(err).Msgf("could not create proxy dialer")
+		}
+		proxyDialer = &dialer
+	}
+
 	dialerOpts := fastdialer.DefaultOptions
 	dialerOpts.WithDialerHistory = true
 	dialerOpts.MaxRetries = 3
-	dialerOpts.DialerTimeout = time.Duration(options.Timeout) * time.Second
+	dialerOpts.DialerTimeout = dialerTimeout
+	if proxyDialer != nil {
+		dialerOpts.ProxyDialer = proxyDialer
+	}
 	if len(options.Resolvers) > 0 {
 		dialerOpts.BaseResolvers = options.Resolvers
 	}

@@ -164,6 +164,8 @@ type Options struct {
 	Fastdialer *fastdialer.Dialer
 	// Serail displays certiface serial number
 	Serial bool
+	// Proxy is the proxy to use for tlsx
+	Proxy string
 }
 
 // Response is the response returned for a TLS grab event
@@ -194,7 +196,7 @@ type Response struct {
 	Chain              []*CertificateResponse `json:"chain,omitempty"`
 	JarmHash           string                 `json:"jarm_hash,omitempty"`
 	Ja3Hash            string                 `json:"ja3_hash,omitempty"`
-	Ja3sHash    string                 `json:"ja3s_hash,omitempty"`
+	Ja3sHash           string                 `json:"ja3s_hash,omitempty"`
 	ServerName         string                 `json:"sni,omitempty"`
 	VersionEnum        []string               `json:"version_enum,omitempty"`
 	TlsCiphers         []TlsCiphers           `json:"cipher_enum,omitempty"`
