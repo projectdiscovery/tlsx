@@ -115,6 +115,7 @@ CONFIGURATIONS:
    -vc, -verify-cert            enable verification of server certificate
    -ob, -openssl-binary string  OpenSSL Binary Path
    -hf, -hardfail               strategy to use if encountered errors while checking revocation status
+   -proxy string                socks5 proxy to use for tlsx
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)

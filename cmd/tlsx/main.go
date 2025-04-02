@@ -18,7 +18,6 @@ var (
 )
 
 func main() {
-
 	if err := process(); err != nil {
 		gologger.Fatal().Msgf("Could not process: %s", err)
 	}
@@ -115,6 +114,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
 		flagSet.StringVarP(&options.OpenSSLBinary, "openssl-binary", "ob", "", "OpenSSL Binary Path"),
 		flagSet.BoolVarP(&options.HardFail, "hardfail", "hf", false, "strategy to use if encountered errors while checking revocation status"),
+		flagSet.StringVar(&options.Proxy, "proxy", "", "socks5 proxy to use for tlsx"),
 	)
 
 	flagSet.CreateGroup("optimizations", "Optimizations",
