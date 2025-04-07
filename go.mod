@@ -108,7 +108,7 @@ require (
 	github.com/projectdiscovery/cdncheck v1.1.12 // indirect
 	github.com/projectdiscovery/hmap v0.0.85 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.1 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.96 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.97 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.105
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
@@ -119,7 +119,7 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.33.0
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
