@@ -7,6 +7,7 @@ on:
 
 permissions:
   pull-requests: write
+  contents: write
   issues: write
   repository-projects: write
 
@@ -14,44 +15,16 @@ jobs:
   rootca:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
+      - uses: projectdiscovery/actions/setup/git@v1
+      - uses: projectdiscovery/actions/setup/go@v1
+      - run: go install github.com/projectdiscovery/tlsx/cmd/update-rootcerts@latest
+      - run: update-rootcerts -out-root-certs ./assets/root-certs.pem
+      - uses: projectdiscovery/actions/commit@v1
         with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.21.x
-
-      - name: install update-rootcerts
-        run: |
-          go install github.com/projectdiscovery/tlsx/cmd/update-rootcerts
-
-      - name: update root certificate changes
-        run: |
-          update-rootcerts -out-root-certs ./assets/root-certs.pem
-        working-directory: .
-
-      - name: create local changes
-        run: |
-          git add ./assets/root-certs.pem
-
-      - name: check for local changes
-        id: change
-        run: |
-          git status -s | wc -l | xargs -I {} echo CHANGES={} >> $GITHUB_OUTPUT
-
-      - name: Commit files
-        if: steps.change.outputs.CHANGES > 0
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git commit -m "Weekly root certifacte update [$(date)] :robot:" -a --allow-empty
-
+          files: 'assets/root-certs.pem'
+          message: 'chore: root CA update :robot:'
       - name: Push changes
-        if: steps.change.outputs.CHANGES > 0
         run: |
-          git pull --rebase
-          git push origin ${{ github.ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git pull origin $GITHUB_REF --rebase
+          git push origin $GITHUB_REF
