@@ -109,7 +109,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.86 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.1 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.97 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.105
+	github.com/projectdiscovery/retryablehttp-go v1.0.108
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
