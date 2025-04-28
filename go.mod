@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.74
 	github.com/projectdiscovery/gologger v1.1.53
 	github.com/projectdiscovery/mapcidr v1.1.34
-	github.com/projectdiscovery/utils v0.4.17
+	github.com/projectdiscovery/utils v0.4.18
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.10.0
 	github.com/zmap/zcrypto v0.0.0-20231106212110-94c8f62efae4
@@ -106,10 +106,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.1.14 // indirect
-	github.com/projectdiscovery/hmap v0.0.86 // indirect
+	github.com/projectdiscovery/hmap v0.0.87 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.12 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.97 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.108
+	github.com/projectdiscovery/retryabledns v1.0.98 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.110
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
