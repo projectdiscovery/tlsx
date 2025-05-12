@@ -1,6 +1,7 @@
 module github.com/projectdiscovery/tlsx
 
-go 1.21
+go 1.22.0
+
 toolchain go1.24.1
 
 require (
@@ -14,7 +15,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.74
 	github.com/projectdiscovery/gologger v1.1.53
 	github.com/projectdiscovery/mapcidr v1.1.34
-	github.com/projectdiscovery/utils v0.4.17
+	github.com/projectdiscovery/utils v0.4.19
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.10.0
 	github.com/zmap/zcrypto v0.0.0-20231106212110-94c8f62efae4
