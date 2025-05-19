@@ -1,6 +1,6 @@
 module github.com/projectdiscovery/tlsx
 
-go 1.22.2
+go 1.23.0
 
 toolchain go1.24.1
 
@@ -44,7 +44,7 @@ require (
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/gaissmai/bart v0.17.10 // indirect
+	github.com/gaissmai/bart v0.20.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
@@ -118,7 +118,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.1.18 // indirect
 	github.com/projectdiscovery/hmap v0.0.88 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.12 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.15 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.99 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.111
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
