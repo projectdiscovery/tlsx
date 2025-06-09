@@ -119,7 +119,7 @@ require (
 	github.com/projectdiscovery/cdncheck v1.1.22 // indirect
 	github.com/projectdiscovery/hmap v0.0.89 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.15 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.100 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.101 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.113
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
