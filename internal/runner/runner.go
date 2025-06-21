@@ -33,6 +33,7 @@ import (
 // Runner is a client for running the enumeration process
 type Runner struct {
 	hasStdin     bool
+	hasStdinSet  bool // Track if hasStdin was manually set (for tests)
 	outputWriter output.Writer
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options

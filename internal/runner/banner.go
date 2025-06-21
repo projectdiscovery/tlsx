@@ -22,7 +22,11 @@ const version = "v1.1.9"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
-	r.hasStdin = fileutil.HasStdin()
+	// Only call fileutil.HasStdin() if hasStdin hasn't been manually set
+	// This allows tests to properly simulate stdin behavior
+	if !r.hasStdinSet {
+		r.hasStdin = fileutil.HasStdin()
+	}
 
 	if r.options.Retries == 0 {
 		r.options.Retries = 1
@@ -34,9 +38,18 @@ func (r *Runner) validateOptions() error {
 	if (r.options.SAN || r.options.CN) && probeSpecified {
 		return errorutils.New("san or cn flag cannot be used with other probes")
 	}
+
+	// Enable CT logs mode by default if no input is provided
+	if !r.options.CTLogs && !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
+		r.options.CTLogs = true
+		r.options.SAN = true // Enable SAN by default in CT logs mode
+	}
+
+	// Check if we still have no input after auto-enabling CT logs
 	if !r.options.CTLogs && !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
 		return errorutils.New("no input provided for enumeration")
 	}
+
 	if len(r.options.Ports) == 0 {
 		// Append port 443 for default ports
 		r.options.Ports = append(r.options.Ports, "443")

@@ -257,7 +257,8 @@ func Test_CTLogsModeWithStdinDisabled(t *testing.T) {
 	}
 
 	runner := &Runner{options: options}
-	runner.hasStdin = true // Simulate stdin has data
+	runner.hasStdin = true    // Simulate stdin has data
+	runner.hasStdinSet = true // Mark that hasStdin was manually set
 
 	err := runner.validateOptions()
 	require.NoError(t, err)
