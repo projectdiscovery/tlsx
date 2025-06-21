@@ -19,13 +19,14 @@ var (
 
 func main() {
 	if err := process(); err != nil {
-		gologger.Fatal().Msgf("Could not process: %s", err)
+		gologger.Fatal().Msgf("%s", err)
 	}
 }
 
 func process() error {
 	if err := readFlags(); err != nil {
-		return errorutils.NewWithErr(err).Msgf("could not read flags")
+		gologger.Fatal().Msgf("%s", err)
+		os.Exit(1)
 	}
 	runner, err := runner.New(options)
 	if err != nil {
@@ -89,6 +90,7 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.Serial, "serial", "se", false, "display certificate serial number"),
+		flagSet.BoolVarP(&options.CTLogs, "ct-logs", "ctl", false, "enable certificate transparency logs streaming mode"),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
@@ -147,6 +149,27 @@ func readFlags() error {
 
 	if err := flagSet.Parse(); err != nil {
 		return errorutils.NewWithErr(err).Msgf("could not parse flags")
+	}
+
+	// Check if stdin has data
+	hasStdin := false
+	if stat, err := os.Stdin.Stat(); err == nil && (stat.Mode()&os.ModeCharDevice) == 0 {
+		hasStdin = true
+	}
+
+	// Validation: CT logs mode and input mode cannot be used together
+	if options.CTLogs && (len(options.Inputs) > 0 || options.InputList != "" || hasStdin) {
+		return errorutils.NewWithTag("flags", "CT logs mode (-ctl) and input mode (-u/-l/stdin) cannot be used together.")
+	}
+
+	// Enable CT logs mode by default if no input is provided
+	if len(options.Inputs) == 0 && options.InputList == "" && !hasStdin {
+		options.CTLogs = true
+	}
+
+	// Enable SAN by default when CT logs mode is active
+	if options.CTLogs {
+		options.SAN = true
 	}
 
 	if options.HealthCheck {

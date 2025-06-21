@@ -34,7 +34,7 @@ func (r *Runner) validateOptions() error {
 	if (r.options.SAN || r.options.CN) && probeSpecified {
 		return errorutils.New("san or cn flag cannot be used with other probes")
 	}
-	if !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
+	if !r.options.CTLogs && !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
 		return errorutils.New("no input provided for enumeration")
 	}
 	if len(r.options.Ports) == 0 {

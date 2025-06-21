@@ -21,6 +21,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/ctlogs"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	iputil "github.com/projectdiscovery/utils/ip"
@@ -156,6 +157,11 @@ func (t taskInput) Address() string {
 
 // Execute executes the main data collection loop
 func (r *Runner) Execute() error {
+	// Handle CT logs streaming mode
+	if r.options.CTLogs {
+		return r.executeCTLogsMode()
+	}
+
 	// Create the worker goroutines for processing
 	inputs := make(chan taskInput, r.options.Concurrency)
 	wg := &sync.WaitGroup{}
@@ -176,6 +182,32 @@ func (r *Runner) Execute() error {
 	if r.options.ScanMode == "auto" {
 		gologger.Info().Msgf("Connections made using crypto/tls: %d, zcrypto/tls: %d, openssl: %d", stats.LoadCryptoTLSConnections(), stats.LoadZcryptoTLSConnections(), stats.LoadOpensslTLSConnections())
 	}
+	return nil
+}
+
+// executeCTLogsMode executes CT logs streaming mode
+func (r *Runner) executeCTLogsMode() error {
+	gologger.Info().Msg("Starting Certificate Transparency logs streaming mode...")
+
+	// Create CT logs service
+	ctService, err := ctlogs.New(r.options)
+	if err != nil {
+		return errorutil.NewWithErr(err).Msgf("could not create CT logs service")
+	}
+
+	// Start streaming
+	ctService.Start()
+	defer ctService.Stop()
+
+	// Process output from CT logs
+	outputChan := ctService.GetOutputChannel()
+	for response := range outputChan {
+		if err := r.outputWriter.Write(response); err != nil {
+			gologger.Warning().Msgf("Could not write CT log output: %s", err)
+			continue
+		}
+	}
+
 	return nil
 }
 
