@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.74
 	github.com/projectdiscovery/gologger v1.1.54
 	github.com/projectdiscovery/mapcidr v1.1.34
-	github.com/projectdiscovery/utils v0.4.20
+	github.com/projectdiscovery/utils v0.4.21
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.10.0
 	github.com/zmap/zcrypto v0.0.0-20231106212110-94c8f62efae4
@@ -41,7 +41,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.3.2 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.4 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
-	github.com/dlclark/regexp2 v1.11.4 // indirect
+	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/gaissmai/bart v0.20.4 // indirect
@@ -104,7 +104,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cloudflare/cfssl v1.6.4
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -114,7 +114,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/cdncheck v1.1.23 // indirect
 	github.com/projectdiscovery/hmap v0.0.89 // indirect
