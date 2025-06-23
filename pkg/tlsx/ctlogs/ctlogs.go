@@ -98,7 +98,11 @@ func (service *CTLogsService) initializeSources() error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch CT log list: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			gologger.Warning().Msgf("Failed to close response body: %v", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -41,7 +41,11 @@ func fetchRootCerts(url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch root certs")
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			gologger.Warning().Msgf("Failed to close response body: %v", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status code error: %d %s", resp.StatusCode, resp.Status)
 	}

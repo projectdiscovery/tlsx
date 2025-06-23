@@ -262,7 +262,11 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		if err != nil {
 			return errorutil.NewWithErr(err).Msgf("could not open input file")
 		}
-		defer file.Close()
+		defer func() {
+			if err := file.Close(); err != nil {
+				gologger.Warning().Msgf("Failed to close input file: %v", err)
+			}
+		}()
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {

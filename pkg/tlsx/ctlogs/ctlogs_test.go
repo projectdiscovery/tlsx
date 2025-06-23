@@ -163,10 +163,10 @@ func TestCertificateToResponseWithCertOption(t *testing.T) {
 	response := service.certificateToResponse(cert, "Test Log Source")
 
 	require.NotNil(t, response)
-	assert.NotEmpty(t, response.CertificateResponse.Certificate)
+	assert.NotEmpty(t, response.Certificate)
 
 	// Verify the certificate is in PEM format
-	block, _ := pem.Decode([]byte(response.CertificateResponse.Certificate))
+	block, _ := pem.Decode([]byte(response.Certificate))
 	assert.NotNil(t, block)
 	assert.Equal(t, "CERTIFICATE", block.Type)
 }

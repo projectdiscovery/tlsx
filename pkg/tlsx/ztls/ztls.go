@@ -126,7 +126,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to setup connection").WithTag("ztls")
 	}
-	defer conn.Close() //internally done by conn.Close() so just a placeholder
+	defer func() {
+		_ = conn.Close()
+	}() //internally done by conn.Close() so just a placeholder
 
 	// get resolvedIp
 	resolvedIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
@@ -146,7 +148,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err)
 		}
 	}
-	defer tlsConn.Close()
+	defer func() {
+		_ = tlsConn.Close()
+	}()
 
 	hl := tlsConn.GetHandshakeLog()
 	now := time.Now()
@@ -233,7 +237,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			gologger.Error().Msgf("tlsx: ztls: failed to run connection pool: %v", err)
 		}
 	}()
-	defer pool.Close()
+	defer func() {
+		_ = pool.Close()
+	}()
 
 	// create ztls base config
 	baseCfg, err := c.getConfig(hostname, ip, port, options)
