@@ -2,8 +2,6 @@ module github.com/projectdiscovery/tlsx
 
 go 1.24.0
 
-toolchain go1.24.1
-
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/google/certificate-transparency-go v1.3.2
