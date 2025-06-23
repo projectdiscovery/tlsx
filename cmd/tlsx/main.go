@@ -10,6 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	errorutils "github.com/projectdiscovery/utils/errors"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 var (
@@ -25,8 +26,7 @@ func main() {
 
 func process() error {
 	if err := readFlags(); err != nil {
-		gologger.Fatal().Msgf("%s", err)
-		os.Exit(1)
+		return errorutils.NewWithErr(err).Msgf("could not read flags")
 	}
 	runner, err := runner.New(options)
 	if err != nil {
@@ -44,7 +44,7 @@ func process() error {
 	return nil
 }
 
-func readFlags() error {
+func readFlags(args ...string) error {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`TLSX is a tls data gathering and analysis toolkit.`)
 
@@ -147,15 +147,11 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.HealthCheck, "hc", "health-check", false, "run diagnostic check up"),
 	)
 
-	if err := flagSet.Parse(); err != nil {
+	err := flagSet.Parse(args...)
+	if err != nil {
 		return errorutils.NewWithErr(err).Msgf("could not parse flags")
 	}
-
-	// Check if stdin has data
-	hasStdin := false
-	if stat, err := os.Stdin.Stat(); err == nil && (stat.Mode()&os.ModeCharDevice) == 0 {
-		hasStdin = true
-	}
+	hasStdin := fileutil.HasStdin()
 
 	// Validation: CT logs mode and input mode cannot be used together
 	if options.CTLogs && (len(options.Inputs) > 0 || options.InputList != "" || hasStdin) {
