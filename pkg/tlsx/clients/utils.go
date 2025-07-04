@@ -24,7 +24,7 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 		NotBefore:    cert.NotBefore,
 		NotAfter:     cert.NotAfter,
 		Expired:      IsExpired(cert.NotAfter),
-		SelfSigned:   IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		SelfSigned:   IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId, cert.DNSNames),
 		MisMatched:   IsMisMatchedCert(hostname, domainNames),
 		Revoked:      IsTLSRevoked(options, cert),
 		WildCardCert: IsWildCardCert(domainNames),

@@ -46,7 +46,7 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 		NotBefore:    cert.NotBefore,
 		NotAfter:     cert.NotAfter,
 		Expired:      clients.IsExpired(cert.NotAfter),
-		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId, cert.DNSNames),
 		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
 		Revoked:      clients.IsZTLSRevoked(options, cert),
 		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
