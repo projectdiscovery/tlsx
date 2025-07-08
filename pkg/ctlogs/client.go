@@ -1,1 +1,102 @@
-THIS SHOULD BE A LINTER ERROR
+package ctlogs
+
+import (
+    "context"
+    "net/http"
+    "sync"
+    "time"
+
+    ct "github.com/google/certificate-transparency-go"
+    ctclient "github.com/google/certificate-transparency-go/client"
+    "github.com/google/certificate-transparency-go/jsonclient"
+)
+
+// ClientOptions controls behaviour of a CTLogClient.
+//
+// The struct is intentionally minimal for Milestone 1; further configuration
+// (e.g. back-off tuning, metrics granularity) will be added in later phases.
+// All fields are optional – sensible defaults are applied when a value is not
+// supplied.
+//
+// NOTE: We relax linting on public field names for builder-pattern ergonomics.
+//
+//nolint:revive // exported field names accepted by design here.
+type ClientOptions struct {
+    // HTTPClient used for all outbound requests.
+    HTTPClient *http.Client
+
+    // MaxBackoff caps the exponential back-off duration (future milestone).
+    MaxBackoff time.Duration
+}
+
+// WithHTTPClient sets a custom HTTP client.
+func WithHTTPClient(c *http.Client) func(*ClientOptions) {
+    return func(o *ClientOptions) {
+        o.HTTPClient = c
+    }
+}
+
+// WithMaxBackoff customises the back-off ceiling (placeholder).
+func WithMaxBackoff(d time.Duration) func(*ClientOptions) {
+    return func(o *ClientOptions) {
+        o.MaxBackoff = d
+    }
+}
+
+// applyDefaults initialises zero-value fields of ClientOptions.
+func (o *ClientOptions) applyDefaults() {
+    if o.HTTPClient == nil {
+        o.HTTPClient = &http.Client{Timeout: 10 * time.Second}
+    }
+    if o.MaxBackoff == 0 {
+        o.MaxBackoff = 60 * time.Second
+    }
+}
+
+// CTLogClient is a thin wrapper over certificate-transparency-go's LogClient
+// with room for future enhancements such as rate-limiting/back-off, statistics
+// and instrumentation. It is safe for concurrent use.
+type CTLogClient struct {
+    mu     sync.Mutex // protects mutable internal state as we extend features
+    info   CTLogInfo
+    client *ctclient.LogClient
+    opts   ClientOptions
+
+    // FUTURE: counters, back-off metadata, etc.
+}
+
+// NewCTLogClient constructs a CTLogClient for the provided log definition.
+// Option functions may be passed to modify behaviour.
+func NewCTLogClient(info CTLogInfo, optFns ...func(*ClientOptions)) (*CTLogClient, error) {
+    var opts ClientOptions
+    for _, fn := range optFns {
+        fn(&opts)
+    }
+    opts.applyDefaults()
+
+    lc, err := ctclient.New(info.URL, opts.HTTPClient, jsonclient.Options{})
+    if err != nil {
+        return nil, err
+    }
+
+    return &CTLogClient{
+        info:   info,
+        client: lc,
+        opts:   opts,
+    }, nil
+}
+
+// Info returns metadata describing the CT log this client is connected to.
+func (c *CTLogClient) Info() CTLogInfo {
+    return c.info
+}
+
+// GetSTH fetches the latest Signed Tree Head.
+func (c *CTLogClient) GetSTH(ctx context.Context) (*ct.SignedTreeHead, error) {
+    return c.client.GetSTH(ctx)
+}
+
+// GetEntries retrieves entries in the inclusive range [start, end].
+func (c *CTLogClient) GetEntries(ctx context.Context, start, end uint64) ([]ct.LogEntry, error) {
+    return c.client.GetEntries(ctx, int64(start), int64(end))
+}
