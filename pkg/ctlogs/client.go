@@ -5,6 +5,7 @@ import (
     "net/http"
     "sync"
     "time"
+    "sync/atomic"
 
     ct "github.com/google/certificate-transparency-go"
     ctclient "github.com/google/certificate-transparency-go/client"
@@ -73,6 +74,8 @@ type CTLogClient struct {
     client *ctclient.LogClient
     opts   ClientOptions
 
+    retryCounter *atomic.Uint64
+
     // FUTURE: counters, back-off metadata, etc.
 }
 
@@ -121,6 +124,10 @@ func (c *CTLogClient) GetEntries(ctx context.Context, start, end uint64) ([]ct.L
         // If context is done, propagate.
         if ctx.Err() != nil {
             return nil, err
+        }
+
+        if c.retryCounter != nil {
+            c.retryCounter.Add(1)
         }
 
         // Wait then retry.

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	ct "github.com/google/certificate-transparency-go"
@@ -55,6 +56,12 @@ type CTLogsService struct {
 	outputChan chan *clients.Response
 
 	deduper *boom.InverseBloomFilter
+
+	// atomic counters
+	totalCert     atomic.Uint64
+	duplicates    atomic.Uint64
+	uniqueCert    atomic.Uint64
+	backoffRetry  atomic.Uint64
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -149,6 +156,10 @@ func (service *CTLogsService) initializeSources() error {
 				client, err := NewCTLogClient(logInfo, WithHTTPClient(&http.Client{
 					Timeout: 10 * time.Second,
 				}))
+				if err == nil {
+					// attach retry counter
+					client.retryCounter = &service.backoffRetry
+				}
 				if err != nil {
 					if service.options.Verbose {
 						gologger.Warning().Msgf("Failed to create client for %s: %v", logInfo.Description, err)
@@ -315,6 +326,13 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 	uniqKey := cert.Issuer.String() + cert.SerialNumber.String()
 	duplicate := service.deduper.TestAndAdd([]byte(uniqKey))
 
+	service.totalCert.Add(1)
+	if duplicate {
+		service.duplicates.Add(1)
+	} else {
+		service.uniqueCert.Add(1)
+	}
+
 	// Process all certificates - no filtering
 	if duplicate && service.options.Callback == nil {
 		// Skip duplicates when using legacy channel approach.
@@ -428,4 +446,22 @@ func (service *CTLogsService) formatSourceID(sourceName string) string {
 	id = strings.ReplaceAll(id, " ", "_")
 	id = strings.ReplaceAll(id, "-", "_")
 	return id
+}
+
+// Stats represents a snapshot of service metrics.
+type Stats struct {
+	Total      uint64 `json:"total"`
+	Unique     uint64 `json:"unique"`
+	Duplicates uint64 `json:"duplicates"`
+	Retries    uint64 `json:"retries"`
+}
+
+// GetStats atomically captures current counters.
+func (service *CTLogsService) GetStats() Stats {
+	return Stats{
+		Total:      service.totalCert.Load(),
+		Unique:     service.uniqueCert.Load(),
+		Duplicates: service.duplicates.Load(),
+		Retries:    service.backoffRetry.Load(),
+	}
 }
