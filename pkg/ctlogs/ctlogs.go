@@ -12,8 +12,6 @@ import (
 	"time"
 
 	ct "github.com/google/certificate-transparency-go"
-	ctclient "github.com/google/certificate-transparency-go/client"
-	"github.com/google/certificate-transparency-go/jsonclient"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 )
@@ -42,11 +40,8 @@ type CTLogList struct {
 
 // CTLogSource represents a Certificate Transparency log source
 type CTLogSource struct {
-	Info       CTLogInfo
-	Client     *ctclient.LogClient
+	Client     *CTLogClient
 	LastSize   uint64
-	RateLimit  time.Duration
-	LastFetch  time.Time
 	WindowSize uint64 // Sliding window size
 }
 
@@ -130,9 +125,9 @@ func (service *CTLogsService) initializeSources() error {
 			wg.Add(1)
 			go func(logInfo CTLogInfo) {
 				defer wg.Done()
-				client, err := ctclient.New(logInfo.URL, &http.Client{
-					Timeout: 10 * time.Second, // Shorter timeout
-				}, jsonclient.Options{})
+				client, err := NewCTLogClient(logInfo, WithHTTPClient(&http.Client{
+					Timeout: 10 * time.Second,
+				}))
 				if err != nil {
 					if service.options.Verbose {
 						gologger.Warning().Msgf("Failed to create client for %s: %v", logInfo.Description, err)
@@ -152,11 +147,8 @@ func (service *CTLogsService) initializeSources() error {
 					startSize = sth.TreeSize - 1000
 				}
 				source := &CTLogSource{
-					Info:       logInfo,
 					Client:     client,
 					LastSize:   startSize,
-					RateLimit:  time.Duration(logInfo.MMD) * time.Second,
-					LastFetch:  time.Now(),
 					WindowSize: 1000, // Process last 1000 entries
 				}
 				mu.Lock()
@@ -215,7 +207,7 @@ func (service *CTLogsService) streamFromSource(source *CTLogSource) {
 	// Process initial batch immediately
 	if err := service.fetchNewEntries(source); err != nil {
 		if service.options.Verbose {
-			gologger.Error().Msgf("Error in initial fetch from %s: %v", source.Info.Description, err)
+			gologger.Error().Msgf("Error in initial fetch from %s: %v", source.Client.Info().Description, err)
 		}
 	}
 
@@ -231,7 +223,7 @@ func (service *CTLogsService) streamFromSource(source *CTLogSource) {
 		case <-ticker.C:
 			if err := service.fetchNewEntries(source); err != nil {
 				if service.options.Verbose {
-					gologger.Error().Msgf("Error fetching from %s: %v", source.Info.Description, err)
+					gologger.Error().Msgf("Error fetching from %s: %v", source.Client.Info().Description, err)
 				}
 				// Continue trying even if there's an error
 			}
@@ -259,20 +251,20 @@ func (service *CTLogsService) fetchNewEntries(source *CTLogSource) error {
 	}
 
 	// Fetch entries
-	entries, err := source.Client.GetEntries(service.ctx, int64(start), int64(end-1))
+	entries, err := source.Client.GetEntries(service.ctx, start, end-1)
 	if err != nil {
 		return fmt.Errorf("failed to get entries: %w", err)
 	}
 
 	if service.options.Verbose {
-		gologger.Info().Msgf("[%s] Fetched %d entries (%d-%d)", source.Info.Description, len(entries), start, end-1)
+		gologger.Info().Msgf("[%s] Fetched %d entries (%d-%d)", source.Client.Info().Description, len(entries), start, end-1)
 	}
 
 	// Process all certificates - no filtering
 	for i, entry := range entries {
 		if err := service.processEntry(source, &entry, start+uint64(i)); err != nil {
 			if service.options.Verbose {
-				gologger.Error().Msgf("Error processing entry from %s: %v", source.Info.Description, err)
+				gologger.Error().Msgf("Error processing entry from %s: %v", source.Client.Info().Description, err)
 			}
 			continue
 		}
@@ -280,7 +272,6 @@ func (service *CTLogsService) fetchNewEntries(source *CTLogSource) error {
 
 	// Update last size
 	source.LastSize = end
-	source.LastFetch = time.Now()
 
 	return nil
 }
@@ -299,7 +290,7 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 	}
 
 	// Process all certificates - no filtering
-	response := service.certificateToResponse(cert, source.Info.Description)
+	response := service.certificateToResponse(cert, source.Client.Info().Description)
 	if response == nil {
 		return nil
 	}
@@ -309,12 +300,12 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 	case service.outputChan <- response:
 		// Only show verbose output, let the main output writer handle non-verbose
 		if service.options.Verbose {
-			gologger.Info().Msgf("[%s] %s", source.Info.Description, response.Host)
+			gologger.Info().Msgf("[%s] %s", source.Client.Info().Description, response.Host)
 		}
 	default:
 		// Channel is full, skip this entry
 		if service.options.Verbose {
-			gologger.Warning().Msgf("Output channel full, skipping entry from %s", source.Info.Description)
+			gologger.Warning().Msgf("Output channel full, skipping entry from %s", source.Client.Info().Description)
 		}
 	}
 
@@ -337,9 +328,6 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 	if host == "" {
 		return nil
 	}
-
-	// Convert source name to ID format (e.g., "Google 'Xenon2025h2'" -> "google_xenon2025h2")
-	sourceID := service.formatSourceID(sourceName)
 
 	// Create certificate response
 	certResp := &clients.CertificateResponse{
@@ -383,7 +371,7 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 		Port:                "443", // Default HTTPS port
 		ProbeStatus:         true,
 		CertificateResponse: certResp,
-		CTLogSource:         sourceID,
+		CTLogSource:         service.formatSourceID(sourceName),
 	}
 
 	return response
