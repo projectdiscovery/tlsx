@@ -52,9 +52,6 @@ type CTLogsService struct {
 	options    ServiceOptions
 	sources    []*CTLogSource
 
-	// Deprecated: retained for backward compatibility until CLI refactor is done.
-	outputChan chan *clients.Response
-
 	deduper *boom.InverseBloomFilter
 
 	// atomic counters
@@ -99,7 +96,6 @@ func New(legacyOpts *clients.Options, optFns ...ServiceOption) (*CTLogsService, 
 
 	svc := &CTLogsService{
 		options:    opts,
-		outputChan: make(chan *clients.Response, 1000), // deprecate later
 		ctx:        ctx,
 		cancel:     cancel,
 	}
@@ -224,13 +220,6 @@ func (service *CTLogsService) Start() {
 func (service *CTLogsService) Stop() {
 	service.cancel()
 	service.wg.Wait()
-	close(service.outputChan)
-}
-
-// GetOutputChannel exposes the deprecated channel-based interface.
-// Will be removed in a future milestone once all call-sites migrate.
-func (service *CTLogsService) GetOutputChannel() <-chan *clients.Response {
-	return service.outputChan
 }
 
 // streamFromSource continuously streams from a single CT log source
@@ -339,11 +328,6 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 		return nil
 	}
 
-	response := service.certificateToResponse(cert, source.Client.Info().Description)
-	if response == nil {
-		return nil
-	}
-
 	// Invoke callback if configured.
 	if service.options.Callback != nil {
 		meta := EntryMeta{
@@ -354,26 +338,44 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 		}
 
 		service.options.Callback(meta, cert.Raw, duplicate)
-	} else {
-		// Fallback to channel for legacy behaviour.
-		select {
-		case service.outputChan <- response:
-			// Only verbose local log
-			if service.options.Verbose {
-				gologger.Info().Msgf("[%s] %s", source.Client.Info().Description, response.Host)
-			}
-		default:
-			if service.options.Verbose {
-				gologger.Warning().Msgf("Output channel full, skipping entry from %s", source.Client.Info().Description)
-			}
-		}
 	}
 
 	return nil
 }
 
-// certificateToResponse converts an x509 certificate to tlsx response format
-func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sourceName string) *clients.Response {
+// formatSourceID converts a CT log source name to an ID format
+func (service *CTLogsService) formatSourceID(sourceName string) string {
+	// Remove quotes and convert to lowercase with underscores
+	// Example: "Google 'Xenon2025h2'" -> "google_xenon2025h2"
+	id := strings.ToLower(sourceName)
+	id = strings.ReplaceAll(id, "'", "")
+	id = strings.ReplaceAll(id, " ", "_")
+	id = strings.ReplaceAll(id, "-", "_")
+	return id
+}
+
+// Stats represents a snapshot of service metrics.
+type Stats struct {
+	Total      uint64 `json:"total"`
+	Unique     uint64 `json:"unique"`
+	Duplicates uint64 `json:"duplicates"`
+	Retries    uint64 `json:"retries"`
+}
+
+// GetStats atomically captures current counters.
+func (service *CTLogsService) GetStats() Stats {
+	return Stats{
+		Total:      service.totalCert.Load(),
+		Unique:     service.uniqueCert.Load(),
+		Duplicates: service.duplicates.Load(),
+		Retries:    service.backoffRetry.Load(),
+	}
+}
+
+// ConvertCertificateToResponse converts an x509 certificate to tlsx response
+// format. It is exported so callers (e.g., CLI runner) can reuse the same
+// mapping logic as the service internals.
+func ConvertCertificateToResponse(cert *x509.Certificate, sourceName string, includeCert bool) *clients.Response {
 	now := time.Now()
 
 	// Determine host from certificate
@@ -420,7 +422,7 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 	}
 
 	// Add certificate in PEM format if requested
-	if service.options.Cert {
+	if includeCert {
 		certResp.Certificate = clients.PemEncode(cert.Raw)
 	}
 
@@ -431,37 +433,8 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 		Port:                "443", // Default HTTPS port
 		ProbeStatus:         true,
 		CertificateResponse: certResp,
-		CTLogSource:         service.formatSourceID(sourceName),
+		CTLogSource:         strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(sourceName, " ", "_"), "'", ""), "-", "_")),
 	}
 
 	return response
-}
-
-// formatSourceID converts a CT log source name to an ID format
-func (service *CTLogsService) formatSourceID(sourceName string) string {
-	// Remove quotes and convert to lowercase with underscores
-	// Example: "Google 'Xenon2025h2'" -> "google_xenon2025h2"
-	id := strings.ToLower(sourceName)
-	id = strings.ReplaceAll(id, "'", "")
-	id = strings.ReplaceAll(id, " ", "_")
-	id = strings.ReplaceAll(id, "-", "_")
-	return id
-}
-
-// Stats represents a snapshot of service metrics.
-type Stats struct {
-	Total      uint64 `json:"total"`
-	Unique     uint64 `json:"unique"`
-	Duplicates uint64 `json:"duplicates"`
-	Retries    uint64 `json:"retries"`
-}
-
-// GetStats atomically captures current counters.
-func (service *CTLogsService) GetStats() Stats {
-	return Stats{
-		Total:      service.totalCert.Load(),
-		Unique:     service.uniqueCert.Load(),
-		Duplicates: service.duplicates.Load(),
-		Retries:    service.backoffRetry.Load(),
-	}
 }

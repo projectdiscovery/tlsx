@@ -93,6 +93,11 @@ func readFlags(args ...string) error {
 		flagSet.BoolVarP(&options.CTLogs, "ct-logs", "ctl", false, "enable certificate transparency logs streaming mode"),
 	)
 
+	flagSet.CreateGroup("ctlogs", "CTLogs Start Options",
+		flagSet.BoolVarP(&options.CTLBeginning, "ctl-beginning", "cb", false, "start streaming each CT log from index 0"),
+		flagSet.StringSliceVarP(&options.CTLIndex, "ctl-index", "ci", nil, "custom start index per log: <logURL>=<index>", goflags.NormalizedStringSliceOptions),
+	)
+
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
 		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display host with host expired certificate"),
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),

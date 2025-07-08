@@ -1,12 +1,14 @@
 package ctlogs
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
 	"math/big"
+	"sync/atomic"
 	"testing"
 	"time"
 

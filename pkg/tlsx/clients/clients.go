@@ -168,6 +168,10 @@ type Options struct {
 	Proxy string
 	// CTLogs enables certificate transparency logs streaming mode
 	CTLogs bool
+	// CTLBeginning when true starts CT logs streaming from index 0
+	CTLBeginning bool
+	// CTLIndex allows specifying custom start index per log in the form <logURL>=<index>
+	CTLIndex goflags.StringSlice
 }
 
 // Response is the response returned for a TLS grab event

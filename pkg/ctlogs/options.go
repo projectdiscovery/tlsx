@@ -100,6 +100,23 @@ func WithCustomStartIndex(logID string, idx uint64) ServiceOption {
     }
 }
 
+// WithCustomStartIndices sets multiple custom start indices at once and marks
+// the StartMode as StartCustom.
+func WithCustomStartIndices(m map[string]uint64) ServiceOption {
+    return func(o *ServiceOptions) {
+        if len(m) == 0 {
+            return
+        }
+        o.StartMode = StartCustom
+        if o.CustomStartIndices == nil {
+            o.CustomStartIndices = make(map[string]uint64)
+        }
+        for k, v := range m {
+            o.CustomStartIndices[k] = v
+        }
+    }
+}
+
 func WithCallback(cb EntryCallback) ServiceOption {
     return func(o *ServiceOptions) { o.Callback = cb }
 }

@@ -78,10 +78,19 @@ Provide a clean, testable and extensible CT logs SDK / CLI that offers:
 * Wiring retry stats required lightweight coupling between client and service (pointer injection) to avoid heavy refactor.
 * Jitter in back-off makes deterministic testing tricky → allowed tolerance in unit tests rather than mocking rand.
 
----
+### Milestone 5 — CLI Integration & Documentation  ✅
 
-### Milestone 5 — CLI & Docs (WIP)
-Pending tasks: integrate new builder options into CLI flags, deprecate output channel, update README.
+* Removed legacy channel interface from `CTLogsService` – callback is now the sole streaming mechanism.
+* CLI (`tlsx`) re-wired to builder options + callback, adding flags:
+  * `--ctl-beginning / -cb`
+  * `--ctl-index / -ci`
+* Runner adapts callback output into existing writer; behaviour unchanged for end-users.
+* README updated with CT-Logs section and examples.
+* Added public helper `ConvertCertificateToResponse` to share certificate→response mapping between service and CLI (prevents code duplication).
+
+**Closing Notes**
+
+The CT Logs subsystem is now fully decoupled, uses functional options throughout, offers deduplication, rate-limiting back-off, atomic metrics, and integrates cleanly with the CLI. Further enhancements (e.g., Prometheus exporter) can build atop the stats snapshot API without touching core logic.
 
 ---
 
