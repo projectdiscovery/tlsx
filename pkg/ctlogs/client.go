@@ -27,6 +27,9 @@ type ClientOptions struct {
 
     // MaxBackoff caps the exponential back-off duration (future milestone).
     MaxBackoff time.Duration
+
+    // Sleep allows overriding the sleep behaviour (useful for testing).
+    Sleep func(time.Duration)
 }
 
 // WithHTTPClient sets a custom HTTP client.
@@ -43,6 +46,11 @@ func WithMaxBackoff(d time.Duration) func(*ClientOptions) {
     }
 }
 
+// WithSleepFn customises the sleep function.
+func WithSleepFn(sleepFn func(time.Duration)) func(*ClientOptions) {
+    return func(o *ClientOptions) { o.Sleep = sleepFn }
+}
+
 // applyDefaults initialises zero-value fields of ClientOptions.
 func (o *ClientOptions) applyDefaults() {
     if o.HTTPClient == nil {
@@ -50,6 +58,9 @@ func (o *ClientOptions) applyDefaults() {
     }
     if o.MaxBackoff == 0 {
         o.MaxBackoff = 60 * time.Second
+    }
+    if o.Sleep == nil {
+        o.Sleep = time.Sleep
     }
 }
 
@@ -98,5 +109,22 @@ func (c *CTLogClient) GetSTH(ctx context.Context) (*ct.SignedTreeHead, error) {
 
 // GetEntries retrieves entries in the inclusive range [start, end].
 func (c *CTLogClient) GetEntries(ctx context.Context, start, end uint64) ([]ct.LogEntry, error) {
-    return c.client.GetEntries(ctx, int64(start), int64(end))
+    backoff := NewBackoff(500*time.Millisecond, c.opts.MaxBackoff)
+
+    for {
+        entries, err := c.client.GetEntries(ctx, int64(start), int64(end))
+        if err == nil {
+            backoff.Reset()
+            return entries, nil
+        }
+
+        // If context is done, propagate.
+        if ctx.Err() != nil {
+            return nil, err
+        }
+
+        // Wait then retry.
+        wait := backoff.Next()
+        c.opts.Sleep(wait)
+    }
 }
