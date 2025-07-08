@@ -42,6 +42,10 @@ type ServiceOptions struct {
 
     PollInterval time.Duration
 
+    // Size of the inverse bloom filter (number of buckets).
+    // Larger values reduce false negatives. Default 1,000,000.
+    DedupeSize int
+
     // Stream start behaviour.
     StartMode          StartMode
     CustomStartIndices map[string]uint64 // by log URL or ID
@@ -55,6 +59,7 @@ func defaultServiceOptions() ServiceOptions {
         Verbose:     false,
         Cert:        false,
         PollInterval: 5 * time.Second,
+        DedupeSize:  1_000_000,
         StartMode:   StartNow,
         CustomStartIndices: make(map[string]uint64),
     }
@@ -97,4 +102,9 @@ func WithCustomStartIndex(logID string, idx uint64) ServiceOption {
 
 func WithCallback(cb EntryCallback) ServiceOption {
     return func(o *ServiceOptions) { o.Callback = cb }
+}
+
+// WithDedupeSize sets the size of the inverse bloom filter.
+func WithDedupeSize(sz int) ServiceOption {
+    return func(o *ServiceOptions) { if sz > 0 { o.DedupeSize = sz } }
 }

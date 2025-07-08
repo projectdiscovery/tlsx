@@ -14,6 +14,7 @@ import (
 	ct "github.com/google/certificate-transparency-go"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	boom "github.com/tylertreat/BoomFilters"
 )
 
 // CTLogInfo represents a CT log from the official log list
@@ -52,6 +53,8 @@ type CTLogsService struct {
 
 	// Deprecated: retained for backward compatibility until CLI refactor is done.
 	outputChan chan *clients.Response
+
+	deduper *boom.InverseBloomFilter
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -93,6 +96,9 @@ func New(legacyOpts *clients.Options, optFns ...ServiceOption) (*CTLogsService, 
 		ctx:        ctx,
 		cancel:     cancel,
 	}
+
+	// Initialize inverse bloom filter for deduplication.
+	svc.deduper = boom.NewInverseBloomFilter(uint(opts.DedupeSize))
 
 	if err := svc.initializeSources(); err != nil {
 		return nil, err
@@ -305,7 +311,16 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 		return fmt.Errorf("failed to parse certificate: %w", err)
 	}
 
+	// Build uniqueness key and check deduper
+	uniqKey := cert.Issuer.String() + cert.SerialNumber.String()
+	duplicate := service.deduper.TestAndAdd([]byte(uniqKey))
+
 	// Process all certificates - no filtering
+	if duplicate && service.options.Callback == nil {
+		// Skip duplicates when using legacy channel approach.
+		return nil
+	}
+
 	response := service.certificateToResponse(cert, source.Client.Info().Description)
 	if response == nil {
 		return nil
@@ -320,8 +335,7 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 			CollectionTime: time.Now(),
 		}
 
-		// Currently we pass certificate raw bytes; future milestone may adjust.
-		service.options.Callback(meta, cert.Raw, false /* duplicate flag placeholder */)
+		service.options.Callback(meta, cert.Raw, duplicate)
 	} else {
 		// Fallback to channel for legacy behaviour.
 		select {
