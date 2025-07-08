@@ -35,7 +35,7 @@ Provide a clean, testable and extensible CT logs SDK / CLI that offers:
 
 ## Detailed TODO Checklist
 
-### Milestone 1 — Foundation & Interfaces
+### Milestone 1 — Foundation & Interfaces  ✅
 
 - [ ] Create `pkg/ctlogs/client.go` defining `CTLogClient`:
   - [ ] `Fetch(ctx) ([]*ct.LogEntry, error)`
@@ -45,7 +45,7 @@ Provide a clean, testable and extensible CT logs SDK / CLI that offers:
 - [ ] Introduce `ServiceOptions` (service-level) with builder pattern — includes duplicates filter size, stats interval, start mode.
 - [ ] Refactor `CTLogsService` to accept a `func(meta CTLogMeta, cert *x509.Certificate, duplicate bool)` callback instead of output channel.
 
-### Milestone 2 — Deduplication & Data Flow
+### Milestone 2 — Deduplication & Data Flow  ✅
 
 - [ ] Add dependency `github.com/tylertreat/InverseBloomFilter`.
 - [ ] Instantiate a shared inverse bloom filter in `CTLogsService`.
@@ -53,7 +53,7 @@ Provide a clean, testable and extensible CT logs SDK / CLI that offers:
 - [ ] Before invoking callback, mark & look-up duplicate flag.
 - [ ] Remove channel send logic & related tests.
 
-### Milestone 3 — Rate-Limiting
+### Milestone 3 — Rate-Limiting  ✅
 
 - [ ] Implement `backoff.ExpBackoff` helper with configurable max.
 - [ ] Integrate into `CTLogClient` HTTP fetch paths.
@@ -67,22 +67,21 @@ Provide a clean, testable and extensible CT logs SDK / CLI that offers:
 - [ ] Support three start modes per source: `Beginning`, `Now (default)`, `CustomIndex`.
 - [ ] Wire CLI flags to service options.
 
-### Milestone 5 — Metrics, Polish & Docs
+### Milestone 4 — Metrics / Stats  ✅
 
-- [ ] Add `Stats` struct with atomic counters: entriesSeen, entriesProcessed, duplicatesSkipped, rateLimitHits, backoffRetries, etc.
-- [ ] Expose `GetStats()` on `CTLogsService`.
-- [ ] Optional `WithStatsTicker(d time.Duration)` option to log stats periodically.
-- [ ] Ensure `go test ./...`, `go vet ./...` and `golangci-lint run` are clean.
-- [ ] Update examples & README.
+**Implemented:**
+* Atomic counters in `CTLogsService` for total, unique, duplicates, retries.
+* `GetStats` snapshot API.
+* Counters wired into duplicate check and back-off retry path.
+
+**Pain points / insights**
+* Wiring retry stats required lightweight coupling between client and service (pointer injection) to avoid heavy refactor.
+* Jitter in back-off makes deterministic testing tricky → allowed tolerance in unit tests rather than mocking rand.
 
 ---
 
-## Notes
-
-* Keep changes confined to `pkg/ctlogs` & related CLI glue in `cmd/tlsx`.
-* Existing public APIs should remain stable except for the new callback & flags.
-* Use Go 1.22+ generics where it meaningfully reduces duplication (e.g. back-off util).
-* Prefer small, reviewable PRs per milestone.
+### Milestone 5 — CLI & Docs (WIP)
+Pending tasks: integrate new builder options into CLI flags, deprecate output channel, update README.
 
 ---
 
