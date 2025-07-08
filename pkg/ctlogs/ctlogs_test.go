@@ -77,14 +77,8 @@ func TestCertificateToResponse(t *testing.T) {
 		IsCA:                  false,
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    false,
-	}
-
-	service := &CTLogsService{
-		options: options,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: false}
+	service := &CTLogsService{options: svcOpts}
 
 	response := service.certificateToResponse(cert, "Test Log Source")
 
@@ -121,14 +115,8 @@ func TestCertificateToResponseWithEmptyHost(t *testing.T) {
 		DNSNames:  []string{}, // Empty DNS names
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    false,
-	}
-
-	service := &CTLogsService{
-		options: options,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: false}
+	service := &CTLogsService{options: svcOpts}
 
 	response := service.certificateToResponse(cert, "Test Log Source")
 
@@ -151,14 +139,8 @@ func TestCertificateToResponseWithCertOption(t *testing.T) {
 		DNSNames:  []string{"test.example.com"},
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    true, // Enable certificate output
-	}
-
-	service := &CTLogsService{
-		options: options,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: true}
+	service := &CTLogsService{options: svcOpts}
 
 	response := service.certificateToResponse(cert, "Test Log Source")
 
@@ -307,14 +289,8 @@ func TestCertificateResponseFields(t *testing.T) {
 		IsCA:                  false,
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    false,
-	}
-
-	service := &CTLogsService{
-		options: options,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: false}
+	service := &CTLogsService{options: svcOpts}
 
 	response := service.certificateToResponse(cert, "Test Log Source")
 

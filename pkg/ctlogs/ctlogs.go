@@ -47,12 +47,15 @@ type CTLogSource struct {
 
 // CTLogsService handles Certificate Transparency logs streaming
 type CTLogsService struct {
-	options    *clients.Options
+	options    ServiceOptions
 	sources    []*CTLogSource
+
+	// Deprecated: retained for backward compatibility until CLI refactor is done.
 	outputChan chan *clients.Response
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
+
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // CTLogEntry represents a single CT log entry
@@ -66,23 +69,35 @@ type CTLogResponse struct {
 	Entries []CTLogEntry `json:"entries"`
 }
 
-// New creates a new CT logs streaming service
-func New(options *clients.Options) (*CTLogsService, error) {
+// New constructs a CTLogsService using the supplied functional options.
+//
+// For the time being we also allow passing *clients.Options for legacy callers;
+// this parameter will be removed in a subsequent milestone.
+func New(legacyOpts *clients.Options, optFns ...ServiceOption) (*CTLogsService, error) {
+	// Build ServiceOptions with defaults, apply functional overrides, then
+	// copy values from legacy opts for compatibility.
+	opts := defaultServiceOptions()
+	for _, fn := range optFns {
+		fn(&opts)
+	}
+	if legacyOpts != nil {
+		opts.Verbose = opts.Verbose || legacyOpts.Verbose
+		opts.Cert = opts.Cert || legacyOpts.Cert
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
-	service := &CTLogsService{
-		options:    options,
-		outputChan: make(chan *clients.Response, 1000),
+	svc := &CTLogsService{
+		options:    opts,
+		outputChan: make(chan *clients.Response, 1000), // deprecate later
 		ctx:        ctx,
 		cancel:     cancel,
 	}
 
-	// Initialize CT log sources from official list
-	if err := service.initializeSources(); err != nil {
+	if err := svc.initializeSources(); err != nil {
 		return nil, err
 	}
-
-	return service, nil
+	return svc, nil
 }
 
 // initializeSources fetches and initializes CT log sources from the official Google log list
@@ -180,7 +195,7 @@ func (service *CTLogsService) initializeSources() error {
 
 // Start begins streaming from all CT log sources
 func (service *CTLogsService) Start() {
-	gologger.Info().Msg("Starting CT logs streaming...")
+	gologger.Info().Msg("Starting CT logs streaming…")
 
 	for _, source := range service.sources {
 		service.wg.Add(1)
@@ -195,7 +210,8 @@ func (service *CTLogsService) Stop() {
 	close(service.outputChan)
 }
 
-// GetOutputChannel returns the output channel for CT log entries
+// GetOutputChannel exposes the deprecated channel-based interface.
+// Will be removed in a future milestone once all call-sites migrate.
 func (service *CTLogsService) GetOutputChannel() <-chan *clients.Response {
 	return service.outputChan
 }
@@ -212,7 +228,7 @@ func (service *CTLogsService) streamFromSource(source *CTLogSource) {
 	}
 
 	// Use a reasonable polling interval instead of MMD-based rate limiting
-	pollInterval := 5 * time.Second
+	pollInterval := service.options.PollInterval
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
@@ -295,17 +311,29 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 		return nil
 	}
 
-	// Send to output channel
-	select {
-	case service.outputChan <- response:
-		// Only show verbose output, let the main output writer handle non-verbose
-		if service.options.Verbose {
-			gologger.Info().Msgf("[%s] %s", source.Client.Info().Description, response.Host)
+	// Invoke callback if configured.
+	if service.options.Callback != nil {
+		meta := EntryMeta{
+			SourceID:       service.formatSourceID(source.Client.Info().Description),
+			SourceDesc:     source.Client.Info().Description,
+			Index:          index,
+			CollectionTime: time.Now(),
 		}
-	default:
-		// Channel is full, skip this entry
-		if service.options.Verbose {
-			gologger.Warning().Msgf("Output channel full, skipping entry from %s", source.Client.Info().Description)
+
+		// Currently we pass certificate raw bytes; future milestone may adjust.
+		service.options.Callback(meta, cert.Raw, false /* duplicate flag placeholder */)
+	} else {
+		// Fallback to channel for legacy behaviour.
+		select {
+		case service.outputChan <- response:
+			// Only verbose local log
+			if service.options.Verbose {
+				gologger.Info().Msgf("[%s] %s", source.Client.Info().Description, response.Host)
+			}
+		default:
+			if service.options.Verbose {
+				gologger.Warning().Msgf("Output channel full, skipping entry from %s", source.Client.Info().Description)
+			}
 		}
 	}
 
