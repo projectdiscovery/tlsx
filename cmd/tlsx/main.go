@@ -95,7 +95,7 @@ func readFlags(args ...string) error {
 
 	flagSet.CreateGroup("ctlogs", "CTLogs Start Options",
 		flagSet.BoolVarP(&options.CTLBeginning, "ctl-beginning", "cb", false, "start streaming each CT log from index 0"),
-		flagSet.StringSliceVarP(&options.CTLIndex, "ctl-index", "ci", nil, "custom start index per log: <logURL>=<index>", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.CTLIndex, "ctl-index", "cti", nil, "custom start index per log: <logURL>=<index>", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",

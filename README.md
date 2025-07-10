@@ -573,14 +573,14 @@ The tool offers three mutually-exclusive start behaviours controlled by the foll
 |------|-----------|
 | _default_ | Start **now** (tree-size at startup) – only future certificates are streamed |
 | `-cb, --ctl-beginning` | Start from index **0** for every log (full historical replay) |
-| `-ci, --ctl-index <log>=<n>` | Custom per-log index (repeatable). Sets starting index to _n_ for the specified log URL/ID. Example: `--ctl-index https://ct.googleapis.com/logs/argon2023=123456` |
+| `-cti, --ctl-index <log>=<n>` | Custom per-log index (repeatable). Sets starting index to _n_ for the specified log URL/ID. Example: `--ctl-index https://ct.googleapis.com/logs/argon2023=123456` |
 
 ```bash
 # Replay the entire history
 $ tlsx -ctl -cb -silent > all_certs.jsonl
 
 # Resume at custom positions for two logs
-$ tlsx -ctl -ci https://ct.googleapis.com/logs/argon2023=987654 -ci cloudflare-nimbus2024=543210 \
+$ tlsx -ctl -cti https://ct.googleapis.com/logs/argon2023=987654 -cti cloudflare-nimbus2024=543210 \
       -silent | jq -r .ct_source
 ```
 

@@ -83,7 +83,7 @@ Provide a clean, testable and extensible CT logs SDK / CLI that offers:
 * Removed legacy channel interface from `CTLogsService` – callback is now the sole streaming mechanism.
 * CLI (`tlsx`) re-wired to builder options + callback, adding flags:
   * `--ctl-beginning / -cb`
-  * `--ctl-index / -ci`
+  * `--ctl-index / -cti`
 * Runner adapts callback output into existing writer; behaviour unchanged for end-users.
 * README updated with CT-Logs section and examples.
 * Added public helper `ConvertCertificateToResponse` to share certificate→response mapping between service and CLI (prevents code duplication).
