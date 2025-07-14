@@ -354,8 +354,8 @@ func IsExpired(notAfter time.Time) bool {
 // IsSelfSigned returns true if the certificate is self-signed
 //
 // follows: https://security.stackexchange.com/a/162263/250973
-func IsSelfSigned(authorityKeyID, subjectKeyID []byte) bool {
-	if len(authorityKeyID) == 0 || bytes.Equal(authorityKeyID, subjectKeyID) {
+func IsSelfSigned(authorityKeyID, subjectKeyID []byte, SANs []string) bool {
+	if len(authorityKeyID) == 0 || bytes.Equal(authorityKeyID, subjectKeyID) || len(SANs) == 0 {
 		return true
 	}
 	return false
@@ -426,7 +426,7 @@ func IsZTLSRevoked(options *Options, cert *zx509.Certificate) bool {
 // IsUntrustedCA returns true if the certificate is a self-signed CA
 func IsUntrustedCA(certs []*x509.Certificate) bool {
 	for _, c := range certs {
-		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId) && !assets.IsRootCert(c) {
+		if c != nil && c.IsCA && IsSelfSigned(c.AuthorityKeyId, c.SubjectKeyId, c.DNSNames) && !assets.IsRootCert(c) {
 			return true
 		}
 	}
@@ -437,7 +437,7 @@ func IsUntrustedCA(certs []*x509.Certificate) bool {
 func IsZTLSUntrustedCA(certs []ztls.SimpleCertificate) bool {
 	for _, cert := range certs {
 		parsedCert, _ := x509.ParseCertificate(cert.Raw)
-		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId) && !assets.IsRootCert(parsedCert) {
+		if parsedCert != nil && parsedCert.IsCA && IsSelfSigned(parsedCert.AuthorityKeyId, parsedCert.SubjectKeyId, parsedCert.DNSNames) && !assets.IsRootCert(parsedCert) {
 			return true
 		}
 	}
