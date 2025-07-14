@@ -394,7 +394,7 @@ func ConvertCertificateToResponse(cert *x509.Certificate, sourceName string, inc
 		IssuerDN:     cert.Issuer.String(),
 		IssuerCN:     cert.Issuer.CommonName,
 		Expired:      cert.NotAfter.Before(now),
-		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId),
+		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId, cert.DNSNames),
 		WildCardCert: clients.IsWildCardCert(cert.DNSNames),
 	}
 
