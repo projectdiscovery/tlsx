@@ -90,12 +90,12 @@ func readFlags(args ...string) error {
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.Serial, "serial", "se", false, "display certificate serial number"),
-		flagSet.BoolVarP(&options.CTLogs, "ct-logs", "ctl", false, "enable certificate transparency logs streaming mode"),
 	)
 
-	flagSet.CreateGroup("ctlogs", "CTLogs Start Options",
+	flagSet.CreateGroup("ctlogs", "Certificate Transparency Logs",
+		flagSet.BoolVarP(&options.CTLogs, "ct-logs", "ctl", false, "enable certificate transparency logs streaming mode"),
 		flagSet.BoolVarP(&options.CTLBeginning, "ctl-beginning", "cb", false, "start streaming each CT log from index 0"),
-		flagSet.StringSliceVarP(&options.CTLIndex, "ctl-index", "cti", nil, "custom start index per log: <logURL>=<index>", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.CTLIndex, "ctl-index", "cti", nil, "custom start index per log using source ID: <sourceID>=<index> (e.g. google_xenon2025h2=12345)", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",

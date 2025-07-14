@@ -1,43 +1,18 @@
 package ctlogs
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"errors"
 	"math/big"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	ct "github.com/google/certificate-transparency-go"
-	boom "github.com/tylertreat/BoomFilters"
 	x509ct "github.com/google/certificate-transparency-go/x509"
+	boom "github.com/tylertreat/BoomFilters"
 )
-
-// mockLogClient allows injection of failures to trigger backoff.
-type mockLogClient struct {
-	entriesCalls int32
-	failCount    int
-	data         []ct.LogEntry
-}
-
-func (m *mockLogClient) GetSTH(ctx context.Context) (*ct.SignedTreeHead, error) {
-	return &ct.SignedTreeHead{TreeSize: uint64(len(m.data))}, nil
-}
-
-func (m *mockLogClient) GetEntries(ctx context.Context, start, end int64) ([]ct.LogEntry, error) {
-	calls := atomic.AddInt32(&m.entriesCalls, 1)
-	if int(calls) <= m.failCount {
-		return nil, errors.New("rate limit")
-	}
-	if start < 0 || end >= int64(len(m.data)) {
-		return nil, nil
-	}
-	return m.data[start : end+1], nil
-}
 
 func TestDedupAndStats(t *testing.T) {
 	svcOpts := ServiceOptions{}

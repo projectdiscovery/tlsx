@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"crypto/x509"
+
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -29,7 +31,6 @@ import (
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
 	"golang.org/x/net/proxy"
-	"crypto/x509"
 )
 
 // Runner is a client for running the enumeration process
@@ -209,7 +210,7 @@ func (r *Runner) executeCTLogsMode() error {
 		for _, item := range r.options.CTLIndex {
 			parts := strings.SplitN(item, "=", 2)
 			if len(parts) != 2 {
-				gologger.Warning().Msgf("invalid --ctl-index entry %q (expected <logURL>=<index>)", item)
+				gologger.Warning().Msgf("invalid --ctl-index entry %q (expected <sourceID>=<index>, e.g. google_xenon2025h2=12345)", item)
 				continue
 			}
 			idx, err := strconv.ParseUint(parts[1], 10, 64)
@@ -217,7 +218,8 @@ func (r *Runner) executeCTLogsMode() error {
 				gologger.Warning().Msgf("invalid index in --ctl-index entry %q: %v", item, err)
 				continue
 			}
-			custom[parts[0]] = idx
+			key := strings.ToLower(parts[0])
+			custom[key] = idx
 		}
 		if len(custom) > 0 {
 			svcOpts = append(svcOpts, ctlogs.WithCustomStartIndices(custom))
@@ -251,7 +253,7 @@ func (r *Runner) executeCTLogsMode() error {
 
 	svcOpts = append(svcOpts, ctlogs.WithCallback(callback))
 
-	ctService, err := ctlogs.New(nil, svcOpts...)
+	ctService, err := ctlogs.New(svcOpts...)
 	if err != nil {
 		return errorutil.NewWithErr(err).Msgf("could not create CT logs service")
 	}

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -154,13 +153,13 @@ func TestCertificateToResponseWithCertOption(t *testing.T) {
 }
 
 func TestCTLogsServiceInitialization(t *testing.T) {
-	options := &clients.Options{
-		Verbose: false,
-	}
 
 	// This test will fail if the CT log list is unreachable
 	// In a real test environment, you might want to mock the HTTP client
-	service, err := New(options)
+	service, err := New(
+		WithVerbose(false),
+		WithCert(false),
+	)
 
 	// We expect this to either succeed or fail due to network issues
 	// The important thing is that it doesn't panic
@@ -176,11 +175,10 @@ func TestCTLogsServiceInitialization(t *testing.T) {
 }
 
 func TestCTLogsServiceContextCancellation(t *testing.T) {
-	options := &clients.Options{
-		Verbose: false,
-	}
-
-	service, err := New(options)
+	service, err := New(
+		WithVerbose(false),
+		WithCert(false),
+	)
 	if err != nil {
 		t.Skipf("Skipping test due to initialization failure: %v", err)
 	}

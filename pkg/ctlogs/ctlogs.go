@@ -18,86 +18,42 @@ import (
 	boom "github.com/tylertreat/BoomFilters"
 )
 
-// CTLogInfo represents a CT log from the official log list
-type CTLogInfo struct {
-	Description string `json:"description"`
-	LogID       string `json:"log_id"`
-	Key         string `json:"key"`
-	URL         string `json:"url"`
-	MMD         int    `json:"mmd"` // Maximum Merge Delay
-}
-
-// CTOperator represents a CT log operator
-type CTOperator struct {
-	Name  string      `json:"name"`
-	Email []string    `json:"email"`
-	Logs  []CTLogInfo `json:"logs"`
-}
-
-// CTLogList represents the official Google CT log list
-type CTLogList struct {
-	Version   string       `json:"version"`
-	Operators []CTOperator `json:"operators"`
-}
-
-// CTLogSource represents a Certificate Transparency log source
-type CTLogSource struct {
-	Client     *CTLogClient
-	LastSize   uint64
-	WindowSize uint64 // Sliding window size
-}
-
 // CTLogsService handles Certificate Transparency logs streaming
 type CTLogsService struct {
-	options    ServiceOptions
-	sources    []*CTLogSource
+	options ServiceOptions
+	sources []*CTLogSource
 
 	deduper *boom.InverseBloomFilter
 
 	// atomic counters
-	totalCert     atomic.Uint64
-	duplicates    atomic.Uint64
-	uniqueCert    atomic.Uint64
-	backoffRetry  atomic.Uint64
+	totalCert    atomic.Uint64
+	duplicates   atomic.Uint64
+	uniqueCert   atomic.Uint64
+	backoffRetry atomic.Uint64
 
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 }
 
-// CTLogEntry represents a single CT log entry
-type CTLogEntry struct {
-	LeafInput string `json:"leaf_input"`
-	ExtraData string `json:"extra_data"`
-}
-
-// CTLogResponse represents the response from a CT log API
-type CTLogResponse struct {
-	Entries []CTLogEntry `json:"entries"`
-}
-
 // New constructs a CTLogsService using the supplied functional options.
 //
 // For the time being we also allow passing *clients.Options for legacy callers;
 // this parameter will be removed in a subsequent milestone.
-func New(legacyOpts *clients.Options, optFns ...ServiceOption) (*CTLogsService, error) {
+func New(optFns ...ServiceOption) (*CTLogsService, error) {
 	// Build ServiceOptions with defaults, apply functional overrides, then
 	// copy values from legacy opts for compatibility.
 	opts := defaultServiceOptions()
 	for _, fn := range optFns {
 		fn(&opts)
 	}
-	if legacyOpts != nil {
-		opts.Verbose = opts.Verbose || legacyOpts.Verbose
-		opts.Cert = opts.Cert || legacyOpts.Cert
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	svc := &CTLogsService{
-		options:    opts,
-		ctx:        ctx,
-		cancel:     cancel,
+		options: opts,
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 
 	// Initialize inverse bloom filter for deduplication.
@@ -143,47 +99,17 @@ func (service *CTLogsService) initializeSources() error {
 
 	for _, operator := range logList.Operators {
 		for _, logInfo := range operator.Logs {
+			// Skip known placeholder or bogus logs (e.g., "Bogus placeholder log to unbreak misbehaving CT libraries")
+			desc := strings.ToLower(logInfo.Description)
+			if strings.Contains(desc, "bogus") || strings.Contains(desc, "placeholder") {
+				continue
+			}
+
 			if logInfo.MMD > 86400 {
 				continue
 			}
 			wg.Add(1)
-			go func(logInfo CTLogInfo) {
-				defer wg.Done()
-				client, err := NewCTLogClient(logInfo, WithHTTPClient(&http.Client{
-					Timeout: 10 * time.Second,
-				}))
-				if err == nil {
-					// attach retry counter
-					client.retryCounter = &service.backoffRetry
-				}
-				if err != nil {
-					if service.options.Verbose {
-						gologger.Warning().Msgf("Failed to create client for %s: %v", logInfo.Description, err)
-					}
-					return
-				}
-				sth, err := client.GetSTH(initCtx)
-				if err != nil {
-					if service.options.Verbose {
-						gologger.Warning().Msgf("Failed to get STH for %s: %v", logInfo.Description, err)
-					}
-					return
-				}
-				// Start tailing from last 1000 entries
-				var startSize uint64 = 0
-				if sth.TreeSize > 1000 {
-					startSize = sth.TreeSize - 1000
-				}
-				source := &CTLogSource{
-					Client:     client,
-					LastSize:   startSize,
-					WindowSize: 1000, // Process last 1000 entries
-				}
-				mu.Lock()
-				service.sources = append(service.sources, source)
-				logCount++
-				mu.Unlock()
-			}(logInfo)
+			go service.processLogSource(initCtx, logInfo, &wg, &mu, &logCount)
 		}
 	}
 
@@ -204,6 +130,72 @@ func (service *CTLogsService) initializeSources() error {
 
 	gologger.Info().Msgf("Initialized %d CT log sources", logCount)
 	return nil
+}
+
+// processLogSource handles initialization of a single CT log source.
+// It is intended to run as a goroutine and will add the source to the
+// service list if successful.
+func (service *CTLogsService) processLogSource(ctx context.Context, logInfo CTLogInfo, wg *sync.WaitGroup, mu *sync.Mutex, logCount *int) {
+	defer wg.Done()
+
+	source, err := service.initLogSource(ctx, logInfo)
+	if err != nil {
+		gologger.Warning().Msgf("Skipping CT log source %s: %v", logInfo.Description, err)
+		return
+	}
+
+	mu.Lock()
+	service.sources = append(service.sources, source)
+	*logCount++
+	mu.Unlock()
+}
+
+// initLogSource sets up a CTLogSource for the given logInfo respecting the
+// configured StartMode and returns it.
+func (service *CTLogsService) initLogSource(ctx context.Context, logInfo CTLogInfo) (*CTLogSource, error) {
+	client, err := NewCTLogClient(logInfo, WithHTTPClient(&http.Client{
+		Timeout: 10 * time.Second,
+	}))
+	if err == nil {
+		client.retryCounter = &service.backoffRetry
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client for %s: %w", logInfo.Description, err)
+	}
+
+	sth, err := client.GetSTH(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get STH for %s: %w", logInfo.Description, err)
+	}
+
+	// Determine starting point based on configured StartMode / custom indices
+	var startSize uint64
+	switch service.options.StartMode {
+	case StartBeginning:
+		startSize = 0
+	case StartCustom:
+		sourceID := FormatSourceID(logInfo.Description)
+		if idx, ok := service.options.CustomStartIndices[sourceID]; ok {
+			startSize = idx
+		} else {
+			startSize = 0
+		}
+	case StartNow:
+		fallthrough
+	default:
+		startSize = sth.TreeSize
+	}
+
+	if startSize > sth.TreeSize {
+		startSize = sth.TreeSize
+	}
+
+	source := &CTLogSource{
+		Client:     client,
+		LastSize:   startSize,
+		WindowSize: 1000, // Process entries in chunks of 1000
+	}
+	return source, nil
 }
 
 // Start begins streaming from all CT log sources
@@ -433,7 +425,7 @@ func ConvertCertificateToResponse(cert *x509.Certificate, sourceName string, inc
 		Port:                "443", // Default HTTPS port
 		ProbeStatus:         true,
 		CertificateResponse: certResp,
-		CTLogSource:         strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(sourceName, " ", "_"), "'", ""), "-", "_")),
+		CTLogSource:         FormatSourceID(sourceName),
 	}
 
 	return response
