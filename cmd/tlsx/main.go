@@ -10,6 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	errorutils "github.com/projectdiscovery/utils/errors"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 
 func main() {
 	if err := process(); err != nil {
-		gologger.Fatal().Msgf("Could not process: %s", err)
+		gologger.Fatal().Msgf("%s", err)
 	}
 }
 
@@ -43,7 +44,7 @@ func process() error {
 	return nil
 }
 
-func readFlags() error {
+func readFlags(args ...string) error {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`TLSX is a tls data gathering and analysis toolkit.`)
 
@@ -89,6 +90,12 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.ClientHello, "client-hello", "ch", false, "include client hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.ServerHello, "server-hello", "sh", false, "include server hello in json output (ztls mode only)"),
 		flagSet.BoolVarP(&options.Serial, "serial", "se", false, "display certificate serial number"),
+	)
+
+	flagSet.CreateGroup("ctlogs", "Certificate Transparency Logs",
+		flagSet.BoolVarP(&options.CTLogs, "ct-logs", "ctl", false, "enable certificate transparency logs streaming mode"),
+		flagSet.BoolVarP(&options.CTLBeginning, "ctl-beginning", "cb", false, "start streaming each CT log from index 0"),
+		flagSet.StringSliceVarP(&options.CTLIndex, "ctl-index", "cti", nil, "custom start index per log using source ID: <sourceID>=<index> (e.g. google_xenon2025h2=12345)", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("misconfigurations", "Misconfigurations",
@@ -145,8 +152,25 @@ func readFlags() error {
 		flagSet.BoolVarP(&options.HealthCheck, "hc", "health-check", false, "run diagnostic check up"),
 	)
 
-	if err := flagSet.Parse(); err != nil {
+	err := flagSet.Parse(args...)
+	if err != nil {
 		return errorutils.NewWithErr(err).Msgf("could not parse flags")
+	}
+	hasStdin := fileutil.HasStdin()
+
+	// Validation: CT logs mode and input mode cannot be used together
+	if options.CTLogs && (len(options.Inputs) > 0 || options.InputList != "" || hasStdin) {
+		return errorutils.NewWithTag("flags", "CT logs mode (-ctl) and input mode (-u/-l/stdin) cannot be used together.")
+	}
+
+	// Enable CT logs mode by default if no input is provided
+	if len(options.Inputs) == 0 && options.InputList == "" && !hasStdin {
+		options.CTLogs = true
+	}
+
+	// Enable SAN by default when CT logs mode is active
+	if options.CTLogs {
+		options.SAN = true
 	}
 
 	if options.HealthCheck {

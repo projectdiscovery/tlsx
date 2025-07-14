@@ -286,7 +286,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 			all = append(all, ct.Unknown...)
 			if len(all) > 0 {
 				builder.WriteString(outputPrefix)
-				builder.WriteString(fmt.Sprintf(" [%v] [%v]\n", w.aurora.Magenta(v.Version), strings.Join(all, ",")))
+				_, _ = fmt.Fprintf(builder, " [%v] [%v]\n", w.aurora.Magenta(v.Version), strings.Join(all, ","))
 			}
 		}
 	} else if w.options.TlsVersionsEnum {
@@ -304,7 +304,7 @@ func (w *StandardWriter) formatStandard(output *clients.Response) ([]byte, error
 func uniqueNormalizeCertNames(names []string) []string {
 	unique := make(map[string]struct{})
 	for _, value := range names {
-		replaced := strings.Replace(value, "*.", "", -1)
+		replaced := strings.ReplaceAll(value, "*.", "")
 		unique[replaced] = struct{}{}
 	}
 	return maps.Keys(unique)

@@ -166,6 +166,12 @@ type Options struct {
 	Serial bool
 	// Proxy is the proxy to use for tlsx
 	Proxy string
+	// CTLogs enables certificate transparency logs streaming mode
+	CTLogs bool
+	// CTLBeginning when true starts CT logs streaming from index 0
+	CTLBeginning bool
+	// CTLIndex allows specifying custom start index per log in the form <logURL>=<index>
+	CTLIndex goflags.StringSlice
 }
 
 // Response is the response returned for a TLS grab event
@@ -203,6 +209,8 @@ type Response struct {
 	ClientHello        *ztls.ClientHello      `json:"client_hello,omitempty"`
 	ServerHello        *ztls.ServerHello      `json:"servers_hello,omitempty"`
 	ClientCertRequired *bool                  `json:"client_cert_required,omitempty"`
+	// CTLogSource is the Certificate Transparency log source for CT logs mode
+	CTLogSource string `json:"ctl_source,omitempty"`
 }
 
 type TlsCiphers struct {

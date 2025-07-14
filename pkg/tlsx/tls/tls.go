@@ -128,11 +128,13 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
 		} else {
-			rawConn.Close()
+			_ = rawConn.Close()
 			return nil, errorutil.NewWithTag("ctls", "could not do handshake").Wrap(err)
 		}
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	connectionState := conn.ConnectionState()
 	if len(connectionState.PeerCertificates) == 0 {
@@ -219,7 +221,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			gologger.Error().Msgf("tlsx: ctls: failed to run connection pool: %v", err)
 		}
 	}()
-	defer pool.Close()
+	defer func() {
+		_ = pool.Close()
+	}()
 
 	for _, v := range toEnumerate {
 		// create new baseConn and pass it to tlsclient
