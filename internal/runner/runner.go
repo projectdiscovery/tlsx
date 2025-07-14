@@ -5,9 +5,12 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"crypto/x509"
 
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
@@ -188,10 +191,69 @@ func (r *Runner) Execute() error {
 
 // executeCTLogsMode executes CT logs streaming mode
 func (r *Runner) executeCTLogsMode() error {
-	gologger.Info().Msg("Starting Certificate Transparency logs streaming mode...")
+	gologger.Info().Msg("Starting Certificate Transparency logs streaming mode…")
 
-	// Create CT logs service
-	ctService, err := ctlogs.New(r.options)
+	// Build functional options for ctlogs service
+	var svcOpts []ctlogs.ServiceOption
+
+	// Verbosity & certificate inclusion follow existing flags
+	svcOpts = append(svcOpts, ctlogs.WithVerbose(r.options.Verbose))
+	if r.options.Cert {
+		svcOpts = append(svcOpts, ctlogs.WithCert(true))
+	}
+
+	// Start mode handling
+	if r.options.CTLBeginning {
+		svcOpts = append(svcOpts, ctlogs.WithStartBeginning())
+	} else if len(r.options.CTLIndex) > 0 {
+		custom := make(map[string]uint64)
+		for _, item := range r.options.CTLIndex {
+			parts := strings.SplitN(item, "=", 2)
+			if len(parts) != 2 {
+				gologger.Warning().Msgf("invalid --ctl-index entry %q (expected <sourceID>=<index>, e.g. google_xenon2025h2=12345)", item)
+				continue
+			}
+			idx, err := strconv.ParseUint(parts[1], 10, 64)
+			if err != nil {
+				gologger.Warning().Msgf("invalid index in --ctl-index entry %q: %v", item, err)
+				continue
+			}
+			key := strings.ToLower(parts[0])
+			custom[key] = idx
+		}
+		if len(custom) > 0 {
+			svcOpts = append(svcOpts, ctlogs.WithCustomStartIndices(custom))
+		}
+	}
+
+	// Callback adapter converts ctlogs.EntryMeta + raw cert into tlsx Response
+	callback := func(meta ctlogs.EntryMeta, raw []byte, duplicate bool) {
+		// Skip duplicates to preserve historical CLI behaviour
+		if duplicate {
+			return
+		}
+
+		cert, err := x509.ParseCertificate(raw)
+		if err != nil {
+			if r.options.Verbose {
+				gologger.Warning().Msgf("failed to parse certificate: %v", err)
+			}
+			return
+		}
+
+		resp := ctlogs.ConvertCertificateToResponse(cert, meta.SourceDesc, r.options.Cert)
+		if resp == nil {
+			return
+		}
+
+		if err := r.outputWriter.Write(resp); err != nil {
+			gologger.Warning().Msgf("Could not write CT log output: %s", err)
+		}
+	}
+
+	svcOpts = append(svcOpts, ctlogs.WithCallback(callback))
+
+	ctService, err := ctlogs.New(svcOpts...)
 	if err != nil {
 		return errorutil.NewWithErr(err).Msgf("could not create CT logs service")
 	}
@@ -200,16 +262,8 @@ func (r *Runner) executeCTLogsMode() error {
 	ctService.Start()
 	defer ctService.Stop()
 
-	// Process output from CT logs
-	outputChan := ctService.GetOutputChannel()
-	for response := range outputChan {
-		if err := r.outputWriter.Write(response); err != nil {
-			gologger.Warning().Msgf("Could not write CT log output: %s", err)
-			continue
-		}
-	}
-
-	return nil
+	// Block indefinitely (until SIGINT/SIGTERM) as streaming is async.
+	select {}
 }
 
 // processInputElementWorker processes an element from input

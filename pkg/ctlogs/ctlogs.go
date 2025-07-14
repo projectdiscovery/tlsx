@@ -9,85 +9,60 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	ct "github.com/google/certificate-transparency-go"
-	ctclient "github.com/google/certificate-transparency-go/client"
-	"github.com/google/certificate-transparency-go/jsonclient"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	boom "github.com/tylertreat/BoomFilters"
 )
-
-// CTLogInfo represents a CT log from the official log list
-type CTLogInfo struct {
-	Description string `json:"description"`
-	LogID       string `json:"log_id"`
-	Key         string `json:"key"`
-	URL         string `json:"url"`
-	MMD         int    `json:"mmd"` // Maximum Merge Delay
-}
-
-// CTOperator represents a CT log operator
-type CTOperator struct {
-	Name  string      `json:"name"`
-	Email []string    `json:"email"`
-	Logs  []CTLogInfo `json:"logs"`
-}
-
-// CTLogList represents the official Google CT log list
-type CTLogList struct {
-	Version   string       `json:"version"`
-	Operators []CTOperator `json:"operators"`
-}
-
-// CTLogSource represents a Certificate Transparency log source
-type CTLogSource struct {
-	Info       CTLogInfo
-	Client     *ctclient.LogClient
-	LastSize   uint64
-	RateLimit  time.Duration
-	LastFetch  time.Time
-	WindowSize uint64 // Sliding window size
-}
 
 // CTLogsService handles Certificate Transparency logs streaming
 type CTLogsService struct {
-	options    *clients.Options
-	sources    []*CTLogSource
-	outputChan chan *clients.Response
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
+	options ServiceOptions
+	sources []*CTLogSource
+
+	deduper *boom.InverseBloomFilter
+
+	// atomic counters
+	totalCert    atomic.Uint64
+	duplicates   atomic.Uint64
+	uniqueCert   atomic.Uint64
+	backoffRetry atomic.Uint64
+
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
-// CTLogEntry represents a single CT log entry
-type CTLogEntry struct {
-	LeafInput string `json:"leaf_input"`
-	ExtraData string `json:"extra_data"`
-}
+// New constructs a CTLogsService using the supplied functional options.
+//
+// For the time being we also allow passing *clients.Options for legacy callers;
+// this parameter will be removed in a subsequent milestone.
+func New(optFns ...ServiceOption) (*CTLogsService, error) {
+	// Build ServiceOptions with defaults, apply functional overrides, then
+	// copy values from legacy opts for compatibility.
+	opts := defaultServiceOptions()
+	for _, fn := range optFns {
+		fn(&opts)
+	}
 
-// CTLogResponse represents the response from a CT log API
-type CTLogResponse struct {
-	Entries []CTLogEntry `json:"entries"`
-}
-
-// New creates a new CT logs streaming service
-func New(options *clients.Options) (*CTLogsService, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	service := &CTLogsService{
-		options:    options,
-		outputChan: make(chan *clients.Response, 1000),
-		ctx:        ctx,
-		cancel:     cancel,
+	svc := &CTLogsService{
+		options: opts,
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 
-	// Initialize CT log sources from official list
-	if err := service.initializeSources(); err != nil {
+	// Initialize inverse bloom filter for deduplication.
+	svc.deduper = boom.NewInverseBloomFilter(uint(opts.DedupeSize))
+
+	if err := svc.initializeSources(); err != nil {
 		return nil, err
 	}
-
-	return service, nil
+	return svc, nil
 }
 
 // initializeSources fetches and initializes CT log sources from the official Google log list
@@ -124,46 +99,17 @@ func (service *CTLogsService) initializeSources() error {
 
 	for _, operator := range logList.Operators {
 		for _, logInfo := range operator.Logs {
+			// Skip known placeholder or bogus logs (e.g., "Bogus placeholder log to unbreak misbehaving CT libraries")
+			desc := strings.ToLower(logInfo.Description)
+			if strings.Contains(desc, "bogus") || strings.Contains(desc, "placeholder") {
+				continue
+			}
+
 			if logInfo.MMD > 86400 {
 				continue
 			}
 			wg.Add(1)
-			go func(logInfo CTLogInfo) {
-				defer wg.Done()
-				client, err := ctclient.New(logInfo.URL, &http.Client{
-					Timeout: 10 * time.Second, // Shorter timeout
-				}, jsonclient.Options{})
-				if err != nil {
-					if service.options.Verbose {
-						gologger.Warning().Msgf("Failed to create client for %s: %v", logInfo.Description, err)
-					}
-					return
-				}
-				sth, err := client.GetSTH(initCtx)
-				if err != nil {
-					if service.options.Verbose {
-						gologger.Warning().Msgf("Failed to get STH for %s: %v", logInfo.Description, err)
-					}
-					return
-				}
-				// Start tailing from last 1000 entries
-				var startSize uint64 = 0
-				if sth.TreeSize > 1000 {
-					startSize = sth.TreeSize - 1000
-				}
-				source := &CTLogSource{
-					Info:       logInfo,
-					Client:     client,
-					LastSize:   startSize,
-					RateLimit:  time.Duration(logInfo.MMD) * time.Second,
-					LastFetch:  time.Now(),
-					WindowSize: 1000, // Process last 1000 entries
-				}
-				mu.Lock()
-				service.sources = append(service.sources, source)
-				logCount++
-				mu.Unlock()
-			}(logInfo)
+			go service.processLogSource(initCtx, logInfo, &wg, &mu, &logCount)
 		}
 	}
 
@@ -186,9 +132,75 @@ func (service *CTLogsService) initializeSources() error {
 	return nil
 }
 
+// processLogSource handles initialization of a single CT log source.
+// It is intended to run as a goroutine and will add the source to the
+// service list if successful.
+func (service *CTLogsService) processLogSource(ctx context.Context, logInfo CTLogInfo, wg *sync.WaitGroup, mu *sync.Mutex, logCount *int) {
+	defer wg.Done()
+
+	source, err := service.initLogSource(ctx, logInfo)
+	if err != nil {
+		gologger.Warning().Msgf("Skipping CT log source %s: %v", logInfo.Description, err)
+		return
+	}
+
+	mu.Lock()
+	service.sources = append(service.sources, source)
+	*logCount++
+	mu.Unlock()
+}
+
+// initLogSource sets up a CTLogSource for the given logInfo respecting the
+// configured StartMode and returns it.
+func (service *CTLogsService) initLogSource(ctx context.Context, logInfo CTLogInfo) (*CTLogSource, error) {
+	client, err := NewCTLogClient(logInfo, WithHTTPClient(&http.Client{
+		Timeout: 10 * time.Second,
+	}))
+	if err == nil {
+		client.retryCounter = &service.backoffRetry
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client for %s: %w", logInfo.Description, err)
+	}
+
+	sth, err := client.GetSTH(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get STH for %s: %w", logInfo.Description, err)
+	}
+
+	// Determine starting point based on configured StartMode / custom indices
+	var startSize uint64
+	switch service.options.StartMode {
+	case StartBeginning:
+		startSize = 0
+	case StartCustom:
+		sourceID := FormatSourceID(logInfo.Description)
+		if idx, ok := service.options.CustomStartIndices[sourceID]; ok {
+			startSize = idx
+		} else {
+			startSize = 0
+		}
+	case StartNow:
+		fallthrough
+	default:
+		startSize = sth.TreeSize
+	}
+
+	if startSize > sth.TreeSize {
+		startSize = sth.TreeSize
+	}
+
+	source := &CTLogSource{
+		Client:     client,
+		LastSize:   startSize,
+		WindowSize: 1000, // Process entries in chunks of 1000
+	}
+	return source, nil
+}
+
 // Start begins streaming from all CT log sources
 func (service *CTLogsService) Start() {
-	gologger.Info().Msg("Starting CT logs streaming...")
+	gologger.Info().Msg("Starting CT logs streaming…")
 
 	for _, source := range service.sources {
 		service.wg.Add(1)
@@ -200,12 +212,6 @@ func (service *CTLogsService) Start() {
 func (service *CTLogsService) Stop() {
 	service.cancel()
 	service.wg.Wait()
-	close(service.outputChan)
-}
-
-// GetOutputChannel returns the output channel for CT log entries
-func (service *CTLogsService) GetOutputChannel() <-chan *clients.Response {
-	return service.outputChan
 }
 
 // streamFromSource continuously streams from a single CT log source
@@ -215,12 +221,12 @@ func (service *CTLogsService) streamFromSource(source *CTLogSource) {
 	// Process initial batch immediately
 	if err := service.fetchNewEntries(source); err != nil {
 		if service.options.Verbose {
-			gologger.Error().Msgf("Error in initial fetch from %s: %v", source.Info.Description, err)
+			gologger.Error().Msgf("Error in initial fetch from %s: %v", source.Client.Info().Description, err)
 		}
 	}
 
 	// Use a reasonable polling interval instead of MMD-based rate limiting
-	pollInterval := 5 * time.Second
+	pollInterval := service.options.PollInterval
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
@@ -231,7 +237,7 @@ func (service *CTLogsService) streamFromSource(source *CTLogSource) {
 		case <-ticker.C:
 			if err := service.fetchNewEntries(source); err != nil {
 				if service.options.Verbose {
-					gologger.Error().Msgf("Error fetching from %s: %v", source.Info.Description, err)
+					gologger.Error().Msgf("Error fetching from %s: %v", source.Client.Info().Description, err)
 				}
 				// Continue trying even if there's an error
 			}
@@ -259,20 +265,20 @@ func (service *CTLogsService) fetchNewEntries(source *CTLogSource) error {
 	}
 
 	// Fetch entries
-	entries, err := source.Client.GetEntries(service.ctx, int64(start), int64(end-1))
+	entries, err := source.Client.GetEntries(service.ctx, start, end-1)
 	if err != nil {
 		return fmt.Errorf("failed to get entries: %w", err)
 	}
 
 	if service.options.Verbose {
-		gologger.Info().Msgf("[%s] Fetched %d entries (%d-%d)", source.Info.Description, len(entries), start, end-1)
+		gologger.Info().Msgf("[%s] Fetched %d entries (%d-%d)", source.Client.Info().Description, len(entries), start, end-1)
 	}
 
 	// Process all certificates - no filtering
 	for i, entry := range entries {
 		if err := service.processEntry(source, &entry, start+uint64(i)); err != nil {
 			if service.options.Verbose {
-				gologger.Error().Msgf("Error processing entry from %s: %v", source.Info.Description, err)
+				gologger.Error().Msgf("Error processing entry from %s: %v", source.Client.Info().Description, err)
 			}
 			continue
 		}
@@ -280,7 +286,6 @@ func (service *CTLogsService) fetchNewEntries(source *CTLogSource) error {
 
 	// Update last size
 	source.LastSize = end
-	source.LastFetch = time.Now()
 
 	return nil
 }
@@ -298,31 +303,71 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 		return fmt.Errorf("failed to parse certificate: %w", err)
 	}
 
+	// Build uniqueness key and check deduper
+	uniqKey := cert.Issuer.String() + cert.SerialNumber.String()
+	duplicate := service.deduper.TestAndAdd([]byte(uniqKey))
+
+	service.totalCert.Add(1)
+	if duplicate {
+		service.duplicates.Add(1)
+	} else {
+		service.uniqueCert.Add(1)
+	}
+
 	// Process all certificates - no filtering
-	response := service.certificateToResponse(cert, source.Info.Description)
-	if response == nil {
+	if duplicate && service.options.Callback == nil {
+		// Skip duplicates when using legacy channel approach.
 		return nil
 	}
 
-	// Send to output channel
-	select {
-	case service.outputChan <- response:
-		// Only show verbose output, let the main output writer handle non-verbose
-		if service.options.Verbose {
-			gologger.Info().Msgf("[%s] %s", source.Info.Description, response.Host)
+	// Invoke callback if configured.
+	if service.options.Callback != nil {
+		meta := EntryMeta{
+			SourceID:       service.formatSourceID(source.Client.Info().Description),
+			SourceDesc:     source.Client.Info().Description,
+			Index:          index,
+			CollectionTime: time.Now(),
 		}
-	default:
-		// Channel is full, skip this entry
-		if service.options.Verbose {
-			gologger.Warning().Msgf("Output channel full, skipping entry from %s", source.Info.Description)
-		}
+
+		service.options.Callback(meta, cert.Raw, duplicate)
 	}
 
 	return nil
 }
 
-// certificateToResponse converts an x509 certificate to tlsx response format
-func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sourceName string) *clients.Response {
+// formatSourceID converts a CT log source name to an ID format
+func (service *CTLogsService) formatSourceID(sourceName string) string {
+	// Remove quotes and convert to lowercase with underscores
+	// Example: "Google 'Xenon2025h2'" -> "google_xenon2025h2"
+	id := strings.ToLower(sourceName)
+	id = strings.ReplaceAll(id, "'", "")
+	id = strings.ReplaceAll(id, " ", "_")
+	id = strings.ReplaceAll(id, "-", "_")
+	return id
+}
+
+// Stats represents a snapshot of service metrics.
+type Stats struct {
+	Total      uint64 `json:"total"`
+	Unique     uint64 `json:"unique"`
+	Duplicates uint64 `json:"duplicates"`
+	Retries    uint64 `json:"retries"`
+}
+
+// GetStats atomically captures current counters.
+func (service *CTLogsService) GetStats() Stats {
+	return Stats{
+		Total:      service.totalCert.Load(),
+		Unique:     service.uniqueCert.Load(),
+		Duplicates: service.duplicates.Load(),
+		Retries:    service.backoffRetry.Load(),
+	}
+}
+
+// ConvertCertificateToResponse converts an x509 certificate to tlsx response
+// format. It is exported so callers (e.g., CLI runner) can reuse the same
+// mapping logic as the service internals.
+func ConvertCertificateToResponse(cert *x509.Certificate, sourceName string, includeCert bool) *clients.Response {
 	now := time.Now()
 
 	// Determine host from certificate
@@ -337,9 +382,6 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 	if host == "" {
 		return nil
 	}
-
-	// Convert source name to ID format (e.g., "Google 'Xenon2025h2'" -> "google_xenon2025h2")
-	sourceID := service.formatSourceID(sourceName)
 
 	// Create certificate response
 	certResp := &clients.CertificateResponse{
@@ -372,7 +414,7 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 	}
 
 	// Add certificate in PEM format if requested
-	if service.options.Cert {
+	if includeCert {
 		certResp.Certificate = clients.PemEncode(cert.Raw)
 	}
 
@@ -383,19 +425,8 @@ func (service *CTLogsService) certificateToResponse(cert *x509.Certificate, sour
 		Port:                "443", // Default HTTPS port
 		ProbeStatus:         true,
 		CertificateResponse: certResp,
-		CTLogSource:         sourceID,
+		CTLogSource:         FormatSourceID(sourceName),
 	}
 
 	return response
-}
-
-// formatSourceID converts a CT log source name to an ID format
-func (service *CTLogsService) formatSourceID(sourceName string) string {
-	// Remove quotes and convert to lowercase with underscores
-	// Example: "Google 'Xenon2025h2'" -> "google_xenon2025h2"
-	id := strings.ToLower(sourceName)
-	id = strings.ReplaceAll(id, "'", "")
-	id = strings.ReplaceAll(id, " ", "_")
-	id = strings.ReplaceAll(id, "-", "_")
-	return id
 }

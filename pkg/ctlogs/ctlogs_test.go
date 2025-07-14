@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,16 +76,10 @@ func TestCertificateToResponse(t *testing.T) {
 		IsCA:                  false,
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    false,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: false}
+	service := &CTLogsService{options: svcOpts}
 
-	service := &CTLogsService{
-		options: options,
-	}
-
-	response := service.certificateToResponse(cert, "Test Log Source")
+	response := ConvertCertificateToResponse(cert, "Test Log Source", service.options.Cert)
 
 	require.NotNil(t, response)
 	assert.Equal(t, "test.example.com", response.Host)
@@ -121,16 +114,10 @@ func TestCertificateToResponseWithEmptyHost(t *testing.T) {
 		DNSNames:  []string{}, // Empty DNS names
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    false,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: false}
+	service := &CTLogsService{options: svcOpts}
 
-	service := &CTLogsService{
-		options: options,
-	}
-
-	response := service.certificateToResponse(cert, "Test Log Source")
+	response := ConvertCertificateToResponse(cert, "Test Log Source", service.options.Cert)
 
 	// Should return nil for certificates without hostname
 	assert.Nil(t, response)
@@ -151,16 +138,10 @@ func TestCertificateToResponseWithCertOption(t *testing.T) {
 		DNSNames:  []string{"test.example.com"},
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    true, // Enable certificate output
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: true}
+	service := &CTLogsService{options: svcOpts}
 
-	service := &CTLogsService{
-		options: options,
-	}
-
-	response := service.certificateToResponse(cert, "Test Log Source")
+	response := ConvertCertificateToResponse(cert, "Test Log Source", service.options.Cert)
 
 	require.NotNil(t, response)
 	assert.NotEmpty(t, response.Certificate)
@@ -172,13 +153,13 @@ func TestCertificateToResponseWithCertOption(t *testing.T) {
 }
 
 func TestCTLogsServiceInitialization(t *testing.T) {
-	options := &clients.Options{
-		Verbose: false,
-	}
 
 	// This test will fail if the CT log list is unreachable
 	// In a real test environment, you might want to mock the HTTP client
-	service, err := New(options)
+	service, err := New(
+		WithVerbose(false),
+		WithCert(false),
+	)
 
 	// We expect this to either succeed or fail due to network issues
 	// The important thing is that it doesn't panic
@@ -189,17 +170,15 @@ func TestCTLogsServiceInitialization(t *testing.T) {
 
 	require.NotNil(t, service)
 	assert.NotNil(t, service.options)
-	assert.NotNil(t, service.outputChan)
 	assert.NotNil(t, service.ctx)
 	assert.NotNil(t, service.cancel)
 }
 
 func TestCTLogsServiceContextCancellation(t *testing.T) {
-	options := &clients.Options{
-		Verbose: false,
-	}
-
-	service, err := New(options)
+	service, err := New(
+		WithVerbose(false),
+		WithCert(false),
+	)
 	if err != nil {
 		t.Skipf("Skipping test due to initialization failure: %v", err)
 	}
@@ -216,73 +195,6 @@ func TestCTLogsServiceContextCancellation(t *testing.T) {
 		// Expected
 	default:
 		t.Error("Context should be cancelled")
-	}
-}
-
-func TestCTLogsServiceOutputChannel(t *testing.T) {
-	options := &clients.Options{
-		Verbose: false,
-	}
-
-	service, err := New(options)
-	if err != nil {
-		t.Skipf("Skipping test due to initialization failure: %v", err)
-	}
-
-	outputChan := service.GetOutputChannel()
-	assert.NotNil(t, outputChan)
-
-	// Test that we can send and receive from the channel
-	testResponse := &clients.Response{
-		Host:        "test.example.com",
-		Port:        "443",
-		ProbeStatus: true,
-		CTLogSource: "test_source",
-	}
-
-	// Send a test response
-	select {
-	case service.outputChan <- testResponse:
-		// Success
-	case <-time.After(time.Second):
-		t.Error("Timeout sending to output channel")
-	}
-
-	// Receive the test response
-	select {
-	case received := <-outputChan:
-		assert.Equal(t, testResponse.Host, received.Host)
-		assert.Equal(t, testResponse.Port, received.Port)
-		assert.Equal(t, testResponse.CTLogSource, received.CTLogSource)
-	case <-time.After(time.Second):
-		t.Error("Timeout receiving from output channel")
-	}
-}
-
-func TestCTLogsServiceStop(t *testing.T) {
-	options := &clients.Options{
-		Verbose: false,
-	}
-
-	service, err := New(options)
-	if err != nil {
-		t.Skipf("Skipping test due to initialization failure: %v", err)
-	}
-
-	// Start the service
-	service.Start()
-
-	// Stop the service
-	service.Stop()
-
-	// The output channel should be closed
-	select {
-	case _, ok := <-service.outputChan:
-		if ok {
-			t.Error("Output channel should be closed")
-		}
-	default:
-		// Channel is closed, which is expected
 	}
 }
 
@@ -307,16 +219,10 @@ func TestCertificateResponseFields(t *testing.T) {
 		IsCA:                  false,
 	}
 
-	options := &clients.Options{
-		Verbose: false,
-		Cert:    false,
-	}
+	svcOpts := ServiceOptions{Verbose: false, Cert: false}
+	service := &CTLogsService{options: svcOpts}
 
-	service := &CTLogsService{
-		options: options,
-	}
-
-	response := service.certificateToResponse(cert, "Test Log Source")
+	response := ConvertCertificateToResponse(cert, "Test Log Source", service.options.Cert)
 
 	require.NotNil(t, response)
 	certResp := response.CertificateResponse
