@@ -43,7 +43,7 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
 
 ## Installation
 
-tlsx requires **Go 1.21** to install successfully. To install, just run the below command or download pre-compiled binary from [release page](https://github.com/projectdiscovery/tlsx/releases).
+tlsx requires **Go 1.24** to install successfully. To install, just run the below command or download pre-compiled binary from [release page](https://github.com/projectdiscovery/tlsx/releases).
 
 ```console
 go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest
@@ -115,6 +115,7 @@ CONFIGURATIONS:
    -vc, -verify-cert            enable verification of server certificate
    -ob, -openssl-binary string  OpenSSL Binary Path
    -hf, -hardfail               strategy to use if encountered errors while checking revocation status
+   -proxy string                socks5 proxy to use for tlsx
 
 OPTIMIZATIONS:
    -c, -concurrency int  number of concurrent threads to process (default 300)
@@ -312,7 +313,7 @@ http://slc-b-origin-pointofsale.paypal.com
 http://api-3t.paypal.com
 http://zootapi.paypal.com
 http://pointofsale.paypal.com
-````
+```
 
 ### TLS / Cipher Probe
 
@@ -553,3 +554,34 @@ tlsx is made with ❤️ by the [projectdiscovery](https://projectdiscovery.io) 
 <a href="https://discord.gg/projectdiscovery"><img src="https://raw.githubusercontent.com/projectdiscovery/nuclei-burp-plugin/main/static/join-discord.png" width="300" alt="Join Discord"></a>
 
 </div>
+
+### Certificate Transparency (CT) Logs Streaming
+
+`tlsx` can operate in a _fire-hose_ mode that continuously streams newly-issued TLS certificates from the public Certificate Transparency ecosystem, providing a near-real-time feed of hostnames and metadata.
+
+Enable CT logs mode via the `-ctl` switch (default when no input is provided):
+
+```bash
+tlsx -ctl -silent | jq .subject_an
+```
+
+#### Starting offsets
+
+The tool offers three mutually-exclusive start behaviours controlled by the following flags:
+
+| Flag | Behaviour |
+|------|-----------|
+| _default_ | Start **now** (tree-size at startup) – only future certificates are streamed |
+| `-cb, --ctl-beginning` | Start from index **0** for every log (full historical replay) |
+| `-cti, --ctl-index <log>=<n>` | Custom per-log index (repeatable). Sets starting index to _n_ for the specified log URL/ID. Example: `--ctl-index https://ct.googleapis.com/logs/argon2023=123456` |
+
+```bash
+# Replay the entire history
+$ tlsx -ctl -cb -silent > all_certs.jsonl
+
+# Resume at custom positions for two logs
+$ tlsx -ctl -cti https://ct.googleapis.com/logs/argon2023=987654 -cti cloudflare-nimbus2024=543210 \
+      -silent | jq -r .ct_source
+```
+
+By default duplicates are filtered out using a large inverse bloom filter. Pass `-v` to observe verbose statistics.

@@ -5,9 +5,12 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"crypto/x509"
 
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
@@ -17,6 +20,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/mapcidr/asn"
+	"github.com/projectdiscovery/tlsx/pkg/ctlogs"
 	"github.com/projectdiscovery/tlsx/pkg/output"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
@@ -26,11 +30,13 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
+	"golang.org/x/net/proxy"
 )
 
 // Runner is a client for running the enumeration process
 type Runner struct {
 	hasStdin     bool
+	hasStdinSet  bool // Track if hasStdin was manually set (for tests)
 	outputWriter output.Writer
 	fastDialer   *fastdialer.Dialer
 	options      *clients.Options
@@ -76,10 +82,31 @@ func New(options *clients.Options) (*Runner, error) {
 		return nil, errorutil.NewWithErr(err).Msgf("could not validate options")
 	}
 
+	dialerTimeout := time.Duration(options.Timeout) * time.Second
+
+	var proxyDialer *proxy.Dialer
+	if options.Proxy != "" {
+		proxyURL, err := url.Parse(options.Proxy)
+		if err != nil {
+			return nil, errorutil.NewWithErr(err).Msgf("could not parse proxy")
+		}
+		dialer, err := proxy.FromURL(proxyURL, &net.Dialer{
+			Timeout:   dialerTimeout,
+			DualStack: true,
+		})
+		if err != nil {
+			return nil, errorutil.NewWithErr(err).Msgf("could not create proxy dialer")
+		}
+		proxyDialer = &dialer
+	}
+
 	dialerOpts := fastdialer.DefaultOptions
 	dialerOpts.WithDialerHistory = true
 	dialerOpts.MaxRetries = 3
-	dialerOpts.DialerTimeout = time.Duration(options.Timeout) * time.Second
+	dialerOpts.DialerTimeout = dialerTimeout
+	if proxyDialer != nil {
+		dialerOpts.ProxyDialer = proxyDialer
+	}
 	if len(options.Resolvers) > 0 {
 		dialerOpts.BaseResolvers = options.Resolvers
 	}
@@ -134,6 +161,11 @@ func (t taskInput) Address() string {
 
 // Execute executes the main data collection loop
 func (r *Runner) Execute() error {
+	// Handle CT logs streaming mode
+	if r.options.CTLogs {
+		return r.executeCTLogsMode()
+	}
+
 	// Create the worker goroutines for processing
 	inputs := make(chan taskInput, r.options.Concurrency)
 	wg := &sync.WaitGroup{}
@@ -155,6 +187,83 @@ func (r *Runner) Execute() error {
 		gologger.Info().Msgf("Connections made using crypto/tls: %d, zcrypto/tls: %d, openssl: %d", stats.LoadCryptoTLSConnections(), stats.LoadZcryptoTLSConnections(), stats.LoadOpensslTLSConnections())
 	}
 	return nil
+}
+
+// executeCTLogsMode executes CT logs streaming mode
+func (r *Runner) executeCTLogsMode() error {
+	gologger.Info().Msg("Starting Certificate Transparency logs streaming mode…")
+
+	// Build functional options for ctlogs service
+	var svcOpts []ctlogs.ServiceOption
+
+	// Verbosity & certificate inclusion follow existing flags
+	svcOpts = append(svcOpts, ctlogs.WithVerbose(r.options.Verbose))
+	if r.options.Cert {
+		svcOpts = append(svcOpts, ctlogs.WithCert(true))
+	}
+
+	// Start mode handling
+	if r.options.CTLBeginning {
+		svcOpts = append(svcOpts, ctlogs.WithStartBeginning())
+	} else if len(r.options.CTLIndex) > 0 {
+		custom := make(map[string]uint64)
+		for _, item := range r.options.CTLIndex {
+			parts := strings.SplitN(item, "=", 2)
+			if len(parts) != 2 {
+				gologger.Warning().Msgf("invalid --ctl-index entry %q (expected <sourceID>=<index>, e.g. google_xenon2025h2=12345)", item)
+				continue
+			}
+			idx, err := strconv.ParseUint(parts[1], 10, 64)
+			if err != nil {
+				gologger.Warning().Msgf("invalid index in --ctl-index entry %q: %v", item, err)
+				continue
+			}
+			key := strings.ToLower(parts[0])
+			custom[key] = idx
+		}
+		if len(custom) > 0 {
+			svcOpts = append(svcOpts, ctlogs.WithCustomStartIndices(custom))
+		}
+	}
+
+	// Callback adapter converts ctlogs.EntryMeta + raw cert into tlsx Response
+	callback := func(meta ctlogs.EntryMeta, raw []byte, duplicate bool) {
+		// Skip duplicates to preserve historical CLI behaviour
+		if duplicate {
+			return
+		}
+
+		cert, err := x509.ParseCertificate(raw)
+		if err != nil {
+			if r.options.Verbose {
+				gologger.Warning().Msgf("failed to parse certificate: %v", err)
+			}
+			return
+		}
+
+		resp := ctlogs.ConvertCertificateToResponse(cert, meta.SourceDesc, r.options.Cert)
+		if resp == nil {
+			return
+		}
+
+		if err := r.outputWriter.Write(resp); err != nil {
+			gologger.Warning().Msgf("Could not write CT log output: %s", err)
+		}
+	}
+
+	svcOpts = append(svcOpts, ctlogs.WithCallback(callback))
+
+	ctService, err := ctlogs.New(svcOpts...)
+	if err != nil {
+		return errorutil.NewWithErr(err).Msgf("could not create CT logs service")
+	}
+
+	// Start streaming
+	ctService.Start()
+	defer ctService.Stop()
+
+	// Block indefinitely (until SIGINT/SIGTERM) as streaming is async.
+	select {}
 }
 
 // processInputElementWorker processes an element from input
@@ -207,7 +316,11 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		if err != nil {
 			return errorutil.NewWithErr(err).Msgf("could not open input file")
 		}
-		defer file.Close()
+		defer func() {
+			if err := file.Close(); err != nil {
+				gologger.Warning().Msgf("Failed to close input file: %v", err)
+			}
+		}()
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {

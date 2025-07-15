@@ -60,7 +60,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil || rawConn == nil {
 		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("could not dial address:%v", opensslOpts.Address)
 	}
-	defer rawConn.Close()
+	defer func() {
+		_ = rawConn.Close()
+	}()
 
 	resolvedIP, _, err := net.SplitHostPort(rawConn.RemoteAddr().String())
 	if err != nil {

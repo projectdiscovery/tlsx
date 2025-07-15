@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        go-version: [1.21.x]
+        go-version: [1.24.x]
 
     steps:
       - name: Set up Go
@@ -30,7 +30,7 @@ jobs:
         working-directory: cmd/tlsx/
 
       - name: Test
-        run: go test ./...
+        run: go test -v ./...
         working-directory: .
         env:
           PDCP_API_KEY: "${{ secrets.PDCP_API_KEY }}"

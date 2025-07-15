@@ -66,7 +66,7 @@ func TestClientCertRequired(t *testing.T) {
 			log.SetOutput(io.Discard) // discard logs
 
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, "OK")
+				_, _ = fmt.Fprintf(w, "OK")
 			}))
 			server.TLS.ClientAuth = tc.clientAuthConfig
 			server.TLS.MinVersion = ctls.VersionTLS10

@@ -40,7 +40,11 @@ func FetchAndLoadCiphers(url string) {
 	if err != nil {
 		gologger.Fatal().Msg(err.Error())
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			gologger.Warning().Msgf("Failed to close response body: %v", err)
+		}
+	}()
 	if res.StatusCode != http.StatusOK {
 		gologger.Fatal().Msgf("status code error: %d %s", res.StatusCode, res.Status)
 	}
