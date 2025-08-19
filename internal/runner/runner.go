@@ -324,18 +324,34 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			text := scanner.Text()
+			text := strings.TrimSpace(scanner.Text())
 			if text != "" {
-				r.processInputItem(text, inputs)
+				if strings.Contains(text, ",") {
+					for _, item := range strings.FieldsFunc(text, func(c rune) bool { return c == ',' }) {
+						if item = strings.TrimSpace(item); item != "" {
+							r.processInputItem(item, inputs)
+						}
+					}
+				} else {
+					r.processInputItem(text, inputs)
+				}
 			}
 		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			text := scanner.Text()
+			text := strings.TrimSpace(scanner.Text())
 			if text != "" {
-				r.processInputItem(text, inputs)
+				if strings.Contains(text, ",") {
+					for _, item := range strings.FieldsFunc(text, func(c rune) bool { return c == ',' }) {
+						if item = strings.TrimSpace(item); item != "" {
+							r.processInputItem(item, inputs)
+						}
+					}
+				} else {
+					r.processInputItem(text, inputs)
+				}
 			}
 		}
 	}
