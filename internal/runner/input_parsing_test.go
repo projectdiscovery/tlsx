@@ -314,23 +314,26 @@ func TestConcurrentAccess(t *testing.T) {
 
 // Benchmark tests for performance validation
 func BenchmarkEnqueueLine(b *testing.B) {
-	runner := &Runner{}
+	runner := &Runner{
+		options: &clients.Options{Ports: []string{"443"}},
+	}
 	inputs := make(chan taskInput, 1000)
 	testInput := "example.com,google.com,github.com,stackoverflow.com,reddit.com"
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		runner.enqueueLine(testInput, inputs)
-		// Drain channel to prevent blocking
-		select {
-		case <-inputs:
-		default:
+		// Drain channel fully to prevent saturation
+		for len(inputs) > 0 {
+			<-inputs
 		}
 	}
 }
 
 func BenchmarkEnqueueLineLarge(b *testing.B) {
-	runner := &Runner{}
+	runner := &Runner{
+		options: &clients.Options{Ports: []string{"443"}},
+	}
 	inputs := make(chan taskInput, 10000)
 	
 	// Create a line with 1000 hosts

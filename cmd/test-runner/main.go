@@ -83,16 +83,20 @@ func (tr *TestRunner) loadTestsFromFile(filename, category string) ([]TestCase, 
 
 	var tests []TestCase
 	scanner := bufio.NewScanner(file)
-	
+	// Allow very long lines for large CSV inputs
+	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
+
 	var currentTest TestCase
 	var inTest bool
+	var inputBuilder strings.Builder
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		
 		if strings.HasPrefix(line, "# ") {
 			// Save previous test if exists
-			if inTest && currentTest.Input != "" {
+			if inTest && inputBuilder.Len() > 0 {
+				currentTest.Input = inputBuilder.String()
 				tests = append(tests, currentTest)
 			}
 			
@@ -107,16 +111,28 @@ func (tr *TestRunner) loadTestsFromFile(filename, category string) ([]TestCase, 
 				currentTest.Description = parts[1]
 			}
 			inTest = true
-		} else if inTest && line != "" {
-			// This is the test input
-			currentTest.Input = line
-			tests = append(tests, currentTest)
-			inTest = false
+			inputBuilder.Reset()
+		} else if inTest {
+			// Accumulate input until blank line
+			if line == "" {
+				if inputBuilder.Len() > 0 {
+					currentTest.Input = inputBuilder.String()
+					tests = append(tests, currentTest)
+				}
+				inTest = false
+				inputBuilder.Reset()
+				continue
+			}
+			if inputBuilder.Len() > 0 {
+				inputBuilder.WriteByte('\n')
+			}
+			inputBuilder.WriteString(line)
 		}
 	}
 
 	// Add final test if exists
-	if inTest && currentTest.Input != "" {
+	if inTest && inputBuilder.Len() > 0 {
+		currentTest.Input = inputBuilder.String()
 		tests = append(tests, currentTest)
 	}
 

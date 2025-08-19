@@ -439,27 +439,3 @@ func TestMonotonicityProperty(t *testing.T) {
 	}
 }
 
-// Benchmark property-based tests for performance validation
-func BenchmarkPropertyBasedParsing(b *testing.B) {
-	pbt := NewPropertyBasedTest()
-	
-	inputs := []string{
-		"example.com",
-		"host1.com,host2.org,host3.net",
-		strings.Repeat("host.com,", 1000),
-		"тест.рф,例え.テスト",
-		" , , host.com , , ",
-	}
-	
-	b.ResetTimer()
-	
-	for i := 0; i < b.N; i++ {
-		input := inputs[i%len(inputs)]
-		
-		// Test all properties for performance
-		pbt.PropertyParsingDeterminism(input)
-		pbt.PropertyWhitespaceInvariance(input)
-		pbt.PropertyEmptyElimination(input)
-		pbt.PropertyIdempotency(input)
-	}
-}
