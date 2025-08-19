@@ -74,3 +74,63 @@ func Test_matchWildCardToken(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSelfSigned(t *testing.T) {
+	tests := []struct {
+		name          string
+		authorityKeyID []byte
+		subjectKeyID   []byte
+		SANs          []string
+		want          bool
+	}{
+		{
+			name:          "Traditional self-signed: empty authority key ID",
+			authorityKeyID: []byte{},
+			subjectKeyID:   []byte{0x01, 0x02, 0x03},
+			SANs:          []string{"example.com"},
+			want:          true,
+		},
+		{
+			name:          "Traditional self-signed: matching key IDs",
+			authorityKeyID: []byte{0x01, 0x02, 0x03},
+			subjectKeyID:   []byte{0x01, 0x02, 0x03},
+			SANs:          []string{"example.com"},
+			want:          true,
+		},
+		{
+			name:          "Legitimate intermediate CA: different key IDs, no SANs",
+			authorityKeyID: []byte{0x01, 0x02, 0x03},
+			subjectKeyID:   []byte{0x04, 0x05, 0x06},
+			SANs:          []string{},
+			want:          false,
+		},
+		{
+			name:          "Poorly generated self-signed: no authority key ID and no SANs",
+			authorityKeyID: []byte{},
+			subjectKeyID:   []byte{0x01, 0x02, 0x03},
+			SANs:          []string{},
+			want:          true,
+		},
+		{
+			name:          "Normal certificate: different key IDs with SANs",
+			authorityKeyID: []byte{0x01, 0x02, 0x03},
+			subjectKeyID:   []byte{0x04, 0x05, 0x06},
+			SANs:          []string{"example.com", "*.example.com"},
+			want:          false,
+		},
+		{
+			name:          "Normal certificate: different key IDs with single SAN",
+			authorityKeyID: []byte{0x01, 0x02, 0x03},
+			subjectKeyID:   []byte{0x04, 0x05, 0x06},
+			SANs:          []string{"example.com"},
+			want:          false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := IsSelfSigned(test.authorityKeyID, test.subjectKeyID, test.SANs)
+			assert.Equal(t, test.want, got)
+		})
+	}
+}
