@@ -324,38 +324,40 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			text := strings.TrimSpace(scanner.Text())
-			if text != "" {
-				if strings.Contains(text, ",") {
-					for _, item := range strings.FieldsFunc(text, func(c rune) bool { return c == ',' }) {
-						if item = strings.TrimSpace(item); item != "" {
-							r.processInputItem(item, inputs)
-						}
-					}
-				} else {
-					r.processInputItem(text, inputs)
-				}
-			}
+			r.enqueueLine(scanner.Text(), inputs)
+		}
+		if err := scanner.Err(); err != nil {
+			return errorutil.NewWithErr(err).Msgf("error reading input file %q", r.options.InputList)
 		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			text := strings.TrimSpace(scanner.Text())
-			if text != "" {
-				if strings.Contains(text, ",") {
-					for _, item := range strings.FieldsFunc(text, func(c rune) bool { return c == ',' }) {
-						if item = strings.TrimSpace(item); item != "" {
-							r.processInputItem(item, inputs)
-						}
-					}
-				} else {
-					r.processInputItem(text, inputs)
-				}
-			}
+			r.enqueueLine(scanner.Text(), inputs)
+		}
+		if err := scanner.Err(); err != nil {
+			return errorutil.NewWithErr(err).Msgf("error reading stdin")
 		}
 	}
 	return nil
+}
+
+// enqueueLine processes a single line of input, splitting on commas if present
+func (r *Runner) enqueueLine(line string, inputs chan taskInput) {
+	text := strings.TrimSpace(line)
+	if text == "" {
+		return
+	}
+	// IndexByte is a micro-optimization over Contains for single-byte separators
+	if strings.IndexByte(text, ',') >= 0 {
+		for _, item := range strings.FieldsFunc(text, func(c rune) bool { return c == ',' }) {
+			if s := strings.TrimSpace(item); s != "" {
+				r.processInputItem(s, inputs)
+			}
+		}
+		return
+	}
+	r.processInputItem(text, inputs)
 }
 
 // resolveFQDN resolves a FQDN and returns the IP addresses
