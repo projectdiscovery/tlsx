@@ -308,7 +308,7 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	// Process Normal Inputs
 	for _, text := range r.options.Inputs {
-		r.processInputItem(text, inputs)
+		r.enqueueLine(text, inputs)
 	}
 
 	if r.options.InputList != "" {
@@ -323,6 +323,8 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		}()
 
 		scanner := bufio.NewScanner(file)
+		// Allow very long CSV lines (default token limit is ~64K)
+		scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 		for scanner.Scan() {
 			r.enqueueLine(scanner.Text(), inputs)
 		}
@@ -332,6 +334,8 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
+		// Allow very long CSV lines via STDIN
+		scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
 		for scanner.Scan() {
 			r.enqueueLine(scanner.Text(), inputs)
 		}
