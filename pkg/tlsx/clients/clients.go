@@ -355,9 +355,18 @@ func IsExpired(notAfter time.Time) bool {
 //
 // follows: https://security.stackexchange.com/a/162263/250973
 func IsSelfSigned(authorityKeyID, subjectKeyID []byte, SANs []string) bool {
-	if len(authorityKeyID) == 0 || bytes.Equal(authorityKeyID, subjectKeyID) || len(SANs) == 0 {
+	// Traditional self-signed check: no authority key ID or authority equals subject
+	if len(authorityKeyID) == 0 || bytes.Equal(authorityKeyID, subjectKeyID) {
 		return true
 	}
+	
+	// Additional check for poorly generated self-signed certificates:
+	// Only flag as self-signed if BOTH no SANs AND no authority key ID
+	// This avoids false positives with legitimate intermediate CAs
+	if len(SANs) == 0 && len(authorityKeyID) == 0 {
+		return true
+	}
+	
 	return false
 }
 
