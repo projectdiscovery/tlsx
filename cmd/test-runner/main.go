@@ -226,49 +226,51 @@ func (tr *TestRunner) runTlsx(inputFile string) ([]string, error) {
 }
 
 func (tr *TestRunner) validateOutput(test TestCase, output []string) bool {
-	// Basic validation rules
+	trimmedInput := strings.TrimSpace(test.Input)
+	
+	// Handle empty input consistently across all categories
+	if trimmedInput == "" {
+		return len(output) == 0
+	}
+	
 	switch test.Category {
 	case "basic":
-		if test.Input == "" || strings.TrimSpace(test.Input) == "" {
-			return len(output) == 0
-		}
 		return len(output) > 0
 		
 	case "comma":
-		if test.Input == ",,," {
-			return len(output) == 0
-		}
-		// Filter out empty items
-		actualNonEmpty := 0
-		for _, item := range strings.FieldsFunc(test.Input, func(c rune) bool { return c == ',' }) {
-			if strings.TrimSpace(item) != "" {
-				actualNonEmpty++
-			}
-		}
-		return len(output) == actualNonEmpty
+		return tr.validateCommaOutput(test.Input, output)
 		
 	case "whitespace":
-		trimmed := strings.TrimSpace(test.Input)
-		if trimmed == "" {
-			return len(output) == 0
-		}
-		return len(output) == 1 && output[0] == trimmed
+		return len(output) == 1 && output[0] == trimmedInput
 		
 	case "large":
-		// Large inputs should not crash and should process all valid hosts
+		// Large inputs should process successfully without crashes
 		return len(output) > 0
 		
 	case "malformed", "security":
-		// These may fail or succeed, both are acceptable
+		// These categories may legitimately fail or succeed
 		return true
 		
 	default:
-		// For other categories, just check that we got some output for non-empty input
-		if strings.TrimSpace(test.Input) == "" {
-			return len(output) == 0
-		}
 		return len(output) > 0
 	}
+}
+
+func (tr *TestRunner) validateCommaOutput(input string, output []string) bool {
+	// Handle edge case of only commas
+	if strings.Trim(input, ", \t\n\r") == "" {
+		return len(output) == 0
+	}
+	
+	// Count expected non-empty hosts after comma splitting
+	expectedCount := 0
+	for _, item := range strings.FieldsFunc(input, func(c rune) bool { return c == ',' }) {
+		if strings.TrimSpace(item) != "" {
+			expectedCount++
+		}
+	}
+	
+	return len(output) == expectedCount
 }
 
 func (tr *TestRunner) printSummary(totalTests int) {
