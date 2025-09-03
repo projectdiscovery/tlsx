@@ -211,6 +211,12 @@ type Response struct {
 	ClientCertRequired *bool                  `json:"client_cert_required,omitempty"`
 	// CTLogSource is the Certificate Transparency log source for CT logs mode
 	CTLogSource string `json:"ctl_source,omitempty"`
+	// CTLogIndex is the index/offset of this entry in the CT log
+	CTLogIndex uint64 `json:"ctl_index,omitempty"`
+	// CTLogTreeSize is the total number of entries in the CT log (head)
+	CTLogTreeSize uint64 `json:"ctl_tree_size,omitempty"`
+	// CTLogLag is the number of pending entries (TreeSize - Index)
+	CTLogLag uint64 `json:"ctl_lag,omitempty"`
 }
 
 type TlsCiphers struct {

@@ -28,6 +28,7 @@ type CTLogList struct {
 type CTLogSource struct {
 	Client     *CTLogClient
 	LastSize   uint64
+	TreeSize   uint64 // Current tree size from latest STH
 	WindowSize uint64 // Sliding window size
 }
 
@@ -58,9 +59,12 @@ const (
 // EntryMeta carries minimal contextual information about a log entry passed
 // to the callback.
 type EntryMeta struct {
-	SourceID       string // normalized source identifier
-	SourceDesc     string // human-readable log description
-	Index          uint64 // leaf index within the log
+	SourceID       string    // normalized source identifier
+	SourceDesc     string    // human-readable log description
+	LogURL         string    // CT log URL for identification
+	Index          uint64    // leaf index within the log
+	TreeSize       uint64    // total number of entries in the log (head)
+	Lag            uint64    // number of pending entries (TreeSize - Index)
 	CollectionTime time.Time
 }
 

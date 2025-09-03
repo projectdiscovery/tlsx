@@ -193,7 +193,8 @@ func (service *CTLogsService) initLogSource(ctx context.Context, logInfo CTLogIn
 	source := &CTLogSource{
 		Client:     client,
 		LastSize:   startSize,
-		WindowSize: 1000, // Process entries in chunks of 1000
+		TreeSize:   sth.TreeSize, // Store initial tree size
+		WindowSize: 1000,         // Process entries in chunks of 1000
 	}
 	return source, nil
 }
@@ -253,6 +254,9 @@ func (service *CTLogsService) fetchNewEntries(source *CTLogSource) error {
 		return fmt.Errorf("failed to get STH: %w", err)
 	}
 
+	// Update source tree size with latest STH
+	source.TreeSize = sth.TreeSize
+
 	// Calculate range to fetch (sliding window)
 	start := source.LastSize
 	end := start + source.WindowSize
@@ -271,7 +275,9 @@ func (service *CTLogsService) fetchNewEntries(source *CTLogSource) error {
 	}
 
 	if service.options.Verbose {
-		gologger.Info().Msgf("[%s] Fetched %d entries (%d-%d)", source.Client.Info().Description, len(entries), start, end-1)
+		lag := sth.TreeSize - start
+		gologger.Info().Msgf("[%s] Fetched %d entries (%d-%d), TreeSize: %d, Lag: %d", 
+			source.Client.Info().Description, len(entries), start, end-1, sth.TreeSize, lag)
 	}
 
 	// Process all certificates - no filtering
@@ -322,10 +328,16 @@ func (service *CTLogsService) processEntry(source *CTLogSource, entry *ct.LogEnt
 
 	// Invoke callback if configured.
 	if service.options.Callback != nil {
+		clientInfo := source.Client.Info()
+		lag := source.TreeSize - index
+		
 		meta := EntryMeta{
-			SourceID:       service.formatSourceID(source.Client.Info().Description),
-			SourceDesc:     source.Client.Info().Description,
+			SourceID:       service.formatSourceID(clientInfo.Description),
+			SourceDesc:     clientInfo.Description,
+			LogURL:         clientInfo.URL,
 			Index:          index,
+			TreeSize:       source.TreeSize,
+			Lag:            lag,
 			CollectionTime: time.Now(),
 		}
 
@@ -368,6 +380,12 @@ func (service *CTLogsService) GetStats() Stats {
 // format. It is exported so callers (e.g., CLI runner) can reuse the same
 // mapping logic as the service internals.
 func ConvertCertificateToResponse(cert *x509.Certificate, sourceName string, includeCert bool) *clients.Response {
+	return ConvertCertificateToResponseWithMeta(cert, sourceName, includeCert, nil)
+}
+
+// ConvertCertificateToResponseWithMeta converts an x509 certificate to tlsx response
+// format with optional CT log metadata.
+func ConvertCertificateToResponseWithMeta(cert *x509.Certificate, sourceName string, includeCert bool, meta *EntryMeta) *clients.Response {
 	now := time.Now()
 
 	// Determine host from certificate
@@ -426,6 +444,13 @@ func ConvertCertificateToResponse(cert *x509.Certificate, sourceName string, inc
 		ProbeStatus:         true,
 		CertificateResponse: certResp,
 		CTLogSource:         FormatSourceID(sourceName),
+	}
+
+	// Add CT log metadata if provided
+	if meta != nil {
+		response.CTLogIndex = meta.Index
+		response.CTLogTreeSize = meta.TreeSize
+		response.CTLogLag = meta.Lag
 	}
 
 	return response

@@ -241,9 +241,21 @@ func (r *Runner) executeCTLogsMode() error {
 			return
 		}
 
-		resp := ctlogs.ConvertCertificateToResponse(cert, meta.SourceDesc, r.options.Cert)
+		// Display CT log progress information in verbose mode
+		if r.options.Verbose {
+			progressPercent := float64(meta.Index) / float64(meta.TreeSize) * 100
+			gologger.Info().Msgf("[CT] %s: Index %d/%d (%.1f%%), Lag: %d, URL: %s", 
+				meta.SourceDesc, meta.Index, meta.TreeSize, progressPercent, meta.Lag, meta.LogURL)
+		}
+
+		resp := ctlogs.ConvertCertificateToResponseWithMeta(cert, meta.SourceDesc, r.options.Cert, &meta)
 		if resp == nil {
 			return
+		}
+
+		// Enhance response with CT log metadata
+		if resp.CTLogSource == "" {
+			resp.CTLogSource = meta.SourceID
 		}
 
 		if err := r.outputWriter.Write(resp); err != nil {
