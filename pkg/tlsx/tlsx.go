@@ -10,7 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	errorutil "github.com/projectdiscovery/utils/errors" //nolint
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
@@ -49,7 +49,7 @@ func New(options *clients.Options) (*Service, error) {
 		options.ScanMode = "ctls"
 	}
 	if err != nil {
-		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err)
+		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err) //nolint
 	}
 	return service, nil
 }
@@ -66,7 +66,7 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 
 	//validation
 	if (host == "" && ip == "") || port == "" {
-		return nil, errorutil.NewWithTag("tlsx", "tlsx requires valid address got port=%v,hostname=%v,ip=%v", port, host, ip)
+		return nil, errorutil.NewWithTag("tlsx", "tlsx requires valid address got port=%v,hostname=%v,ip=%v", port, host, ip) //nolint
 	}
 
 	if s.options.ScanMode != "auto" && s.options.ScanMode != "" {
@@ -84,10 +84,10 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 		}
 	}
 	if resp == nil && err == nil {
-		return nil, errorutil.NewWithTag("auto", "no response returned for connection")
+		return nil, errorutil.NewWithTag("auto", "no response returned for connection") //nolint
 	}
 	if err != nil {
-		wrappedErr := errorutil.NewWithTag("auto", "could not connect to host").Wrap(err)
+		wrappedErr := errorutil.NewWithTag("auto", "could not connect to host").Wrap(err) //nolint
 		if s.options.ProbeStatus {
 			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false, ServerName: options.SNI}, wrappedErr
 		}

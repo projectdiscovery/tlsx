@@ -2,7 +2,7 @@ package ztls
 
 import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	errorutil "github.com/projectdiscovery/utils/errors" //nolint
 	"github.com/zmap/zcrypto/tls"
 	"github.com/zmap/zcrypto/x509"
 )
@@ -28,7 +28,7 @@ func toZTLSCiphers(items []string) ([]uint16, error) {
 	for _, item := range items {
 		zcipher, ok := ztlsCiphers[item]
 		if !ok {
-			return nil, errorutil.NewWithTag("ztls", "cipher suite %v not supported", item)
+			return nil, errorutil.NewWithTag("ztls", "cipher suite %v not supported", item) //nolint
 		}
 		convertedCiphers = append(convertedCiphers, zcipher)
 	}

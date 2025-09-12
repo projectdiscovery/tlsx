@@ -26,7 +26,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit" //nolint
 	iputil "github.com/projectdiscovery/utils/ip"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
@@ -79,7 +79,7 @@ func New(options *clients.Options) (*Runner, error) {
 
 	runner := &Runner{options: options}
 	if err := runner.validateOptions(); err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("could not validate options")
+		return nil, errkit.Wrap(err, "could not validate options")
 	}
 
 	dialerTimeout := time.Duration(options.Timeout) * time.Second
@@ -88,14 +88,14 @@ func New(options *clients.Options) (*Runner, error) {
 	if options.Proxy != "" {
 		proxyURL, err := url.Parse(options.Proxy)
 		if err != nil {
-			return nil, errorutil.NewWithErr(err).Msgf("could not parse proxy")
+			return nil, errkit.Wrap(err, "could not parse proxy")
 		}
 		dialer, err := proxy.FromURL(proxyURL, &net.Dialer{
 			Timeout:   dialerTimeout,
 			DualStack: true,
 		})
 		if err != nil {
-			return nil, errorutil.NewWithErr(err).Msgf("could not create proxy dialer")
+			return nil, errkit.Wrap(err, "could not create proxy dialer")
 		}
 		proxyDialer = &dialer
 	}
@@ -112,7 +112,7 @@ func New(options *clients.Options) (*Runner, error) {
 	}
 	fastDialer, err := fastdialer.NewDialer(dialerOpts)
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("could not create dialer")
+		return nil, errkit.Wrap(err, "could not create dialer")
 	}
 	runner.fastDialer = fastDialer
 	runner.options.Fastdialer = fastDialer
@@ -131,7 +131,7 @@ func New(options *clients.Options) (*Runner, error) {
 
 	outputWriter, err := output.New(options)
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("could not create output writer")
+		return nil, errkit.Wrap(err, "could not create output writer")
 	}
 	runner.outputWriter = outputWriter
 	if options.TlsCiphersEnum && !options.Silent {
@@ -244,7 +244,7 @@ func (r *Runner) executeCTLogsMode() error {
 		// Display CT log progress information in verbose mode
 		if r.options.Verbose {
 			progressPercent := float64(meta.Index) / float64(meta.TreeSize) * 100
-			gologger.Info().Msgf("[CT] %s: Index %d/%d (%.1f%%), Lag: %d, URL: %s", 
+			gologger.Info().Msgf("[CT] %s: Index %d/%d (%.1f%%), Lag: %d, URL: %s",
 				meta.SourceDesc, meta.Index, meta.TreeSize, progressPercent, meta.Lag, meta.LogURL)
 		}
 
@@ -267,7 +267,7 @@ func (r *Runner) executeCTLogsMode() error {
 
 	ctService, err := ctlogs.New(svcOpts...)
 	if err != nil {
-		return errorutil.NewWithErr(err).Msgf("could not create CT logs service")
+		return errkit.Wrap(err, "could not create CT logs service")
 	}
 
 	// Start streaming
@@ -326,7 +326,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	if r.options.InputList != "" {
 		file, err := os.Open(r.options.InputList)
 		if err != nil {
-			return errorutil.NewWithErr(err).Msgf("could not open input file")
+			return errkit.Wrap(err, "could not open input file")
 		}
 		defer func() {
 			if err := file.Close(); err != nil {

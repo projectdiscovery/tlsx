@@ -5,7 +5,7 @@ import (
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	errorutils "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 	fileutil "github.com/projectdiscovery/utils/file"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
@@ -33,10 +33,10 @@ func (r *Runner) validateOptions() error {
 	}
 	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm || r.options.MisMatched || r.options.Revoked || r.options.WildcardCertCheck
 	if r.options.RespOnly && probeSpecified {
-		return errorutils.New("resp-only flag can only be used with san and cn flags")
+		return errkit.New("resp-only flag can only be used with san and cn flags")
 	}
 	if (r.options.SAN || r.options.CN) && probeSpecified {
-		return errorutils.New("san or cn flag cannot be used with other probes")
+		return errkit.New("san or cn flag cannot be used with other probes")
 	}
 
 	// Enable CT logs mode by default if no input is provided
@@ -47,7 +47,7 @@ func (r *Runner) validateOptions() error {
 
 	// Check if we still have no input after auto-enabling CT logs
 	if !r.options.CTLogs && !r.hasStdin && len(r.options.Inputs) == 0 && r.options.InputList == "" {
-		return errorutils.New("no input provided for enumeration")
+		return errkit.New("no input provided for enumeration")
 	}
 
 	if len(r.options.Ports) == 0 {
@@ -55,7 +55,7 @@ func (r *Runner) validateOptions() error {
 		r.options.Ports = append(r.options.Ports, "443")
 	}
 	if r.options.CertsOnly && (r.options.ScanMode != "ztls" && r.options.ScanMode != "auto") {
-		return errorutils.New("scan-mode must be ztls or auto with certs-only option")
+		return errkit.New("scan-mode must be ztls or auto with certs-only option")
 	}
 	if r.options.CertsOnly || r.options.Ja3 || r.options.Ja3s {
 		r.options.ScanMode = "ztls" // force setting ztls when using certs-only

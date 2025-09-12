@@ -3,7 +3,7 @@ package tls
 import (
 	"crypto/tls"
 
-	errorutil "github.com/projectdiscovery/utils/errors"
+	errorutil "github.com/projectdiscovery/utils/errors" //nolint
 )
 
 var (
@@ -27,7 +27,7 @@ func toTLSCiphers(items []string) ([]uint16, error) {
 	for _, item := range items {
 		cipher, ok := tlsCiphers[item]
 		if !ok {
-			return nil, errorutil.NewWithTag("ctls", "cipher suite %v not supported", item)
+			return nil, errorutil.NewWithTag("ctls", "cipher suite %v not supported", item) //nolint
 		}
 		convertedCiphers = append(convertedCiphers, cipher)
 	}

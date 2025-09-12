@@ -9,7 +9,8 @@ import (
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
-	errorutils "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
+	errorutils "github.com/projectdiscovery/utils/errors" //nolint
 	fileutil "github.com/projectdiscovery/utils/file"
 )
 
@@ -26,20 +27,20 @@ func main() {
 
 func process() error {
 	if err := readFlags(); err != nil {
-		return errorutils.NewWithErr(err).Msgf("could not read flags")
+		return errkit.Wrapf(err, "could not read flags")
 	}
 	runner, err := runner.New(options)
 	if err != nil {
-		return errorutils.NewWithErr(err).Msgf("could not create runner")
+		return errkit.Wrapf(err, "could not create runner")
 	}
 	if runner == nil {
 		return nil
 	}
 	if err := runner.Execute(); err != nil {
-		return errorutils.NewWithErr(err).Msgf("could not execute runner")
+		return errkit.Wrapf(err, "could not execute runner")
 	}
 	if err := runner.Close(); err != nil {
-		return errorutils.NewWithErr(err).Msgf("could not close runner")
+		return errkit.Wrapf(err, "could not close runner")
 	}
 	return nil
 }
@@ -154,13 +155,13 @@ func readFlags(args ...string) error {
 
 	err := flagSet.Parse(args...)
 	if err != nil {
-		return errorutils.NewWithErr(err).Msgf("could not parse flags")
+		return errkit.Wrapf(err, "could not parse flags")
 	}
 	hasStdin := fileutil.HasStdin()
 
 	// Validation: CT logs mode and input mode cannot be used together
 	if options.CTLogs && (len(options.Inputs) > 0 || options.InputList != "" || hasStdin) {
-		return errorutils.NewWithTag("flags", "CT logs mode (-ctl) and input mode (-u/-l/stdin) cannot be used together.")
+		return errorutils.NewWithTag("flags", "CT logs mode (-ctl) and input mode (-u/-l/stdin) cannot be used together.") //nolint
 	}
 
 	// Enable CT logs mode by default if no input is provided
@@ -180,7 +181,7 @@ func readFlags(args ...string) error {
 
 	if cfgFile != "" {
 		if err := flagSet.MergeConfigFile(cfgFile); err != nil {
-			return errorutils.NewWithErr(err).Msgf("could not read config file")
+			return errkit.Wrapf(err, "could not read config file")
 		}
 	}
 	return nil
@@ -190,6 +191,6 @@ func init() {
 	// Feature: Debug Mode
 	// Errors will include stacktrace when debug mode is enabled
 	if os.Getenv("DEBUG") != "" {
-		errorutils.ShowStackTrace = true
+		errkit.EnableTrace = true
 	}
 }

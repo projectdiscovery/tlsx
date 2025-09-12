@@ -10,7 +10,8 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
-	errorutils "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
+	errorutils "github.com/projectdiscovery/utils/errors" //nolint
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	"go.uber.org/multierr"
 )
@@ -29,7 +30,7 @@ func New(options *clients.Options) (*Client, error) {
 	ztlsClient, ztlsErr := ztls.New(options)
 	opensslClient, opensslErr := openssl.New(options)
 
-	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && !errorutils.IsAny(opensslErr, openssl.ErrNotAvailable)) {
+	if tlsErr != nil && ztlsErr != nil && (opensslErr != nil && !errorutils.IsAny(opensslErr, openssl.ErrNotAvailable)) { //nolint
 		return nil, multierr.Combine(tlsErr, ztlsErr, opensslErr)
 	}
 	return &Client{tlsClient: tlsClient, ztlsClient: ztlsClient, opensslClient: opensslClient, options: options}, nil
@@ -46,7 +47,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	retryCounter := 0
 	if c.tlsClient == nil && c.ztlsClient == nil && c.opensslClient == nil {
 		// logic to avoid infinite loop
-		return nil, errorutils.New("no tls client available available for auto mode")
+		return nil, errkit.New("no tls client available available for auto mode")
 	}
 	var errStack error
 	for retryCounter < maxRetries {
@@ -72,7 +73,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 				stats.IncrementOpensslTLSConnections()
 				return response, nil
 			}
-			if errorutils.IsAny(opensslErr, openssl.ErrNotAvailable) {
+			if errorutils.IsAny(opensslErr, openssl.ErrNotAvailable) { //nolint
 				opensslErr = nil
 			}
 			retryCounter++

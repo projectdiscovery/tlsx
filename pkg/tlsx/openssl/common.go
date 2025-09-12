@@ -9,15 +9,15 @@ import (
 	"strings"
 
 	"github.com/projectdiscovery/gologger"
-	errorutils "github.com/projectdiscovery/utils/errors"
+	errorutils "github.com/projectdiscovery/utils/errors" //nolint
 )
 
 var (
-	ErrParse          = errorutils.NewWithTag("openssl", "failed to parse openssl response")
-	ErrCertParse      = errorutils.NewWithTag("openssl", "failed to parse server certificate")
-	ErrNotImplemented = errorutils.NewWithTag("openssl", "feature not implemented")
-	ErrNotAvailable   = errorutils.NewWithTag("openssl", "executable not installed or in PATH")
-	ErrNoSession      = errorutils.NewWithTag("openssl", "session not created/found")
+	ErrParse          = errorutils.NewWithTag("openssl", "failed to parse openssl response")    //nolint
+	ErrCertParse      = errorutils.NewWithTag("openssl", "failed to parse server certificate")  //nolint
+	ErrNotImplemented = errorutils.NewWithTag("openssl", "feature not implemented")             //nolint
+	ErrNotAvailable   = errorutils.NewWithTag("openssl", "executable not installed or in PATH") //nolint
+	ErrNoSession      = errorutils.NewWithTag("openssl", "session not created/found")           //nolint
 )
 
 var (
@@ -55,19 +55,19 @@ func init() {
 		return
 	}
 	if err := openSSLSetup(); err != nil {
-		gologger.Debug().Label("openssl").Msg(err.Error())
+		gologger.Debug().Label("openssl").Msg(err.Error()) //nolint
 	}
 }
 
 // fetch openssl version
-func openSSLSetup() errorutils.Error {
+func openSSLSetup() errorutils.Error { //nolint
 	result, err := execOpenSSL(context.TODO(), []string{"version"})
 	if err != nil {
-		return errorutils.NewWithErr(err).WithTag("openssl").Msgf(result.Stderr)
+		return errorutils.NewWithErr(err).WithTag("openssl").Msgf(result.Stderr) //nolint
 	}
 	arr := strings.Fields(result.Stdout)
 	if len(arr) < 2 {
-		return errorutils.NewWithTag("openssl", "failed to parse openssl version got %v", result.Stdout)
+		return errorutils.NewWithTag("openssl", "failed to parse openssl version got %v", result.Stdout) //nolint
 	}
 	if arr[0] == "LibreSSL" {
 		IsLibreSSL = true
@@ -100,6 +100,6 @@ func UseOpenSSLBinary(binpath string) {
 	BinaryPath = binpath
 	if err := openSSLSetup(); err != nil {
 		// do not fallback
-		gologger.Fatal().Label("openssl").Msg(err.Error())
+		gologger.Fatal().Label("openssl").Msg(err.Error()) //nolint
 	}
 }

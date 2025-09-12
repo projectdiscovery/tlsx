@@ -11,7 +11,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
-	errorutils "github.com/projectdiscovery/utils/errors"
+	errorutils "github.com/projectdiscovery/utils/errors" //nolint
 	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
@@ -38,7 +38,7 @@ func New(options *clients.Options) (*Client, error) {
 func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.ConnectOptions) (*clients.Response, error) {
 	opensslOpts, errx := c.getOpenSSLopts(hostname, ip, port, options)
 	if errx != nil {
-		return nil, errx.Msgf("failed to generate openssl options")
+		return nil, errx.Msgf("failed to generate openssl options") //nolint
 	}
 
 	// timeout cannot be zero(If GOOS==windows it should be on average 3)
@@ -51,14 +51,14 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		var err error
 		c.dialer, err = fastdialer.NewDialer(fastdialer.DefaultOptions)
 		if err != nil {
-			return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("failed to create new fastdialer")
+			return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("failed to create new fastdialer") //nolint
 		}
 	}
 	// There is no guarantee that dialed ip is same as ip used by openssl
 	// this is only used to avoid inconsistencies
 	rawConn, err := c.dialer.Dial(context.TODO(), "tcp", opensslOpts.Address)
 	if err != nil || rawConn == nil {
-		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("could not dial address:%v", opensslOpts.Address)
+		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("could not dial address:%v", opensslOpts.Address) //nolint
 	}
 	defer func() {
 		_ = rawConn.Close()
@@ -73,7 +73,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	// Here _ contains handshake errors and other errors returned by openssl
 	resp, errx := getResponse(ctx, opensslOpts)
 	if errx != nil {
-		return nil, errx.Msgf("failed to response from openssl").WithTag(PkgTag)
+		return nil, errx.Msgf("failed to response from openssl").WithTag(PkgTag) //nolint
 	}
 
 	now := time.Now()
@@ -114,7 +114,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	// generate openssl options
 	opensslOpts, err := c.getOpenSSLopts(hostname, ip, port, options)
 	if err != nil {
-		return nil, err.Msgf("failed to generate openssl options")
+		return nil, err.Msgf("failed to generate openssl options") //nolint
 	}
 	opensslOpts.SkipCertParse = true
 	gologger.Debug().Label(PkgTag).Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
@@ -144,7 +144,7 @@ func (c *Client) SupportedTLSCiphers() ([]string, error) {
 	return AllCiphersNames, nil
 }
 
-func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.ConnectOptions) (*Options, errorutils.Error) {
+func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.ConnectOptions) (*Options, errorutils.Error) { //nolint
 	var protocolVersion string
 	switch {
 	case options.VersionTLS != "":
@@ -158,7 +158,7 @@ func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.Conne
 	}
 	protocol, err := getProtocol(protocolVersion)
 	if err != nil {
-		return nil, errorutils.NewWithTag("openssl", "%s", err.Error())
+		return nil, errorutils.NewWithTag("openssl", "%s", err.Error()) //nolint
 	}
 
 	// Note: CLI options are omitted if given value is empty
@@ -174,18 +174,18 @@ func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.Conne
 	}
 	// validation
 	if (hostname == "" && ip == "") || port == "" {
-		return nil, errorutils.NewWithTag("openssl", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip)
+		return nil, errorutils.NewWithTag("openssl", "client requires valid address got port=%v,hostname=%v,ip=%v", port, hostname, ip) //nolint
 	}
 
 	// In enum mode return if given options are not supported
 	if options.EnumMode == clients.Version && (options.VersionTLS == "" || !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTLSVersions...)) {
 		// version not supported
-		return nil, errorutils.NewWithTag("openssl", "tlsversion `%v` not supported in openssl", options.VersionTLS)
+		return nil, errorutils.NewWithTag("openssl", "tlsversion `%v` not supported in openssl", options.VersionTLS) //nolint
 	}
 	if options.EnumMode != clients.Cipher {
 		ciphers, err := toOpenSSLCiphers(options.Ciphers...)
 		if err != nil {
-			return nil, errorutils.NewWithErr(err).WithTag("openssl")
+			return nil, errorutils.NewWithErr(err).WithTag("openssl") //nolint
 		}
 		opensslOptions.Cipher = ciphers
 		if opensslOptions.ServerName == "" {
@@ -194,7 +194,7 @@ func (c *Client) getOpenSSLopts(hostname, ip, port string, options clients.Conne
 		}
 	} else {
 		if !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTLSVersions...) {
-			return nil, errorutils.NewWithTag(PkgTag, "cipher enum with version %v not implemented", options.VersionTLS)
+			return nil, errorutils.NewWithTag(PkgTag, "cipher enum with version %v not implemented", options.VersionTLS) //nolint
 		}
 	}
 	return opensslOptions, nil
