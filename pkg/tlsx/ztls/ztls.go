@@ -320,6 +320,10 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
+// ErrCertsOnly is a replacement for the removed tls.ErrCertsOnly.
+// Return this from tls.Config.VerifyPeerCertificate to stop after receiving certs.
+var ErrCertsOnly = errors.New("certs-only: stop after receiving peer certs")
+
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
@@ -332,7 +336,7 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 	}
 
 	err := <-errChan
-	if err == tls.ErrCertsOnly {
+	if errors.Is(err, ErrCertsOnly) {
 		err = nil
 	}
 	return err

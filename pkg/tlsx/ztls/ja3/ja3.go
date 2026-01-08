@@ -60,10 +60,6 @@ func GetJa3Hash(clientHello *tls.ClientHello) string {
 		byteString = appendExtension(byteString, extensionServerName)
 	}
 
-	if clientHello.NextProtoNeg {
-		byteString = appendExtension(byteString, extensionNextProtoNeg)
-	}
-
 	if clientHello.OcspStapling {
 		byteString = appendExtension(byteString, extensionStatusRequest)
 	}
@@ -172,10 +168,6 @@ func GetJa3sHash(serverHello *tls.ServerHello) string {
 	}
 
 	// Extensions
-	if serverHello.NextProtoNeg {
-		byteString = appendExtension(byteString, extensionNextProtoNeg)
-	}
-
 	if serverHello.OcspStapling {
 		byteString = appendExtension(byteString, extensionStatusRequest)
 	}
