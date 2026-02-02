@@ -21,9 +21,16 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 
 	timeout := time.Duration(duration) * time.Second
+	if timeout == 0 {
+		timeout = 5 * time.Second
+	}
+
+	// Create a cancellable context for the pool
+	poolCtx, poolCancel := context.WithCancel(context.Background())
+	defer poolCancel()
 
 	// using connection pool as we need multiple probes
-	pool, err := connpool.NewOneTimePool(context.Background(), addr, poolCount)
+	pool, err := connpool.NewOneTimePool(poolCtx, addr, poolCount)
 	if err != nil {
 		return "", err
 	}
@@ -31,17 +38,22 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 
 	defer pool.Close() //nolint
 	go func() {
-		if err := pool.Run(); err != nil {
+		if err := pool.Run(); err != nil && !strings.Contains(err.Error(), "context canceled") {
 			gologger.Error().Msgf("tlsx: jarm: failed to run connection pool: %v", err)
 		}
 	}() //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
-		conn, err := pool.Acquire(context.TODO())
+		// Use timeout context for acquiring connection
+		acquireCtx, acquireCancel := context.WithTimeout(poolCtx, timeout)
+		conn, err := pool.Acquire(acquireCtx)
+		acquireCancel()
 		if err != nil {
+			results = append(results, "")
 			continue
 		}
 		if conn == nil {
+			results = append(results, "")
 			continue
 		}
 		_ = conn.SetWriteDeadline(time.Now().Add(timeout))

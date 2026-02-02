@@ -210,8 +210,17 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		threads = len(toEnumerate)
 	}
 
-	// setup connection pool
-	pool, err := connpool.NewOneTimePool(context.Background(), address, threads)
+	// Create a timeout for the entire cipher enumeration operation
+	timeout := time.Duration(c.options.Timeout) * time.Second
+	if timeout == 0 {
+		timeout = 5 * time.Second
+	}
+
+	// setup connection pool with cancellable context
+	poolCtx, poolCancel := context.WithCancel(context.Background())
+	defer poolCancel()
+
+	pool, err := connpool.NewOneTimePool(poolCtx, address, threads)
 	if err != nil {
 		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup connection pool") //nolint
 	}
@@ -226,20 +235,26 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}()
 
 	for _, v := range toEnumerate {
-		// create new baseConn and pass it to tlsclient
-		baseConn, err := pool.Acquire(context.Background())
+		// Use timeout context for acquiring connection
+		acquireCtx, acquireCancel := context.WithTimeout(poolCtx, timeout)
+		baseConn, err := pool.Acquire(acquireCtx)
+		acquireCancel()
 		if err != nil {
-			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ctls") //nolint
+			// Skip this cipher if we can't acquire a connection in time
+			continue
 		}
 		stats.IncrementCryptoTLSConnections()
 		baseCfg.CipherSuites = []uint16{tlsCiphers[v]}
 
 		conn := tls.Client(baseConn, baseCfg)
 
-		if err := conn.Handshake(); err == nil {
+		// Use HandshakeContext for proper timeout handling
+		handshakeCtx, handshakeCancel := context.WithTimeout(poolCtx, timeout)
+		if err := conn.HandshakeContext(handshakeCtx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 		}
+		handshakeCancel()
 		_ = conn.Close() // close baseConn internally
 	}
 	return enumeratedCiphers, nil
