@@ -226,8 +226,17 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		threads = len(toEnumerate)
 	}
 
-	// setup connection pool
-	pool, err := connpool.NewOneTimePool(context.Background(), address, threads)
+	// Create timeout for operations
+	timeout := time.Duration(c.options.Timeout) * time.Second
+	if timeout == 0 {
+		timeout = 5 * time.Second
+	}
+
+	// setup connection pool with cancellable context
+	poolCtx, poolCancel := context.WithCancel(context.Background())
+	defer poolCancel()
+
+	pool, err := connpool.NewOneTimePool(poolCtx, address, threads)
 	if err != nil {
 		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup connection pool") //nolint
 	}
@@ -249,18 +258,27 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		// Use timeout context for acquiring connection
+		acquireCtx, acquireCancel := context.WithTimeout(poolCtx, timeout)
+		baseConn, err := pool.Acquire(acquireCtx)
+		acquireCancel() // Cancel immediately to avoid context leak
 		if err != nil {
-			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
+			// Skip this cipher if we can't acquire connection in time
+			continue
 		}
 		stats.IncrementZcryptoTLSConnections()
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		// Use timeout context for handshake
+		handshakeCtx, handshakeCancel := context.WithTimeout(poolCtx, timeout)
+		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
-			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			if h1 != nil && h1.ServerHello != nil {
+				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			}
 		}
+		handshakeCancel()
 		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil
@@ -320,20 +338,24 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout.
+// The handshake runs in a goroutine so the context timeout can interrupt it.
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
+		// Close the connection to unblock the handshake goroutine
+		_ = tlsConn.Close()
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			return nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }

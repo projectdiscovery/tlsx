@@ -3,12 +3,17 @@ package output
 import (
 	"bufio"
 	"os"
+	"sync/atomic"
 )
+
+// flushThreshold is the number of writes after which the buffer is flushed
+const flushThreshold = 100
 
 // fileWriter is a concurrent file based output writer.
 type fileWriter struct {
-	file   *os.File
-	writer *bufio.Writer
+	file       *os.File
+	writer     *bufio.Writer
+	writeCount atomic.Int64
 }
 
 // NewFileOutputWriter creates a new buffered writer for a file
@@ -27,7 +32,18 @@ func (w *fileWriter) Write(data []byte) error {
 		return err
 	}
 	_, err = w.writer.WriteRune('\n')
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Periodically flush to ensure data is written to disk
+	// This prevents data loss if the process hangs or crashes
+	if w.writeCount.Add(1)%flushThreshold == 0 {
+		if flushErr := w.writer.Flush(); flushErr != nil {
+			return flushErr
+		}
+	}
+	return nil
 }
 
 // Close closes the underlying writer flushing everything to disk
