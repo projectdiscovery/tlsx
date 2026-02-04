@@ -259,15 +259,18 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 		// Create context with timeout for cipher enumeration handshake
 		ctx := context.Background()
+		var cancel context.CancelFunc
 		if c.options.Timeout != 0 {
-			var cancel context.CancelFunc
 			ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
-			defer cancel()
 		}
 
 		if err := c.tlsHandshakeWithTimeout(conn, ctx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+		}
+		// Cancel context per-iteration to release timer resources immediately
+		if cancel != nil {
+			cancel()
 		}
 		_ = conn.Close() // also closes baseConn internally
 	}
