@@ -440,7 +440,13 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				r.processInputItem(text, inputs)
+				// Split by comma to support comma-separated values like -u flag
+				for _, item := range strings.Split(text, ",") {
+					item = strings.TrimSpace(item)
+					if item != "" {
+						r.processInputItem(item, inputs)
+					}
+				}
 			}
 		}
 	}
