@@ -3,24 +3,27 @@ package ztls
 import (
 	"context"
 	"net"
+	"strings"
 	"testing"
 	"time"
-	"strings"
 
 	"github.com/zmap/zcrypto/tls"
 )
 
-// hangingConn is a net.Conn that blocks on Read and Write
+// hangingConn is a net.Conn that blocks on Read and Write until context is cancelled
 type hangingConn struct {
 	net.Conn
+	ctx context.Context
 }
 
 func (h hangingConn) Read(b []byte) (n int, err error) {
-	select {}
+	<-h.ctx.Done()
+	return 0, h.ctx.Err()
 }
 
 func (h hangingConn) Write(b []byte) (n int, err error) {
-	select {}
+	<-h.ctx.Done()
+	return 0, h.ctx.Err()
 }
 
 func TestTLSHandshakeHang(t *testing.T) {
@@ -29,7 +32,15 @@ func TestTLSHandshakeHang(t *testing.T) {
 	clientConn, _ := net.Pipe()
 	defer clientConn.Close()
 
-	hanging := hangingConn{Conn: clientConn}
+	// Context to control the hanging connection's lifecycle
+	// This ensures the goroutine spawned by Handshake eventually exits
+	connCtx, connCancel := context.WithCancel(context.Background())
+	defer connCancel()
+
+	hanging := hangingConn{
+		Conn: clientConn,
+		ctx:  connCtx,
+	}
 
 	// create a tls connection using the hanging connection
 	// we don't need a real server because we want to test the client-side timeout
@@ -42,7 +53,7 @@ func TestTLSHandshakeHang(t *testing.T) {
 	// Create a dummy client just to call the method
 	client := &Client{}
 
-	// context with short timeout
+	// context with short timeout for the handshake operation
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
