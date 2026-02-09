@@ -38,6 +38,33 @@ func Test_InputDomain_processInputItem(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
 }
 
+func Test_InputListCommaSeparated_normalizeAndQueueInputs(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	tmpDir := t.TempDir()
+	inputFile := tmpDir + string(os.PathSeparator) + "inputs.txt"
+	require.NoError(t, os.WriteFile(inputFile, []byte("example.com, example.net\n"), 0o600))
+	options.InputList = inputFile
+
+	inputs := make(chan taskInput, 4)
+	require.NoError(t, runner.normalizeAndQueueInputs(inputs))
+	close(inputs)
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "example.com", port: "443"},
+		{host: "example.net", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
 func Test_InputForMultipleIps_processInputItem(t *testing.T) {
 	options := &clients.Options{
 		Ports:      []string{"443"},
