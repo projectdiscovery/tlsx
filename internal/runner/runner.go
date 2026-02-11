@@ -485,6 +485,16 @@ func (r *Runner) resolveFQDN(target string) ([]string, error) {
 
 // processInputItem processes a single input item
 func (r *Runner) processInputItem(input string, inputs chan taskInput) {
+	// Handle comma-separated entries (consistent with -u flag behavior)
+	if strings.Contains(input, ",") {
+		for _, item := range strings.Split(input, ",") {
+			item = strings.TrimSpace(item)
+			if item != "" {
+				r.processInputItem(item, inputs)
+			}
+		}
+		return
+	}
 	// AS Input
 	if asn.IsASN(input) {
 		r.processInputASN(input, inputs)

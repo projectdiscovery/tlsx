@@ -38,6 +38,90 @@ func Test_InputDomain_processInputItem(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
 }
 
+// Comma-separated input via processInputItem
+func Test_InputCommaSeparated_processInputItem(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	commaSeparated := "example.com,example.net, example.org"
+	expected := []taskInput{
+		{host: "example.com", port: "443"},
+		{host: "example.net", port: "443"},
+		{host: "example.org", port: "443"},
+	}
+	go func() {
+		runner.processInputItem(commaSeparated, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs for comma-separated input")
+}
+
+// Comma-separated CIDR input via processInputItem
+func Test_InputCommaSeparatedCIDR_processInputItem(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	commaSeparated := "173.0.84.0/30,173.0.85.0/30"
+	expected := []taskInput{
+		{host: "173.0.84.0", port: "443"},
+		{host: "173.0.84.1", port: "443"},
+		{host: "173.0.84.2", port: "443"},
+		{host: "173.0.84.3", port: "443"},
+		{host: "173.0.85.0", port: "443"},
+		{host: "173.0.85.1", port: "443"},
+		{host: "173.0.85.2", port: "443"},
+		{host: "173.0.85.3", port: "443"},
+	}
+	go func() {
+		runner.processInputItem(commaSeparated, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs for comma-separated CIDR input")
+}
+
+// Comma-separated input from file via normalizeAndQueueInputs
+func Test_InputListCommaSeparated_normalizeAndQueueInputs(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	tmpDir := t.TempDir()
+	inputFile := tmpDir + string(os.PathSeparator) + "inputs.txt"
+	require.NoError(t, os.WriteFile(inputFile, []byte("example.com, example.net\nexample.org\n"), 0o600))
+	options.InputList = inputFile
+
+	inputs := make(chan taskInput, 8)
+	require.NoError(t, runner.normalizeAndQueueInputs(inputs))
+	close(inputs)
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "example.com", port: "443"},
+		{host: "example.net", port: "443"},
+		{host: "example.org", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs for comma-separated file input")
+}
+
 func Test_InputForMultipleIps_processInputItem(t *testing.T) {
 	options := &clients.Options{
 		Ports:      []string{"443"},
