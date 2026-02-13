@@ -140,7 +140,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	err = c.tlsHandshakeWithTimeout(tlsConn, conn, ctx)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
@@ -257,10 +257,12 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		cipherCtx, cipherCancel := c.cipherHandshakeContext()
+		if err := c.tlsHandshakeWithTimeout(conn, baseConn, cipherCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
+		cipherCancel()
 		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil
@@ -320,20 +322,38 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+// cipherHandshakeContext returns a context with timeout for per-cipher handshakes.
+func (c *Client) cipherHandshakeContext() (context.Context, context.CancelFunc) {
+	timeout := time.Duration(c.options.Timeout) * time.Second
+	if timeout <= 0 {
+		timeout = 10 * time.Second
+	}
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout.
+// The handshake runs in a separate goroutine so the context cancellation
+// can interrupt a blocking handshake (e.g. unresponsive server).
+// rawConn is the underlying TCP connection; closing it unblocks the handshake
+// goroutine without deadlocking on the zcrypto TLS mutex.
+func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, rawConn net.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
+		// Close the underlying TCP connection to unblock the handshake
+		// goroutine. Closing the TLS conn directly would deadlock because
+		// the handshake holds the internal mutex.
+		_ = rawConn.Close()
+		<-errChan // wait for goroutine to exit
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			return nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }

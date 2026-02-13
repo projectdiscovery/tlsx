@@ -236,10 +236,12 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 		conn := tls.Client(baseConn, baseCfg)
 
-		if err := conn.Handshake(); err == nil {
+		cipherCtx, cipherCancel := c.cipherHandshakeContext()
+		if err := conn.HandshakeContext(cipherCtx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 		}
+		cipherCancel()
 		_ = conn.Close() // close baseConn internally
 	}
 	return enumeratedCiphers, nil
@@ -253,6 +255,15 @@ func (c *Client) SupportedTLSVersions() ([]string, error) {
 // SupportedTLSCiphers returns the list of standard tls library supported ciphers
 func (c *Client) SupportedTLSCiphers() ([]string, error) {
 	return AllCiphersNames, nil
+}
+
+// cipherHandshakeContext returns a context with timeout for per-cipher handshakes.
+func (c *Client) cipherHandshakeContext() (context.Context, context.CancelFunc) {
+	timeout := time.Duration(c.options.Timeout) * time.Second
+	if timeout <= 0 {
+		timeout = 10 * time.Second
+	}
+	return context.WithTimeout(context.Background(), timeout)
 }
 
 // getConfig returns a valid config to be used by client
