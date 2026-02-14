@@ -27,7 +27,9 @@ func New(options *clients.Options) (*Service, error) {
 	}
 	if options.Fastdialer == nil {
 		var err error
-		options.Fastdialer, err = fastdialer.NewDialer(fastdialer.DefaultOptions)
+		fastdialerOptions := fastdialer.DefaultOptions
+		fastdialerOptions.DialerTimeout = options.Timeout
+		options.Fastdialer, err = fastdialer.NewDialer(fastdialerOptions)
 		if err != nil {
 			return nil, err
 		}
