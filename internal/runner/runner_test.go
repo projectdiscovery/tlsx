@@ -208,6 +208,120 @@ func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) 
 	return ret, nil
 }
 
+func Test_CommaSeparatedListInput(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+	runner.hasStdin = false
+
+	// Create a temporary file with comma-separated entries on a single line
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("www.example.com,www.example.org,www.example.net\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options.InputList = tmpFile.Name()
+
+	inputs := make(chan taskInput)
+	expected := []taskInput{
+		{host: "www.example.com", port: "443"},
+		{host: "www.example.org", port: "443"},
+		{host: "www.example.net", port: "443"},
+	}
+
+	go func() {
+		defer close(inputs)
+		err := runner.normalizeAndQueueInputs(inputs)
+		require.NoError(t, err)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "comma-separated entries in list file should be split into individual inputs")
+}
+
+func Test_CommaSeparatedListInputWithSpaces(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+	runner.hasStdin = false
+
+	// Create a temporary file with comma-separated entries that include spaces
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("www.example.com , www.example.org , www.example.net\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options.InputList = tmpFile.Name()
+
+	inputs := make(chan taskInput)
+	expected := []taskInput{
+		{host: "www.example.com", port: "443"},
+		{host: "www.example.org", port: "443"},
+		{host: "www.example.net", port: "443"},
+	}
+
+	go func() {
+		defer close(inputs)
+		err := runner.normalizeAndQueueInputs(inputs)
+		require.NoError(t, err)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "comma-separated entries with spaces should be trimmed and split correctly")
+}
+
+func Test_MixedListInput(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+	runner.hasStdin = false
+
+	// Create a file with both single entries per line and comma-separated entries
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("www.example.com\nwww.example.org,www.example.net\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options.InputList = tmpFile.Name()
+
+	inputs := make(chan taskInput)
+	expected := []taskInput{
+		{host: "www.example.com", port: "443"},
+		{host: "www.example.org", port: "443"},
+		{host: "www.example.net", port: "443"},
+	}
+
+	go func() {
+		defer close(inputs)
+		err := runner.normalizeAndQueueInputs(inputs)
+		require.NoError(t, err)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "mixed single-line and comma-separated entries should all be processed")
+}
+
 func Test_CTLogsModeValidation(t *testing.T) {
 	// Test that CT logs mode and input mode cannot be used together
 	// This validation is now done in the main package, so this test should be removed
