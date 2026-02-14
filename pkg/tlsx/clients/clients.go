@@ -81,7 +81,7 @@ type Options struct {
 	// Retries is the number of times to retry TLS connection
 	Retries int
 	// Timeout is the number of seconds to wait for connection
-	Timeout int
+	Timeout time.Duration
 	// Concurrency is the number of concurrent threads to process
 	Concurrency int
 	// Delay is the duration to wait between requests in each thread
