@@ -440,7 +440,9 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				r.processInputItem(text, inputs)
+				for _, item := range splitAndTrim(text) {
+					r.processInputItem(item, inputs)
+				}
 			}
 		}
 	}
@@ -449,11 +451,35 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				r.processInputItem(text, inputs)
+				for _, item := range splitAndTrim(text) {
+					r.processInputItem(item, inputs)
+				}
 			}
 		}
 	}
 	return nil
+}
+
+// splitAndTrim splits a string by comma and trims whitespace from each part,
+// returning only non-empty entries. If the input contains no commas, it returns
+// a single-element slice with the trimmed input.
+func splitAndTrim(input string) []string {
+	if !strings.Contains(input, ",") {
+		trimmed := strings.TrimSpace(input)
+		if trimmed == "" {
+			return nil
+		}
+		return []string{trimmed}
+	}
+	parts := strings.Split(input, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 // resolveFQDN resolves a FQDN and returns the IP addresses
