@@ -41,7 +41,7 @@ func Test_InputDomain_processInputItem(t *testing.T) {
 func Test_InputForMultipleIps_processInputItem(t *testing.T) {
 	options := &clients.Options{
 		Ports:      []string{"443"},
-		ScanAllIPs: true,
+		ScanAllIPs: false,
 	}
 	runner := &Runner{options: options}
 	dnsOptions := dnsx.DefaultOptions
