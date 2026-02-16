@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	ctls "crypto/tls"
 
@@ -105,4 +107,66 @@ func TestClientCertRequired(t *testing.T) {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+// TestHandshakeTimeout verifies that tlsx does not hang indefinitely
+// when connecting to a host that accepts TCP but never completes TLS.
+// Regression test for https://github.com/projectdiscovery/tlsx/issues/819
+func TestHandshakeTimeout(t *testing.T) {
+	// Start a TCP listener that accepts connections but never speaks TLS
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			// Hold the connection open but never send any data
+			go func(c net.Conn) {
+				defer c.Close()
+				buf := make([]byte, 1024)
+				for {
+					if _, err := c.Read(buf); err != nil {
+						return
+					}
+				}
+			}(conn)
+		}
+	}()
+
+	addr := ln.Addr().String()
+	host, port, _ := net.SplitHostPort(addr)
+
+	dialerOpts := fastdialer.DefaultOptions
+	dialerOpts.EnableFallback = false
+	fd, err := fastdialer.NewDialer(dialerOpts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client, err := ztls.New(&clients.Options{
+		Timeout: 3, // 3 second timeout
+		Fastdialer: fd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_, _ = client.ConnectWithOptions(host, host, port, clients.ConnectOptions{})
+	}()
+
+	select {
+	case <-done:
+		// Success: the connection returned (with error) within timeout
+	case <-time.After(10 * time.Second):
+		t.Fatal("tlsx hung indefinitely — handshake timeout not working")
+	}
 }
