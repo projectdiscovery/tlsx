@@ -208,6 +208,77 @@ func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) 
 	return ret, nil
 }
 
+func Test_CommaSeparatedFileInput(t *testing.T) {
+	// Create a temporary file with comma-separated entries on a single line
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("192.168.1.1,192.168.1.2,192.168.1.3\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tmpFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	expected := []taskInput{
+		{host: "192.168.1.1", port: "443"},
+		{host: "192.168.1.2", port: "443"},
+		{host: "192.168.1.3", port: "443"},
+	}
+
+	go func() {
+		_ = runner.normalizeAndQueueInputs(inputs)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "comma-separated entries in file should be split into individual inputs")
+}
+
+func Test_CommaSeparatedFileInputMixedLines(t *testing.T) {
+	// Test file with a mix of single entries and comma-separated entries
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("10.0.0.1\n10.0.0.2,10.0.0.3\n10.0.0.4\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tmpFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	expected := []taskInput{
+		{host: "10.0.0.1", port: "443"},
+		{host: "10.0.0.2", port: "443"},
+		{host: "10.0.0.3", port: "443"},
+		{host: "10.0.0.4", port: "443"},
+	}
+
+	go func() {
+		_ = runner.normalizeAndQueueInputs(inputs)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "mixed single and comma-separated entries should all be processed")
+}
+
 func Test_CTLogsModeValidation(t *testing.T) {
 	// Test that CT logs mode and input mode cannot be used together
 	// This validation is now done in the main package, so this test should be removed
