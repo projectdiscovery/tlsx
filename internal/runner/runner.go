@@ -419,6 +419,16 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 }
 
 // normalizeAndQueueInputs normalizes the inputs and queues them for execution
+// processLine splits a comma-separated input line and queues each non-empty item.
+func (r *Runner) processLine(text string, inputs chan taskInput) {
+	for _, item := range strings.Split(text, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			r.processInputItem(item, inputs)
+		}
+	}
+}
+
 func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	// Process Normal Inputs
 	for _, text := range r.options.Inputs {
@@ -440,12 +450,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				for _, item := range strings.Split(text, ",") {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processLine(text, inputs)
 			}
 		}
 	}
@@ -454,12 +459,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				for _, item := range strings.Split(text, ",") {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processLine(text, inputs)
 			}
 		}
 	}
