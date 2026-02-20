@@ -239,14 +239,13 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			if err != nil {
 				return errorutil.NewWithErr(err).WithTag("ctls") //nolint
 			}
-			stats.IncrementCryptoTLSConnections()
-
 			cfg := baseCfg.Clone()
 			cfg.CipherSuites = []uint16{tlsCiphers[v]}
 			conn := tls.Client(baseConn, cfg)
 			defer func() { _ = conn.Close() }() // close baseConn internally
 
 			if err := conn.HandshakeContext(handshakeCtx); err == nil {
+				stats.IncrementCryptoTLSConnections()
 				ciphersuite := conn.ConnectionState().CipherSuite
 				enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 			}

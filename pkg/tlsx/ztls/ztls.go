@@ -261,16 +261,17 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			if err != nil {
 				return errorutil.NewWithErr(err).WithTag("ztls") //nolint
 			}
-			stats.IncrementZcryptoTLSConnections()
-
 			cfg := baseCfg.Clone()
 			cfg.CipherSuites = []uint16{ztlsCiphers[v]}
 			conn := tls.Client(baseConn, cfg)
 			defer func() { _ = conn.Close() }() // also closes baseConn internally
 
 			if err := c.tlsHandshakeWithTimeout(handshakeCtx, conn); err == nil {
+				stats.IncrementZcryptoTLSConnections()
 				h1 := conn.GetHandshakeLog()
-				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+				if h1 != nil && h1.ServerHello != nil {
+					enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+				}
 			}
 			return nil
 		}(v)
@@ -337,6 +338,10 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 
 // tlsHandshakeWithTimeout attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn) error {
+	if deadline, ok := ctx.Deadline(); ok {
+		_ = tlsConn.SetDeadline(deadline)
+	}
+
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- tlsConn.Handshake()
