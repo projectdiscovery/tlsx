@@ -249,29 +249,34 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		handshakeCtx := context.Background()
-		cancel := func() {}
-		if c.options.Timeout != 0 {
-			handshakeCtx, cancel = context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
-		}
+		err := func(v string) error {
+			handshakeCtx := context.Background()
+			cancel := func() {}
+			if c.options.Timeout != 0 {
+				handshakeCtx, cancel = context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+			}
+			defer cancel()
 
-		baseConn, err := pool.Acquire(handshakeCtx)
+			baseConn, err := pool.Acquire(handshakeCtx)
+			if err != nil {
+				return errorutil.NewWithErr(err).WithTag("ztls") //nolint
+			}
+			stats.IncrementZcryptoTLSConnections()
+
+			cfg := baseCfg.Clone()
+			cfg.CipherSuites = []uint16{ztlsCiphers[v]}
+			conn := tls.Client(baseConn, cfg)
+			defer func() { _ = conn.Close() }() // also closes baseConn internally
+
+			if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
+				h1 := conn.GetHandshakeLog()
+				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			}
+			return nil
+		}(v)
 		if err != nil {
-			cancel()
-			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
+			return enumeratedCiphers, err
 		}
-		stats.IncrementZcryptoTLSConnections()
-
-		cfg := baseCfg.Clone()
-		cfg.CipherSuites = []uint16{ztlsCiphers[v]}
-		conn := tls.Client(baseConn, cfg)
-
-		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
-			h1 := conn.GetHandshakeLog()
-			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
-		}
-		cancel()
-		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil
 }
