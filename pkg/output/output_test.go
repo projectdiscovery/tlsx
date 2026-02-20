@@ -1,6 +1,9 @@
 package output
 
 import (
+	"bufio"
+	"os"
+	"sync"
 	"testing"
 
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
@@ -21,4 +24,20 @@ func TestStandardWriter_formatStandard(t *testing.T) {
 		require.Nil(t, out)
 		require.Error(t, err)
 	})
+}
+
+func TestStandardWriter_WriteReturnsFileWriteError(t *testing.T) {
+	tempFile, err := os.CreateTemp(t.TempDir(), "output-test-*")
+	require.NoError(t, err)
+	require.NoError(t, tempFile.Close())
+
+	writer := &StandardWriter{
+		json:        true,
+		outputFile:  &fileWriter{file: tempFile, writer: bufio.NewWriterSize(tempFile, 1)},
+		outputMutex: &sync.Mutex{},
+		options:     &clients.Options{},
+	}
+
+	err = writer.Write(&clients.Response{Host: "example.com-very-long-host-to-force-buffer-flush", Port: "443"})
+	require.Error(t, err)
 }

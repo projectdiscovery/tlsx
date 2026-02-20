@@ -323,15 +323,19 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
+	var err error
 	select {
 	case <-ctx.Done():
+		// Ensure any blocked handshake is interrupted and does not leak indefinitely.
+		// Close can block in some states, so do it asynchronously.
+		go func() { _ = tlsConn.Close() }()
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err = <-errChan:
 	}
-
-	err := <-errChan
 	if err == tls.ErrCertsOnly {
 		err = nil
 	}

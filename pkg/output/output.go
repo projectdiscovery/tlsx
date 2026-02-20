@@ -92,7 +92,7 @@ func (w *StandardWriter) Write(event *clients.Response) error {
 			data = decolorizerRegex.ReplaceAll(data, []byte(""))
 		}
 		if writeErr := w.outputFile.Write(data); writeErr != nil {
-			return errkit.Wrap(err, "could not write to output")
+			return errkit.Wrap(writeErr, "could not write to output")
 		}
 	}
 	return nil
