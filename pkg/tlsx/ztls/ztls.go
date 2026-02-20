@@ -140,7 +140,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	err = c.tlsHandshakeWithTimeout(ctx, tlsConn)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
@@ -268,7 +268,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			conn := tls.Client(baseConn, cfg)
 			defer func() { _ = conn.Close() }() // also closes baseConn internally
 
-			if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
+			if err := c.tlsHandshakeWithTimeout(handshakeCtx, conn); err == nil {
 				h1 := conn.GetHandshakeLog()
 				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 			}
@@ -335,8 +335,8 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout
+func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn) error {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- tlsConn.Handshake()
@@ -347,7 +347,7 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 		_ = tlsConn.SetDeadline(time.Now())
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
 	case err := <-errChan:
-		if err == tls.ErrCertsOnly {
+		if errors.Is(err, tls.ErrCertsOnly) {
 			return nil
 		}
 		return err

@@ -11,6 +11,7 @@ import (
 
 func TestTLSHandshakeWithTimeout_ContextDeadline(t *testing.T) {
 	clientConn, serverConn := net.Pipe()
+	defer clientConn.Close()
 	defer serverConn.Close()
 
 	conn := ztls.Client(clientConn, &ztls.Config{ServerName: "example.com", InsecureSkipVerify: true})
@@ -20,7 +21,7 @@ func TestTLSHandshakeWithTimeout_ContextDeadline(t *testing.T) {
 	defer cancel()
 
 	start := time.Now()
-	err := client.tlsHandshakeWithTimeout(conn, ctx)
+	err := client.tlsHandshakeWithTimeout(ctx, conn)
 	elapsed := time.Since(start)
 
 	if err == nil {
