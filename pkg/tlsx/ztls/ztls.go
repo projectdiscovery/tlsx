@@ -249,18 +249,28 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		handshakeCtx := context.Background()
+		cancel := func() {}
+		if c.options.Timeout != 0 {
+			handshakeCtx, cancel = context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		}
+
+		baseConn, err := pool.Acquire(handshakeCtx)
 		if err != nil {
+			cancel()
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
-		conn := tls.Client(baseConn, baseCfg)
-		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		cfg := baseCfg.Clone()
+		cfg.CipherSuites = []uint16{ztlsCiphers[v]}
+		conn := tls.Client(baseConn, cfg)
+
+		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
+		cancel()
 		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil
@@ -323,17 +333,18 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
+		_ = tlsConn.SetDeadline(time.Now())
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			return nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }
