@@ -241,6 +241,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			timeout = 5 * time.Second
 		}
 		enumCtx, enumCancel := context.WithTimeout(context.Background(), timeout)
+		defer enumCancel() // safety net: ensure context resources are released on early return
 		if err := conn.HandshakeContext(enumCtx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))

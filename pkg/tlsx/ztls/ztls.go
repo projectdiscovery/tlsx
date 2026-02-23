@@ -262,6 +262,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			timeout = 5 * time.Second
 		}
 		enumCtx, enumCancel := context.WithTimeout(context.Background(), timeout)
+		defer enumCancel() // safety net: ensure context resources are released on early return
 		if err := c.tlsHandshakeWithTimeout(conn, enumCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
@@ -335,6 +336,9 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 
 	select {
 	case <-ctx.Done():
+		// Close the connection to unblock the goroutine stuck in Handshake(),
+		// preventing goroutine accumulation under sustained timeout conditions.
+		_ = tlsConn.Close()
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
 	case err := <-errChan:
 		if err == tls.ErrCertsOnly {
