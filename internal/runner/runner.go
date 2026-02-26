@@ -528,20 +528,48 @@ func (r *Runner) getHostPortFromInput(input string) (string, string) {
 	host := input
 
 	if strings.Contains(input, "://") {
-		if parsed, err := url.Parse(input); err != nil {
+		parsed, err := url.Parse(input)
+		if err != nil {
 			return "", ""
-		} else {
-			host = parsed.Host
+		}
+		host = parsed.Host
+	}
+
+	// net.SplitHostPort requires bracketed IPv6 literals. If the user provides
+	// something like "2a03:2880:...:1" or "[2a03:...:1]:443" we want to accept
+	// it without failing parsing.
+	host, port := splitHostPortLoose(host)
+	return host, port
+}
+
+func splitHostPortLoose(hostport string) (string, string) {
+	// Fast path: valid host:port, including bracketed IPv6.
+	if h, p, err := net.SplitHostPort(hostport); err == nil {
+		return h, p
+	}
+
+	// If it doesn't look like a port suffix, keep as-is.
+	lastColon := strings.LastIndex(hostport, ":")
+	if lastColon <= 0 || lastColon >= len(hostport)-1 {
+		return hostport, ""
+	}
+	portPart := hostport[lastColon+1:]
+	if portPart == "" {
+		return hostport, ""
+	}
+	for i := 0; i < len(portPart); i++ {
+		if portPart[i] < '0' || portPart[i] > '9' {
+			return hostport, ""
 		}
 	}
-	if strings.Contains(host, ":") {
-		if host, port, err := net.SplitHostPort(host); err != nil {
-			return "", ""
-		} else {
-			return host, port
-		}
+
+	// If there is only one colon, this is probably host:port already.
+	if strings.Count(hostport, ":") == 1 {
+		return hostport[:lastColon], portPart
 	}
-	return host, ""
+
+	// Multiple colons: treat as raw IPv6 literal with no explicit port.
+	return hostport, ""
 }
 
 // processInputASN processes a single ASN input
