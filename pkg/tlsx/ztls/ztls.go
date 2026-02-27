@@ -248,20 +248,36 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
+	// Determine per-handshake timeout: use the configured value, fall back to 10s
+	perCipherTimeout := 10 * time.Second
+	if c.options.Timeout > 0 {
+		perCipherTimeout = time.Duration(c.options.Timeout) * time.Second
+	}
+
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		hsCtx, hsCancel := context.WithTimeout(context.Background(), perCipherTimeout)
+
+		baseConn, err := pool.Acquire(hsCtx)
 		if err != nil {
+			hsCancel()
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
-		conn := tls.Client(baseConn, baseCfg)
-		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		// Clone config for each cipher so concurrent/in-flight handshakes
+		// never see a mutated CipherSuites slice from the next iteration.
+		iterCfg := baseCfg.Clone()
+		iterCfg.CipherSuites = []uint16{ztlsCiphers[v]}
+		conn := tls.Client(baseConn, iterCfg)
+
+		if err := c.tlsHandshakeWithTimeout(conn, hsCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
-			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			if h1 != nil && h1.ServerHello != nil {
+				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			}
 		}
-		_ = conn.Close() // also closes baseConn internally
+		_ = conn.Close()
+		hsCancel()
 	}
 	return enumeratedCiphers, nil
 }
@@ -320,20 +336,27 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
+// tlsHandshakeWithTimeout runs the TLS handshake in a separate goroutine so
+// the context deadline can actually interrupt a stuck Handshake() call.
+// If the context fires first we force-close the underlying connection to
+// unblock the goroutine, preventing a permanent leak.
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
-		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+		// Closing the connection unblocks any in-progress I/O inside Handshake
+		// so the goroutine above will exit with a "use of closed connection" error
+		// rather than leaking forever.
+		_ = tlsConn.Close()
+		return errorutil.NewWithTag("ztls", "handshake timed out: %v", ctx.Err()) //nolint
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			return nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }

@@ -30,12 +30,15 @@ func (w *fileWriter) Write(data []byte) error {
 	return err
 }
 
-// Close closes the underlying writer flushing everything to disk
+// Close flushes any buffered data and closes the underlying file.
+// The file descriptor is always released even if Flush fails.
 func (w *fileWriter) Close() error {
-	if err := w.writer.Flush(); err != nil {
-		return err
-	}
-	//nolint:errcheck // we don't care whether sync failed or succeeded.
+	flushErr := w.writer.Flush()
+	//nolint:errcheck // best-effort sync before close
 	w.file.Sync()
-	return w.file.Close()
+	closeErr := w.file.Close()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }

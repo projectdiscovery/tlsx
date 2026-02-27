@@ -225,22 +225,35 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		_ = pool.Close()
 	}()
 
+	// Determine per-handshake timeout: use configured value, fall back to 5s
+	perCipherTimeout := 5 * time.Second
+	if c.options.Timeout > 0 {
+		perCipherTimeout = time.Duration(c.options.Timeout) * time.Second
+	}
+
 	for _, v := range toEnumerate {
-		// create new baseConn and pass it to tlsclient
-		baseConn, err := pool.Acquire(context.Background())
+		hsCtx, hsCancel := context.WithTimeout(context.Background(), perCipherTimeout)
+
+		baseConn, err := pool.Acquire(hsCtx)
 		if err != nil {
+			hsCancel()
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ctls") //nolint
 		}
 		stats.IncrementCryptoTLSConnections()
-		baseCfg.CipherSuites = []uint16{tlsCiphers[v]}
 
-		conn := tls.Client(baseConn, baseCfg)
+		// Clone config per cipher so we never mutate the shared baseCfg
+		// while a previous handshake might still reference it.
+		iterCfg := baseCfg.Clone()
+		iterCfg.CipherSuites = []uint16{tlsCiphers[v]}
 
-		if err := conn.Handshake(); err == nil {
+		conn := tls.Client(baseConn, iterCfg)
+
+		if err := conn.HandshakeContext(hsCtx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 		}
-		_ = conn.Close() // close baseConn internally
+		_ = conn.Close()
+		hsCancel()
 	}
 	return enumeratedCiphers, nil
 }

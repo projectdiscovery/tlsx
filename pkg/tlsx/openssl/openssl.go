@@ -54,9 +54,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("failed to create new fastdialer") //nolint
 		}
 	}
-	// There is no guarantee that dialed ip is same as ip used by openssl
-	// this is only used to avoid inconsistencies
-	rawConn, err := c.dialer.Dial(context.TODO(), "tcp", opensslOpts.Address)
+	// Dial with a bounded timeout so we don't block forever on unreachable hosts.
+	dialCtx, dialCancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+	defer dialCancel()
+	rawConn, err := c.dialer.Dial(dialCtx, "tcp", opensslOpts.Address)
 	if err != nil || rawConn == nil {
 		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("could not dial address:%v", opensslOpts.Address) //nolint
 	}
