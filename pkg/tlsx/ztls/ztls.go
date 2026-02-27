@@ -260,8 +260,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
-		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
-		conn := tls.Client(baseConn, baseCfg)
+		cfg := baseCfg.Clone()
+		cfg.CipherSuites = []uint16{ztlsCiphers[v]}
+		conn := tls.Client(baseConn, cfg)
 
 		if err := c.tlsHandshakeWithTimeout(conn, ctx); err == nil {
 			h1 := conn.GetHandshakeLog()
@@ -342,7 +343,7 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 		// Close the connection to unblock the goroutine stuck in Handshake(),
 		// preventing goroutine accumulation under sustained timeout conditions.
 		_ = tlsConn.Close()
-		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
+		return errorutil.NewWithTag("ztls", "handshake canceled: %v", ctx.Err()) //nolint
 	case err := <-errChan:
 		if err == tls.ErrCertsOnly {
 			err = nil
