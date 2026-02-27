@@ -457,6 +457,9 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 				}
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read stdin")
+		}
 	}
 	return nil
 }
