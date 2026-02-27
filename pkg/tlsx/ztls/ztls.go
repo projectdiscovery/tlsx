@@ -249,26 +249,26 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		timeout := time.Duration(c.options.Timeout) * time.Second
+		if timeout <= 0 {
+			timeout = 10 * time.Second
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		baseConn, err := pool.Acquire(ctx)
 		if err != nil {
+			cancel()
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
-		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
+		conn := tls.Client(baseConn, baseCfg)
 
-		timeout := time.Duration(c.options.Timeout) * time.Second
-		if timeout == 0 {
-			timeout = 5 * time.Second
-		}
-		enumCtx, enumCancel := context.WithTimeout(context.Background(), timeout)
-		defer enumCancel() // safety net: ensure context resources are released on early return
-		if err := c.tlsHandshakeWithTimeout(conn, enumCtx); err == nil {
+		if err := c.tlsHandshakeWithTimeout(conn, ctx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
-		enumCancel()
 		_ = conn.Close() // also closes baseConn internally
+		cancel()
 	}
 	return enumeratedCiphers, nil
 }
@@ -327,7 +327,10 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout.
+// On timeout, the spawned goroutine continues until the connection is closed by the caller.
+// This is necessary because zcrypto/tls.Conn.Handshake() does not accept a context.
+// The buffered errChan (size 1) prevents the goroutine from blocking when its result is ignored.
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
 	go func() {

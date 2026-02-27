@@ -3,12 +3,14 @@ package output
 import (
 	"bufio"
 	"os"
+	"sync"
 )
 
 // fileWriter is a concurrent file based output writer.
 type fileWriter struct {
 	file   *os.File
 	writer *bufio.Writer
+	mu     sync.Mutex
 }
 
 // NewFileOutputWriter creates a new buffered writer for a file
@@ -22,6 +24,8 @@ func newFileOutputWriter(file string) (*fileWriter, error) {
 
 // WriteString writes an output to the underlying file
 func (w *fileWriter) Write(data []byte) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	_, err := w.writer.Write(data)
 	if err != nil {
 		return err
@@ -32,6 +36,8 @@ func (w *fileWriter) Write(data []byte) error {
 
 // Close closes the underlying writer flushing everything to disk
 func (w *fileWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	if err := w.writer.Flush(); err != nil {
 		return err
 	}
