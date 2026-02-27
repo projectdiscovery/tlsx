@@ -193,6 +193,78 @@ func Test_SelfSignedCert_processInputItem(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
 }
 
+func Test_CommaSeparatedListInput(t *testing.T) {
+	// Create a temp file with comma-separated entries on a single line
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("scanme.sh,www.example.com, hackerone.com")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tmpFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 10)
+	go func() {
+		err := runner.normalizeAndQueueInputs(inputs)
+		assert.NoError(t, err)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "scanme.sh", port: "443"},
+		{host: "www.example.com", port: "443"},
+		{host: "hackerone.com", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got, "comma-separated entries should be split into individual targets")
+}
+
+func Test_CommaSeparatedMultiLineListInput(t *testing.T) {
+	// Create a temp file with mixed: one entry per line and comma-separated
+	tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("scanme.sh\nwww.example.com,hackerone.com\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tmpFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 10)
+	go func() {
+		err := runner.normalizeAndQueueInputs(inputs)
+		assert.NoError(t, err)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "scanme.sh", port: "443"},
+		{host: "www.example.com", port: "443"},
+		{host: "hackerone.com", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got, "mixed single-line and comma-separated entries should all be parsed")
+}
+
 func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) {
 	fileContent, err := os.ReadFile(filename)
 	if err != nil {
