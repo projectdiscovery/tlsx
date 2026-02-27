@@ -38,10 +38,12 @@ func (w *fileWriter) Write(data []byte) error {
 func (w *fileWriter) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if err := w.writer.Flush(); err != nil {
-		return err
-	}
+	flushErr := w.writer.Flush()
 	//nolint:errcheck // we don't care whether sync failed or succeeded.
 	w.file.Sync()
-	return w.file.Close()
+	closeErr := w.file.Close()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }

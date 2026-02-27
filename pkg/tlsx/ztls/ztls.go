@@ -328,7 +328,7 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 }
 
 // tlsHandshakeWithTimeout attempts tls handshake with given timeout.
-// On timeout, the spawned goroutine continues until the connection is closed by the caller.
+// On timeout, the connection is closed to unblock the goroutine stuck in Handshake().
 // This is necessary because zcrypto/tls.Conn.Handshake() does not accept a context.
 // The buffered errChan (size 1) prevents the goroutine from blocking when its result is ignored.
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
