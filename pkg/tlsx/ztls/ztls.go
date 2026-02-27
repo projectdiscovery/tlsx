@@ -249,19 +249,26 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		timeout := time.Duration(c.options.Timeout) * time.Second
+		if timeout <= 0 {
+			timeout = 10 * time.Second
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		baseConn, err := pool.Acquire(ctx)
 		if err != nil {
+			cancel()
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		if err := c.tlsHandshakeWithTimeout(conn, ctx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
 		_ = conn.Close() // also closes baseConn internally
+		cancel()
 	}
 	return enumeratedCiphers, nil
 }
@@ -323,17 +330,18 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			err = nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }
