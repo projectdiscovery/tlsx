@@ -1,7 +1,6 @@
 package ztls_test
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"log"
@@ -154,10 +153,6 @@ func TestHandshakeTimeout(t *testing.T) {
 	}
 
 	start := time.Now()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecs+2)*time.Second)
-	defer cancel()
-	_ = ctx // ConnectWithOptions uses client.options.Timeout internally
-
 	_, _ = client.ConnectWithOptions(host, host, port, clients.ConnectOptions{})
 	elapsed := time.Since(start)
 
