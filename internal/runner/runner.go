@@ -440,12 +440,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				for _, item := range strings.Split(text, ",") {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processCommaSeparatedLine(text, inputs)
 			}
 		}
 	}
@@ -454,12 +449,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				for _, item := range strings.Split(text, ",") {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processCommaSeparatedLine(text, inputs)
 			}
 		}
 	}
@@ -491,6 +481,17 @@ func (r *Runner) resolveFQDN(target string) ([]string, error) {
 		hostIPs = append(hostIPs, target)
 	}
 	return hostIPs, nil
+}
+
+// processCommaSeparatedLine splits a line on commas, trims whitespace,
+// and enqueues each non-empty item individually.
+func (r *Runner) processCommaSeparatedLine(text string, inputs chan taskInput) {
+	for _, item := range strings.Split(text, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			r.processInputItem(item, inputs)
+		}
+	}
 }
 
 // processInputItem processes a single input item
