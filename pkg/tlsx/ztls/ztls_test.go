@@ -1,13 +1,16 @@
 package ztls_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	ctls "crypto/tls"
 
@@ -105,4 +108,64 @@ func TestClientCertRequired(t *testing.T) {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+// TestHandshakeTimeout verifies that ConnectWithOptions respects the timeout
+// when a server never completes the TLS handshake. Before the fix,
+// tlsHandshakeWithTimeout evaluated Handshake() synchronously inside the
+// select case expression, making the timeout unreachable.
+func TestHandshakeTimeout(t *testing.T) {
+	// Start a TCP server that accepts connections but never sends any data,
+	// simulating a host that hangs during the TLS handshake.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to start mock server: %v", err)
+	}
+	defer ln.Close()
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			// deliberately never respond — simulates a hung handshake
+			defer conn.Close()
+		}
+	}()
+
+	addr := ln.Addr().String()
+	host, port, _ := net.SplitHostPort(addr)
+
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatalf("error initializing dialer: %v", err)
+	}
+
+	timeoutSecs := 2
+	clientOpts := &clients.Options{
+		Fastdialer: dialer,
+		Timeout:    timeoutSecs,
+	}
+
+	client, err := ztls.New(clientOpts)
+	if err != nil {
+		t.Fatalf("error initializing ztls client: %v", err)
+	}
+
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecs+2)*time.Second)
+	defer cancel()
+	_ = ctx // ConnectWithOptions uses client.options.Timeout internally
+
+	_, _ = client.ConnectWithOptions(host, host, port, clients.ConnectOptions{})
+	elapsed := time.Since(start)
+
+	// The call must return within roughly timeout + 1s grace period.
+	// Before the fix it would block indefinitely.
+	maxAllowed := time.Duration(timeoutSecs+1) * time.Second
+	if elapsed > maxAllowed {
+		t.Errorf("ConnectWithOptions hung: took %v, expected < %v", elapsed, maxAllowed)
+	}
+	t.Logf("ConnectWithOptions returned in %v (timeout=%ds) — OK", elapsed.Round(time.Millisecond), timeoutSecs)
 }
