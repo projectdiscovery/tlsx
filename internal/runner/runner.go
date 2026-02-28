@@ -440,12 +440,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				for _, item := range strings.Split(text, ",") {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processCommaSeparatedInputLine(text, inputs)
 			}
 		}
 		if err := scanner.Err(); err != nil {
@@ -457,12 +452,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				for _, item := range strings.Split(text, ",") {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processCommaSeparatedInputLine(text, inputs)
 			}
 		}
 		if err := scanner.Err(); err != nil {
@@ -470,6 +460,15 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		}
 	}
 	return nil
+}
+
+func (r *Runner) processCommaSeparatedInputLine(text string, inputs chan taskInput) {
+	for _, item := range strings.Split(text, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			r.processInputItem(item, inputs)
+		}
+	}
 }
 
 // resolveFQDN resolves a FQDN and returns the IP addresses
