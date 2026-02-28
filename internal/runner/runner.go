@@ -440,8 +440,16 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				r.processInputItem(text, inputs)
+				for _, item := range strings.Split(text, ",") {
+					item = strings.TrimSpace(item)
+					if item != "" {
+						r.processInputItem(item, inputs)
+					}
+				}
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read input file")
 		}
 	}
 	if r.hasStdin {
@@ -458,7 +466,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			return errkit.Wrap(err, "could not read stdin")
+			return errkit.Wrap(err, "could not read stdin input")
 		}
 	}
 	return nil
