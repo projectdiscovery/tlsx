@@ -265,8 +265,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		conn := tls.Client(baseConn, cfg)
 
 		if err := c.tlsHandshakeWithTimeout(ctx, conn); err == nil {
-			h1 := conn.GetHandshakeLog()
-			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			if h1 := conn.GetHandshakeLog(); h1 != nil && h1.ServerHello != nil {
+				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			}
 		}
 		_ = conn.Close() // also closes baseConn internally
 		cancel()
