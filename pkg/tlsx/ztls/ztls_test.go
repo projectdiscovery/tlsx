@@ -122,14 +122,15 @@ func TestHandshakeTimeout(t *testing.T) {
 	}
 	defer ln.Close()
 
+	// Accept connections but never respond — simulates hosts that hang during TLS handshake.
+	// Connections are cleaned up when the listener is closed via defer ln.Close().
 	go func() {
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				return
+				return // listener closed
 			}
-			// deliberately never respond — simulates a hung handshake
-			defer conn.Close()
+			_ = conn // keep open; OS reclaims on process exit
 		}
 	}()
 
