@@ -140,7 +140,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	err = c.tlsHandshakeWithTimeout(ctx, tlsConn)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
@@ -264,7 +264,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		cfg.CipherSuites = []uint16{ztlsCiphers[v]}
 		conn := tls.Client(baseConn, cfg)
 
-		if err := c.tlsHandshakeWithTimeout(conn, ctx); err == nil {
+		if err := c.tlsHandshakeWithTimeout(ctx, conn); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
@@ -332,7 +332,7 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 // On timeout, the connection is closed to unblock the goroutine stuck in Handshake().
 // This is necessary because zcrypto/tls.Conn.Handshake() does not accept a context.
 // The buffered errChan (size 1) prevents the goroutine from blocking when its result is ignored.
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn) error {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- tlsConn.Handshake()
