@@ -440,7 +440,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				r.processInputItem(text, inputs)
+				r.processCommaSeparatedInput(text, inputs)
 			}
 		}
 	}
@@ -449,7 +449,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				r.processInputItem(text, inputs)
+				r.processCommaSeparatedInput(text, inputs)
 			}
 		}
 	}
@@ -481,6 +481,21 @@ func (r *Runner) resolveFQDN(target string) ([]string, error) {
 		hostIPs = append(hostIPs, target)
 	}
 	return hostIPs, nil
+}
+
+// processCommaSeparatedInput splits comma-separated input and processes each item individually.
+// This handles the case where file (-l) or stdin input contains multiple targets on a single line.
+func (r *Runner) processCommaSeparatedInput(input string, inputs chan taskInput) {
+	if strings.Contains(input, ",") {
+		for _, item := range strings.Split(input, ",") {
+			item = strings.TrimSpace(item)
+			if item != "" {
+				r.processInputItem(item, inputs)
+			}
+		}
+		return
+	}
+	r.processInputItem(input, inputs)
 }
 
 // processInputItem processes a single input item

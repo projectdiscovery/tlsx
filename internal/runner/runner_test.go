@@ -208,6 +208,138 @@ func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) 
 	return ret, nil
 }
 
+// Comma-separated input from file (-l) or stdin
+func Test_CommaSeparatedInput_processCommaSeparatedInput(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	line := "www.example.com,scanme.sh,test.com"
+	expected := []taskInput{
+		{
+			host: "www.example.com",
+			port: "443",
+		},
+		{
+			host: "scanme.sh",
+			port: "443",
+		},
+		{
+			host: "test.com",
+			port: "443",
+		},
+	}
+	go func() {
+		runner.processCommaSeparatedInput(line, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
+// Comma-separated input with spaces around commas
+func Test_CommaSeparatedInputWithSpaces_processCommaSeparatedInput(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	line := "www.example.com , scanme.sh , test.com"
+	expected := []taskInput{
+		{
+			host: "www.example.com",
+			port: "443",
+		},
+		{
+			host: "scanme.sh",
+			port: "443",
+		},
+		{
+			host: "test.com",
+			port: "443",
+		},
+	}
+	go func() {
+		runner.processCommaSeparatedInput(line, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
+// Single input (no commas) still works through processCommaSeparatedInput
+func Test_SingleInput_processCommaSeparatedInput(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	line := "www.example.com"
+	expected := []taskInput{
+		{
+			host: "www.example.com",
+			port: "443",
+		},
+	}
+	go func() {
+		runner.processCommaSeparatedInput(line, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
+// Comma-separated with multiple ports
+func Test_CommaSeparatedInputMultiplePorts_processCommaSeparatedInput(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443", "8443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	line := "www.example.com,scanme.sh"
+	expected := []taskInput{
+		{
+			host: "www.example.com",
+			port: "443",
+		},
+		{
+			host: "www.example.com",
+			port: "8443",
+		},
+		{
+			host: "scanme.sh",
+			port: "443",
+		},
+		{
+			host: "scanme.sh",
+			port: "8443",
+		},
+	}
+	go func() {
+		runner.processCommaSeparatedInput(line, inputs)
+		defer close(inputs)
+	}()
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
+}
+
 func Test_CTLogsModeValidation(t *testing.T) {
 	// Test that CT logs mode and input mode cannot be used together
 	// This validation is now done in the main package, so this test should be removed
