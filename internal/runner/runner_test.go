@@ -232,8 +232,8 @@ func Test_CommaSeparatedInput_processCommaSeparatedInput(t *testing.T) {
 		},
 	}
 	go func() {
-		runner.processCommaSeparatedInput(line, inputs)
 		defer close(inputs)
+		runner.processCommaSeparatedInput(line, inputs)
 	}()
 	var got []taskInput
 	for task := range inputs {
@@ -266,8 +266,8 @@ func Test_CommaSeparatedInputWithSpaces_processCommaSeparatedInput(t *testing.T)
 		},
 	}
 	go func() {
-		runner.processCommaSeparatedInput(line, inputs)
 		defer close(inputs)
+		runner.processCommaSeparatedInput(line, inputs)
 	}()
 	var got []taskInput
 	for task := range inputs {
@@ -292,8 +292,8 @@ func Test_SingleInput_processCommaSeparatedInput(t *testing.T) {
 		},
 	}
 	go func() {
-		runner.processCommaSeparatedInput(line, inputs)
 		defer close(inputs)
+		runner.processCommaSeparatedInput(line, inputs)
 	}()
 	var got []taskInput
 	for task := range inputs {
@@ -330,8 +330,8 @@ func Test_CommaSeparatedInputMultiplePorts_processCommaSeparatedInput(t *testing
 		},
 	}
 	go func() {
-		runner.processCommaSeparatedInput(line, inputs)
 		defer close(inputs)
+		runner.processCommaSeparatedInput(line, inputs)
 	}()
 	var got []taskInput
 	for task := range inputs {

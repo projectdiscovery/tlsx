@@ -443,6 +443,9 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 				r.processCommaSeparatedInput(text, inputs)
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read input file")
+		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -451,6 +454,9 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 			if text != "" {
 				r.processCommaSeparatedInput(text, inputs)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read stdin")
 		}
 	}
 	return nil
@@ -486,6 +492,10 @@ func (r *Runner) resolveFQDN(target string) ([]string, error) {
 // processCommaSeparatedInput splits comma-separated input and processes each item individually.
 // This handles the case where file (-l) or stdin input contains multiple targets on a single line.
 func (r *Runner) processCommaSeparatedInput(input string, inputs chan taskInput) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return
+	}
 	if strings.Contains(input, ",") {
 		for _, item := range strings.Split(input, ",") {
 			item = strings.TrimSpace(item)
