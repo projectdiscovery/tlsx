@@ -31,8 +31,13 @@ func (w *fileWriter) Write(data []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.writer.WriteRune('\n')
-	return err
+	if len(data) == 0 || data[len(data)-1] != '\n' {
+		_, err = w.writer.WriteRune('\n')
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Close closes the underlying writer flushing everything to disk.
