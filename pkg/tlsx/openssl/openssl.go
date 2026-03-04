@@ -124,12 +124,11 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		stats.IncrementOpensslTLSConnections()
 
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
-		defer cancel()
-
 		if resp, errx := getResponse(ctx, opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
 			// 0000 indicates handshake failure
 			enumeratedCiphers = append(enumeratedCiphers, resp.Session.Cipher)
 		}
+		cancel()
 	}
 	return enumeratedCiphers, nil
 }
