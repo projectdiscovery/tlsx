@@ -4,6 +4,26 @@ package ztls
 
 import (
 	"context"
+	"time"
+)
+
+// handshakeWithTimeout runs TLS Handshake in a goroutine and enforces context timeout, closing conn on timeout
+func handshakeWithTimeout(ctx context.Context, conn *tls.Conn) error {
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- conn.Handshake()
+	}()
+	select {
+	case <-ctx.Done():
+		_ = conn.Close()
+		return ctx.Err()
+	case err := <-errCh:
+		return err
+	}
+}
+
+import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
