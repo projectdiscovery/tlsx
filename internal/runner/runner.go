@@ -39,6 +39,22 @@ import (
 
 // Runner is a client for running the enumeration process
 type Runner struct {
+// existing fields
+}
+
+// splitAndTrimCSV splits comma-separated values into trimmed non-empty strings
+func splitAndTrimCSV(line string) []string {
+	parts := strings.Split(line, ",")
+	var result []string
+	for _, part := range parts {
+		if s := strings.TrimSpace(part); s != "" {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+type Runner struct {
 	hasStdin     bool
 	hasStdinSet  bool // Track if hasStdin was manually set (for tests)
 	outputWriter output.Writer
