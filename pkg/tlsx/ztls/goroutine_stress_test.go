@@ -94,12 +94,12 @@ func TestGoroutineCountAfter100SequentialTimeouts(t *testing.T) {
 	t.Logf("Post-test goroutines: %d", postGoroutines)
 	t.Logf("Goroutine difference: %+d", leakedGoroutines)
 
-	// Verify no significant leak (allow 10% margin for runtime goroutines)
-	maxAllowedLeak := numAttempts * 10 / 100 // 10% of 100 = 10
+	// Verify leak remains within small runtime noise
+	maxAllowedLeak := 2
 	if leakedGoroutines > maxAllowedLeak {
 		t.Errorf("GOROUTINE LEAK DETECTED: %d goroutines leaked (max allowed: %d)", leakedGoroutines, maxAllowedLeak)
 	} else {
-		t.Logf("✅ PASS: Goroutine count stable - zero leak verified")
+		t.Logf("✅ PASS: Goroutine count stable")
 	}
 
 	// Report
@@ -223,12 +223,12 @@ func TestGoroutineCountAfter1000ConcurrentTimeouts(t *testing.T) {
 	t.Logf("Post-test goroutines: %d", postGoroutines)
 	t.Logf("Goroutine difference: %+d", leakedGoroutines)
 
-	// Verify no significant leak (allow 5% margin for runtime goroutines)
-	maxAllowedLeak := numAttempts * 5 / 100 // 5% of 1000 = 50
+	// Verify leak remains within small runtime noise
+	maxAllowedLeak := 2
 	if leakedGoroutines > maxAllowedLeak {
 		t.Errorf("GOROUTINE LEAK DETECTED: %d goroutines leaked (max allowed: %d)", leakedGoroutines, maxAllowedLeak)
 	} else {
-		t.Logf("✅ PASS: Goroutine count stable - zero leak verified")
+		t.Logf("✅ PASS: Goroutine count stable")
 	}
 
 	// Report
