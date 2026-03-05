@@ -226,8 +226,23 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		threads = len(toEnumerate)
 	}
 
+	// Build a context that respects the global timeout so cipher enumeration
+	// cannot block forever if a host stops responding mid-scan.
+	// context.Background() / context.TODO() were previously used here, causing
+	// pool.Acquire and tlsHandshakeWithTimeout to hang indefinitely (issue #819).
+	enumCtx := context.Background()
+	var enumCancel context.CancelFunc
+	if c.options.Timeout > 0 {
+		perHostDeadline := time.Duration(c.options.Timeout) * time.Second *
+			time.Duration((len(toEnumerate)/threads)+1)
+		enumCtx, enumCancel = context.WithTimeout(context.Background(), perHostDeadline)
+	} else {
+		enumCtx, enumCancel = context.WithCancel(context.Background())
+	}
+	defer enumCancel()
+
 	// setup connection pool
-	pool, err := connpool.NewOneTimePool(context.Background(), address, threads)
+	pool, err := connpool.NewOneTimePool(enumCtx, address, threads)
 	if err != nil {
 		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup connection pool") //nolint
 	}
@@ -249,15 +264,20 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		// Use enumCtx so Acquire unblocks when the enumeration deadline expires.
+		baseConn, err := pool.Acquire(enumCtx)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				return enumeratedCiphers, nil
+			}
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		// Use enumCtx instead of context.TODO() to propagate the timeout.
+		if err := c.tlsHandshakeWithTimeout(conn, enumCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}

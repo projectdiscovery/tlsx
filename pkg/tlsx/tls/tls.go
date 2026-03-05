@@ -210,8 +210,26 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		threads = len(toEnumerate)
 	}
 
+	// Build a context that respects the global timeout so cipher enumeration
+	// cannot block forever if a host stops responding mid-scan.
+	// context.Background() was previously used here, causing pool.Acquire to
+	// hang indefinitely when all pool connections were exhausted (issue #819).
+	enumCtx := context.Background()
+	var enumCancel context.CancelFunc
+	if c.options.Timeout > 0 {
+		// Give the whole enumeration a generous per-host ceiling:
+		// timeout * (number of ciphers / concurrency + 1) keeps things moving
+		// without cutting off legitimately slow hosts.
+		perHostDeadline := time.Duration(c.options.Timeout) * time.Second *
+			time.Duration((len(toEnumerate)/threads)+1)
+		enumCtx, enumCancel = context.WithTimeout(context.Background(), perHostDeadline)
+	} else {
+		enumCtx, enumCancel = context.WithCancel(context.Background())
+	}
+	defer enumCancel()
+
 	// setup connection pool
-	pool, err := connpool.NewOneTimePool(context.Background(), address, threads)
+	pool, err := connpool.NewOneTimePool(enumCtx, address, threads)
 	if err != nil {
 		return enumeratedCiphers, errorutil.NewWithErr(err).Msgf("failed to setup connection pool") //nolint
 	}
@@ -227,8 +245,14 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 	for _, v := range toEnumerate {
 		// create new baseConn and pass it to tlsclient
-		baseConn, err := pool.Acquire(context.Background())
+		// Use enumCtx (with timeout) instead of context.Background() so
+		// Acquire unblocks when the overall enumeration deadline expires.
+		baseConn, err := pool.Acquire(enumCtx)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				// Timeout hit: return what we have so far instead of hanging.
+				return enumeratedCiphers, nil
+			}
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ctls") //nolint
 		}
 		stats.IncrementCryptoTLSConnections()
