@@ -260,7 +260,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 		conn := tls.Client(baseConn, baseCfg)
 
-		if err := conn.Handshake(); err == nil {
+		// Use HandshakeContext so the enumeration deadline/cancellation is
+		// respected during the handshake itself, not just during pool.Acquire.
+		if err := conn.HandshakeContext(enumCtx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 		}

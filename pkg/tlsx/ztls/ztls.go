@@ -340,20 +340,32 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
+// tlsHandshakeWithTimeout attempts a TLS handshake and returns when it
+// completes or when ctx is cancelled/expired, whichever comes first.
+//
+// The previous implementation had a subtle bug: the select case
+//
+//	case errChan <- tlsConn.Handshake():
+//
+// evaluates Handshake() synchronously before the select statement is
+// entered.  If the handshake blocks indefinitely (e.g. the server stops
+// responding mid-handshake) the ctx.Done() case is never evaluated and the
+// function hangs forever.  The fix runs the handshake in a goroutine so
+// that both channels can be observed concurrently.
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			return nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }
