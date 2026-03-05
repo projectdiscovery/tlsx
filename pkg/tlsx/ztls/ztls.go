@@ -254,7 +254,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
+		acqCtx, acqCancel := context.WithTimeout(context.Background(), timeout)
+		baseConn, err := pool.Acquire(acqCtx)
+		acqCancel()
 		if err != nil {
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
