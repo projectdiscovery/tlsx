@@ -140,7 +140,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, conn, ctx)
+	err = c.tlsHandshakeWithTimeout(ctx, tlsConn, conn)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
@@ -270,7 +270,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		conn := tls.Client(baseConn, iterCfg)
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		if err := c.tlsHandshakeWithTimeout(conn, baseConn, ctx); err == nil {
+		if err := c.tlsHandshakeWithTimeout(ctx, conn, baseConn); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
@@ -339,7 +339,7 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 // even when the remote peer never responds.
 // rawConn is the underlying TCP connection; closing it unblocks zcrypto's
 // Handshake without deadlocking on the TLS-level mutex.
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, rawConn net.Conn, ctx context.Context) error {
+func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn, rawConn net.Conn) error {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- tlsConn.Handshake()

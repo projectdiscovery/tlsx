@@ -56,7 +56,7 @@ func TestHandshakeTimeoutWithUnresponsiveServer(t *testing.T) {
 	defer cancel()
 
 	start := time.Now()
-	err = client.tlsHandshakeWithTimeout(tlsConn, tcpConn, ctx)
+	err = client.tlsHandshakeWithTimeout(ctx, tlsConn, tcpConn)
 	elapsed := time.Since(start)
 
 	if err == nil {
@@ -116,7 +116,7 @@ func TestHandshakeTimeoutWithSlowServer(t *testing.T) {
 	defer cancel()
 
 	start := time.Now()
-	err = client.tlsHandshakeWithTimeout(tlsConn, tcpConn, ctx)
+	err = client.tlsHandshakeWithTimeout(ctx, tlsConn, tcpConn)
 	elapsed := time.Since(start)
 
 	if err == nil {

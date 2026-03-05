@@ -61,7 +61,7 @@ func TestGoroutineCleanupAfterTimeouts(t *testing.T) {
 		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-		_ = client.tlsHandshakeWithTimeout(tlsConn, tcpConn, ctx)
+		_ = client.tlsHandshakeWithTimeout(ctx, tlsConn, tcpConn)
 		cancel()
 		_ = tcpConn.Close()
 	}
@@ -143,7 +143,7 @@ func TestConcurrentHandshakeTimeouts(t *testing.T) {
 
 			client := &Client{}
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-			_ = client.tlsHandshakeWithTimeout(tlsConn, tcpConn, ctx)
+			_ = client.tlsHandshakeWithTimeout(ctx, tlsConn, tcpConn)
 			cancel()
 			_ = tcpConn.Close()
 		}(i)
@@ -212,7 +212,7 @@ func TestHandshakeTimeoutReturnsWithinDeadline(t *testing.T) {
 			defer cancel()
 
 			start := time.Now()
-			err = client.tlsHandshakeWithTimeout(tlsConn, tcpConn, ctx)
+			err = client.tlsHandshakeWithTimeout(ctx, tlsConn, tcpConn)
 			elapsed := time.Since(start)
 
 			if err == nil {
