@@ -249,7 +249,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	timeout := time.Duration(c.options.Timeout) * time.Second
-	if timeout == 0 {
+	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
 

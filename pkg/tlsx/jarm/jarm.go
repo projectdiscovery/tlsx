@@ -21,7 +21,7 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 
 	timeout := time.Duration(duration) * time.Second
-	if timeout == 0 {
+	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
 
