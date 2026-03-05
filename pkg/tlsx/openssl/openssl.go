@@ -119,17 +119,21 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	opensslOpts.SkipCertParse = true
 	gologger.Debug().Label(PkgTag).Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
+	timeout := time.Duration(c.options.Timeout) * time.Second
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+
 	for _, v := range toEnumerate {
 		opensslOpts.Cipher = []string{v}
 		stats.IncrementOpensslTLSConnections()
 
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
-		defer cancel()
-
+		ctx, cancel := context.WithTimeout(context.TODO(), timeout)
 		if resp, errx := getResponse(ctx, opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
 			// 0000 indicates handshake failure
 			enumeratedCiphers = append(enumeratedCiphers, resp.Session.Cipher)
 		}
+		cancel()
 	}
 	return enumeratedCiphers, nil
 }

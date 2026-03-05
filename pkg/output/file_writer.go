@@ -3,10 +3,12 @@ package output
 import (
 	"bufio"
 	"os"
+	"sync"
 )
 
 // fileWriter is a concurrent file based output writer.
 type fileWriter struct {
+	mu     sync.Mutex
 	file   *os.File
 	writer *bufio.Writer
 }
@@ -20,22 +22,36 @@ func newFileOutputWriter(file string) (*fileWriter, error) {
 	return &fileWriter{file: output, writer: bufio.NewWriter(output)}, nil
 }
 
-// WriteString writes an output to the underlying file
+// Write writes an output line to the underlying file
 func (w *fileWriter) Write(data []byte) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	_, err := w.writer.Write(data)
 	if err != nil {
 		return err
 	}
-	_, err = w.writer.WriteRune('\n')
-	return err
+	if len(data) == 0 || data[len(data)-1] != '\n' {
+		_, err = w.writer.WriteRune('\n')
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// Close closes the underlying writer flushing everything to disk
+// Close closes the underlying writer flushing everything to disk.
+// The file is always closed even when Flush fails, preventing fd leaks.
 func (w *fileWriter) Close() error {
-	if err := w.writer.Flush(); err != nil {
-		return err
-	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	flushErr := w.writer.Flush()
 	//nolint:errcheck // we don't care whether sync failed or succeeded.
 	w.file.Sync()
-	return w.file.Close()
+	closeErr := w.file.Close()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }
