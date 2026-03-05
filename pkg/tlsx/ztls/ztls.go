@@ -271,8 +271,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		if err := c.tlsHandshakeWithTimeout(ctx, conn, baseConn); err == nil {
-			h1 := conn.GetHandshakeLog()
-			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			if h1 := conn.GetHandshakeLog(); h1 != nil && h1.ServerHello != nil {
+				enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
+			}
 		}
 		cancel()
 		_ = conn.Close() // also closes baseConn internally
@@ -352,7 +353,7 @@ func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn,
 		// acquires the same mutex that Handshake holds, causing a deadlock.
 		_ = rawConn.Close()
 		<-errChan // wait for the goroutine to finish
-		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
+		return errorutil.NewWithTag("ztls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
 	case err := <-errChan:
 		if err == tls.ErrCertsOnly {
 			return nil
