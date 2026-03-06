@@ -41,8 +41,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	var response *clients.Response
 	var err, ztlsErr, opensslErr error
 	maxRetries := c.options.Retries
-	if maxRetries < 3 {
-		maxRetries = 3
+	if maxRetries < 1 {
+		maxRetries = 1
 	}
 	retryCounter := 0
 	if c.tlsClient == nil && c.ztlsClient == nil && c.opensslClient == nil {
@@ -57,7 +57,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 				stats.IncrementCryptoTLSConnections()
 				return response, nil
 			}
-			retryCounter++
 		}
 		if c.ztlsClient != nil {
 			if response, ztlsErr = c.ztlsClient.ConnectWithOptions(hostname, ip, port, options); ztlsErr == nil {
@@ -65,7 +64,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 				stats.IncrementZcryptoTLSConnections()
 				return response, nil
 			}
-			retryCounter++
 		}
 		if c.opensslClient != nil {
 			if response, opensslErr = c.opensslClient.ConnectWithOptions(hostname, ip, port, options); opensslErr == nil {
@@ -76,9 +74,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			if errorutils.IsAny(opensslErr, openssl.ErrNotAvailable) { //nolint
 				opensslErr = nil
 			}
-			retryCounter++
 		}
 		errStack = multierr.Combine(errStack, err, ztlsErr, opensslErr)
+		retryCounter++
 	}
 	return nil, errStack
 }
