@@ -206,6 +206,8 @@ type Response struct {
 	Version string `json:"tls_version,omitempty"`
 	// Cipher is the cipher for the tls request
 	Cipher string `json:"cipher,omitempty"`
+	// KeyExchange is the negotiated key exchange/curve
+	KeyExchange string `json:"key_exchange,omitempty"`
 	// CertificateResponse is the leaf certificate embedded in json
 	*CertificateResponse `json:",inline"`
 	// TLSConnection is the client used for TLS connection

@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"time"
@@ -142,6 +143,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	tlsVersion := versionToTLSVersionString[connectionState.Version]
 	tlsCipher := tls.CipherSuiteName(connectionState.CipherSuite)
+	tlsKeyExchange := curveIDToString(connectionState.CurveID)
 
 	leafCertificate := connectionState.PeerCertificates[0]
 	certificateChain := connectionState.PeerCertificates[1:]
@@ -160,6 +162,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Port:                port,
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
+		KeyExchange:         tlsKeyExchange,
 		TLSConnection:       "ctls",
 		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,
@@ -297,4 +300,30 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 		return nil, errorutil.NewWithTag("ctls", "cipher enum with version %v not implemented", options.VersionTLS) //nolint
 	}
 	return config, nil
+}
+
+// curveIDToString converts CurveID to a human-readable string
+func curveIDToString(curveID tls.CurveID) string {
+	// Standard curve IDs from crypto/tls
+	switch curveID {
+	case 23:
+		return "CurveP256"
+	case 24:
+		return "CurveP384"
+	case 25:
+		return "CurveP521"
+	case 29:
+		return "X25519"
+	case 4588:
+		return "X25519MLKEM768"
+	case 0:
+		return "" // No curve negotiated
+	default:
+		// Try using the built-in String() method if available
+		// Otherwise return the numeric form
+		if curveID > 0 {
+			return fmt.Sprintf("CurveID(%d)", curveID)
+		}
+		return ""
+	}
 }
