@@ -422,7 +422,9 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 	// Process Normal Inputs
 	for _, text := range r.options.Inputs {
-		r.processInputItem(text, inputs)
+		for _, entry := range splitInputEntries(text) {
+			r.processInputItem(entry, inputs)
+		}
 	}
 
 	if r.options.InputList != "" {
@@ -438,22 +440,31 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			text := scanner.Text()
-			if text != "" {
-				r.processInputItem(text, inputs)
+			for _, entry := range splitInputEntries(scanner.Text()) {
+				r.processInputItem(entry, inputs)
 			}
 		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			text := scanner.Text()
-			if text != "" {
-				r.processInputItem(text, inputs)
+			for _, entry := range splitInputEntries(scanner.Text()) {
+				r.processInputItem(entry, inputs)
 			}
 		}
 	}
 	return nil
+}
+
+func splitInputEntries(text string) []string {
+	var entries []string
+	for _, entry := range strings.Split(text, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry != "" {
+			entries = append(entries, entry)
+		}
+	}
+	return entries
 }
 
 // resolveFQDN resolves a FQDN and returns the IP addresses

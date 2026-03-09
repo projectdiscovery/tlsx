@@ -38,6 +38,37 @@ func Test_InputDomain_processInputItem(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not get correct taskInputs")
 }
 
+func TestSplitInputEntries(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "single input remains unchanged",
+			input:    "example.com",
+			expected: []string{"example.com"},
+		},
+		{
+			name:     "comma separated inputs are split",
+			input:    "example.com,one.one.one.one,192.168.1.1",
+			expected: []string{"example.com", "one.one.one.one", "192.168.1.1"},
+		},
+		{
+			name:     "whitespace and empty entries are ignored",
+			input:    " example.com, , one.one.one.one ,, ",
+			expected: []string{"example.com", "one.one.one.one"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := splitInputEntries(tc.input)
+			require.Equal(t, tc.expected, got)
+		})
+	}
+}
+
 func Test_InputForMultipleIps_processInputItem(t *testing.T) {
 	options := &clients.Options{
 		Ports:      []string{"443"},
