@@ -48,6 +48,8 @@ type Runner struct {
 	pdcpWriter   *pdcp.UploadWriter
 }
 
+const maxInputScanTokenSize = 4 * 1024 * 1024
+
 // New creates a new runner from provided configuration options
 func New(options *clients.Options) (*Runner, error) {
 	// Disable coloring of log output if asked by user
@@ -439,18 +441,26 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		}()
 
 		scanner := bufio.NewScanner(file)
+		scanner.Buffer(make([]byte, 0, 64*1024), maxInputScanTokenSize)
 		for scanner.Scan() {
 			for _, entry := range splitInputEntries(scanner.Text()) {
 				r.processInputItem(entry, inputs)
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read input file")
+		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Buffer(make([]byte, 0, 64*1024), maxInputScanTokenSize)
 		for scanner.Scan() {
 			for _, entry := range splitInputEntries(scanner.Text()) {
 				r.processInputItem(entry, inputs)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read stdin")
 		}
 	}
 	return nil
