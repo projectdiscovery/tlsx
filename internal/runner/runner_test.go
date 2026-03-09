@@ -69,6 +69,76 @@ func TestSplitInputEntries(t *testing.T) {
 	}
 }
 
+func TestNormalizeAndQueueInputsFromFile(t *testing.T) {
+	file, err := os.CreateTemp(t.TempDir(), "tlsx-inputs-*.txt")
+	require.NoError(t, err)
+	defer file.Close()
+
+	_, err = file.WriteString("example.com,one.one.one.one\n192.168.1.1\n")
+	require.NoError(t, err)
+
+	options := &clients.Options{
+		InputList: file.Name(),
+		Ports:     []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 10)
+	err = runner.normalizeAndQueueInputs(inputs)
+	require.NoError(t, err)
+	close(inputs)
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "example.com", port: "443"},
+		{host: "one.one.one.one", port: "443"},
+		{host: "192.168.1.1", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got)
+}
+
+func TestNormalizeAndQueueInputsFromStdin(t *testing.T) {
+	file, err := os.CreateTemp(t.TempDir(), "tlsx-stdin-*.txt")
+	require.NoError(t, err)
+
+	_, err = file.WriteString("example.com,one.one.one.one\n")
+	require.NoError(t, err)
+	_, err = file.Seek(0, 0)
+	require.NoError(t, err)
+	defer file.Close()
+
+	originalStdin := os.Stdin
+	os.Stdin = file
+	defer func() {
+		os.Stdin = originalStdin
+	}()
+
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options, hasStdin: true, hasStdinSet: true}
+
+	inputs := make(chan taskInput, 10)
+	err = runner.normalizeAndQueueInputs(inputs)
+	require.NoError(t, err)
+	close(inputs)
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "example.com", port: "443"},
+		{host: "one.one.one.one", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got)
+}
+
 func Test_InputForMultipleIps_processInputItem(t *testing.T) {
 	options := &clients.Options{
 		Ports:      []string{"443"},
