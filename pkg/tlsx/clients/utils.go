@@ -28,9 +28,9 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 		MisMatched:   IsMisMatchedCert(hostname, domainNames),
 		Revoked:      IsTLSRevoked(options, cert),
 		WildCardCert: IsWildCardCert(domainNames),
-		IssuerCN:     cert.Issuer.CommonName,
+		IssuerCN:     sanitizeCN(cert.Issuer.CommonName),
 		IssuerOrg:    cert.Issuer.Organization,
-		SubjectCN:    cert.Subject.CommonName,
+		SubjectCN:    sanitizeCN(cert.Subject.CommonName),
 		SubjectOrg:   cert.Subject.Organization,
 		FingerprintHash: CertificateResponseFingerprintHash{
 			MD5:    MD5Fingerprint(cert.Raw),
@@ -152,4 +152,10 @@ func IsClientCertRequiredError(err error) bool {
 		}
 	}
 	return false
+}
+func sanitizeCN(s string) string {
+	if len(s) > 256 {
+		s = s[:256]
+	}
+	return strings.ToValidUTF8(s, "")
 }
