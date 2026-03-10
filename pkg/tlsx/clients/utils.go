@@ -14,12 +14,12 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 )
-
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
 subjectCN := sanitizeCN(cert.Subject.CommonName)
 	issuerCN := sanitizeCN(cert.Issuer.CommonName)
-	
-    domainNames := []string{cert.Subject.CommonName}
+
+
+	domainNames := []string{subjectCN}
 	domainNames = append(domainNames, cert.DNSNames...)
 	response := &CertificateResponse{
 		SubjectAN:    cert.DNSNames,
@@ -31,9 +31,9 @@ subjectCN := sanitizeCN(cert.Subject.CommonName)
 		MisMatched:   IsMisMatchedCert(hostname, domainNames),
 		Revoked:      IsTLSRevoked(options, cert),
 		WildCardCert: IsWildCardCert(domainNames),
-		IssuerCN:     sanitizeCN(cert.Issuer.CommonName),
+		IssuerCN:     issuerCN,
 		IssuerOrg:    cert.Issuer.Organization,
-		SubjectCN:    sanitizeCN(cert.Subject.CommonName),
+		SubjectCN:    subjectCN,
 		SubjectOrg:   cert.Subject.Organization,
 		FingerprintHash: CertificateResponseFingerprintHash{
 			MD5:    MD5Fingerprint(cert.Raw),
@@ -157,8 +157,8 @@ func IsClientCertRequiredError(err error) bool {
 	return false
 }
 func sanitizeCN(s string) string {
-	var b strings.builder
-	b.Grow(256*utf8.UTFMax)
+	var b strings.Builder
+	b.Grow(256 * utf8.UTFMax)
 	count := 0
 	for len(s)>0 && count<256 {
 		r, size := utf8.DecodeRuneInString(s)
