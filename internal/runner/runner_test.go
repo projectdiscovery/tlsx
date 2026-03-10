@@ -429,3 +429,25 @@ func Test_CTLogsModeOutputOptions(t *testing.T) {
 		})
 	}
 }
+
+func Test_ProcessCommaSeparatedInput(t *testing.T) {
+	options := &clients.Options{Ports: []string{"443"}}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput)
+	go func() {
+		runner.processCommaSeparatedInput("example.com, one.one.one.one ,", inputs)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	expected := []taskInput{
+		{host: "example.com", port: "443"},
+		{host: "one.one.one.one", port: "443"},
+	}
+	require.ElementsMatch(t, expected, got)
+}
