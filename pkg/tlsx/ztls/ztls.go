@@ -257,10 +257,13 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
+		// Use a timeout context for each cipher handshake to prevent indefinite hangs (#819)
+		handshakeCtx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
+		cancel()
 		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil
@@ -321,19 +324,31 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 }
 
 // tlsHandshakeWithCtx attempts tls handshake with given timeout
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout.
+//
+// Previous implementation had a critical bug: it used
+//   case errChan <- tlsConn.Handshake():
+// which evaluates Handshake() synchronously before the send, making the
+// ctx.Done() branch unreachable — the select could never cancel a stuck
+// handshake (#819).
+//
+// Fixed by running Handshake() in a goroutine and closing the connection
+// on timeout to unblock it.
 func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
-	defer close(errChan)
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
+		// Close the connection to unblock the goroutine stuck in Handshake()
+		_ = tlsConn.Close()
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			err = nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }
