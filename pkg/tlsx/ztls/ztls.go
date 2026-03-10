@@ -258,7 +258,12 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
 		// Use a timeout context for each cipher handshake to prevent indefinite hangs (#819)
-		handshakeCtx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		// If Timeout is zero, use a generous default to avoid an already-expired context.
+		timeout := time.Duration(c.options.Timeout) * time.Second
+		if timeout <= 0 {
+			timeout = 10 * time.Second
+		}
+		handshakeCtx, cancel := context.WithTimeout(context.Background(), timeout)
 		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
