@@ -418,11 +418,18 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 	}
 }
 
+// maxInputScanTokenSize is the max token size for the input scanner to handle
+// long comma-separated lines without truncation.
+const maxInputScanTokenSize = 4 * 1024 * 1024
+
 // normalizeAndQueueInputs normalizes the inputs and queues them for execution
 func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
-	// Process Normal Inputs
+	// Process Normal Inputs (-u flag already splits on commas via goflags,
+	// but we split again for safety in case of programmatic use)
 	for _, text := range r.options.Inputs {
-		r.processInputItem(text, inputs)
+		for _, entry := range splitInputEntries(text) {
+			r.processInputItem(entry, inputs)
+		}
 	}
 
 	if r.options.InputList != "" {
@@ -437,23 +444,43 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		}()
 
 		scanner := bufio.NewScanner(file)
+		scanner.Buffer(make([]byte, 0, 64*1024), maxInputScanTokenSize)
 		for scanner.Scan() {
-			text := scanner.Text()
-			if text != "" {
-				r.processInputItem(text, inputs)
+			for _, entry := range splitInputEntries(scanner.Text()) {
+				r.processInputItem(entry, inputs)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read input file")
 		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Buffer(make([]byte, 0, 64*1024), maxInputScanTokenSize)
 		for scanner.Scan() {
-			text := scanner.Text()
-			if text != "" {
-				r.processInputItem(text, inputs)
+			for _, entry := range splitInputEntries(scanner.Text()) {
+				r.processInputItem(entry, inputs)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read stdin")
 		}
 	}
 	return nil
+}
+
+// splitInputEntries splits a text line by commas and returns non-empty,
+// trimmed entries. This ensures file (-l) and stdin inputs behave the
+// same as -u which uses goflags.CommaSeparatedStringSliceOptions.
+func splitInputEntries(text string) []string {
+	var entries []string
+	for _, entry := range strings.Split(text, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry != "" {
+			entries = append(entries, entry)
+		}
+	}
+	return entries
 }
 
 // resolveFQDN resolves a FQDN and returns the IP addresses

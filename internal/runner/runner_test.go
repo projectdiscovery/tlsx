@@ -429,3 +429,59 @@ func Test_CTLogsModeOutputOptions(t *testing.T) {
 		})
 	}
 }
+
+func Test_splitInputEntries(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "single entry",
+			input:    "192.168.1.0/24",
+			expected: []string{"192.168.1.0/24"},
+		},
+		{
+			name:     "comma-separated entries",
+			input:    "192.168.1.0/24,192.168.2.0/24,192.168.3.0/24",
+			expected: []string{"192.168.1.0/24", "192.168.2.0/24", "192.168.3.0/24"},
+		},
+		{
+			name:     "comma-separated with spaces",
+			input:    "192.168.1.0/24 , 192.168.2.0/24 , 192.168.3.0/24",
+			expected: []string{"192.168.1.0/24", "192.168.2.0/24", "192.168.3.0/24"},
+		},
+		{
+			name:     "empty entries filtered",
+			input:    "192.168.1.0/24,,192.168.2.0/24,",
+			expected: []string{"192.168.1.0/24", "192.168.2.0/24"},
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: nil,
+		},
+		{
+			name:     "only commas and spaces",
+			input:    " , , , ",
+			expected: nil,
+		},
+		{
+			name:     "single host with port",
+			input:    "example.com:443",
+			expected: []string{"example.com:443"},
+		},
+		{
+			name:     "mixed hosts and CIDRs",
+			input:    "example.com:443,10.0.0.0/8,scanme.sh",
+			expected: []string{"example.com:443", "10.0.0.0/8", "scanme.sh"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := splitInputEntries(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
