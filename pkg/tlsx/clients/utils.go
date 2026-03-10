@@ -9,14 +9,17 @@ import (
 	"net"
 	"strings"
 	"time"
-
+    "unicode/utf8"
 	"github.com/projectdiscovery/utils/errkit"
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 )
 
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
-	domainNames := []string{cert.Subject.CommonName}
+subjectCN := sanitizeCN(cert.Subject.CommonName)
+	issuerCN := sanitizeCN(cert.Issuer.CommonName)
+	
+    domainNames := []string{cert.Subject.CommonName}
 	domainNames = append(domainNames, cert.DNSNames...)
 	response := &CertificateResponse{
 		SubjectAN:    cert.DNSNames,
@@ -154,9 +157,19 @@ func IsClientCertRequiredError(err error) bool {
 	return false
 }
 func sanitizeCN(s string) string {
-	runes := []rune(s)
-	if len(runes) > 256 {
-		runes = runes[:256]
+	var b strings.builder
+	b.Grow(256*utf8.UTFMax)
+	count := 0
+	for len(s)>0 && count<256 {
+		r, size := utf8.DecodeRuneInString(s)
+		if r == utf8.RuneError && size == 1 {
+			s = s[1:]
+			continue
+		}
+		b.WriteRune(r)
+		s = s[size:]
+		count++
 	}
-	return strings.ToValidUTF8(string(runes), "")
+
+	return b.String()
 }
