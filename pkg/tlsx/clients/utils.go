@@ -154,8 +154,9 @@ func IsClientCertRequiredError(err error) bool {
 	return false
 }
 func sanitizeCN(s string) string {
+	runes := []rune(s)
 	if len(runes) > 256 {
 		runes = runes[:256]
 	}
-	return strings.ToValidUTF8(s, "")
+	return strings.ToValidUTF8(string(runes), "")
 }
