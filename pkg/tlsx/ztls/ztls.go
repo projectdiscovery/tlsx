@@ -339,6 +339,11 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 //
 // Fixed by running Handshake() in a goroutine and closing the connection
 // on timeout to unblock it.
+//
+// Note on select fairness: when both errChan and ctx.Done() are ready
+// simultaneously, Go's select chooses randomly. We prefer a completed
+// handshake result over a timeout by checking errChan non-blockingly
+// in the ctx.Done() branch before returning the timeout error.
 func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn) error {
 	errChan := make(chan error, 1)
 	go func() {
@@ -346,14 +351,24 @@ func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn)
 	}()
 
 	select {
-	case <-ctx.Done():
-		// Close the connection to unblock the goroutine stuck in Handshake()
-		_ = tlsConn.Close()
-		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
 	case err := <-errChan:
 		if err == tls.ErrCertsOnly {
 			err = nil
 		}
 		return err
+	case <-ctx.Done():
+		// Prefer a completed handshake result that arrived at the same time
+		// as the deadline — select is non-deterministic when both are ready.
+		select {
+		case err := <-errChan:
+			if err == tls.ErrCertsOnly {
+				err = nil
+			}
+			return err
+		default:
+		}
+		// Close the connection to unblock the goroutine stuck in Handshake()
+		_ = tlsConn.Close()
+		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
 	}
 }
