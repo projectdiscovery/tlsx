@@ -140,7 +140,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	err = c.tlsHandshakeWithTimeout(ctx, tlsConn)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
@@ -265,7 +265,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		if c.options.Timeout > 0 {
 			handshakeCtx, cancel = context.WithTimeout(handshakeCtx, time.Duration(c.options.Timeout)*time.Second)
 		}
-		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
+		if err := c.tlsHandshakeWithTimeout(handshakeCtx, conn); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
@@ -329,7 +329,6 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
 // tlsHandshakeWithTimeout attempts tls handshake with given timeout.
 //
 // Previous implementation had a critical bug: it used
@@ -340,7 +339,7 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 //
 // Fixed by running Handshake() in a goroutine and closing the connection
 // on timeout to unblock it.
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+func (c *Client) tlsHandshakeWithTimeout(ctx context.Context, tlsConn *tls.Conn) error {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- tlsConn.Handshake()
