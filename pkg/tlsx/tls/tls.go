@@ -236,13 +236,14 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 		conn := tls.Client(baseConn, baseCfg)
 
-		// Use HandshakeContext with timeout to prevent indefinite hangs (#819)
-		// If Timeout is zero, use a generous default to avoid an already-expired context.
-		timeout := time.Duration(c.options.Timeout) * time.Second
-		if timeout <= 0 {
-			timeout = 10 * time.Second
+		// Use HandshakeContext with timeout to prevent indefinite hangs (#819).
+		// Mirror the zero-timeout guard from the main connect path (lines 109-114):
+		// when Timeout is unset (0), use a plain Background context (no expiry).
+		handshakeCtx := context.Background()
+		cancel := func() {}
+		if c.options.Timeout > 0 {
+			handshakeCtx, cancel = context.WithTimeout(handshakeCtx, time.Duration(c.options.Timeout)*time.Second)
 		}
-		handshakeCtx, cancel := context.WithTimeout(context.Background(), timeout)
 		if err := conn.HandshakeContext(handshakeCtx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
