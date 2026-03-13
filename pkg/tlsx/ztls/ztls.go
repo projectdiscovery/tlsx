@@ -250,14 +250,16 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 	for _, v := range toEnumerate {
 		ctx := context.Background()
+		var cancel context.CancelFunc
 		if c.options.Timeout != 0 {
-			var cancel context.CancelFunc
 			ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
-			defer cancel()
 		}
 
 		baseConn, err := pool.Acquire(context.Background())
 		if err != nil {
+			if cancel != nil {
+				cancel()
+			}
 			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
 		}
 		stats.IncrementZcryptoTLSConnections()
@@ -269,6 +271,10 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
 		_ = conn.Close() // also closes baseConn internally
+		
+		if cancel != nil {
+			cancel()
+		}
 	}
 	return enumeratedCiphers, nil
 }
