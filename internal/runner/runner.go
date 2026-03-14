@@ -439,8 +439,11 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			text := scanner.Text()
-			if text != "" {
-				r.processInputItem(text, inputs)
+			for _, item := range strings.Split(text, ",") {
+				item = strings.TrimSpace(item)
+				if item != "" {
+					r.processInputItem(item, inputs)
+				}
 			}
 		}
 	}
@@ -448,8 +451,11 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			text := scanner.Text()
-			if text != "" {
-				r.processInputItem(text, inputs)
+			for _, item := range strings.Split(text, ",") {
+				item = strings.TrimSpace(item)
+				if item != "" {
+					r.processInputItem(item, inputs)
+				}
 			}
 		}
 	}
