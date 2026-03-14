@@ -446,6 +446,9 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 				}
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read input file")
+		}
 	}
 	if r.hasStdin {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -457,6 +460,9 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 					r.processInputItem(item, inputs)
 				}
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return errkit.Wrap(err, "could not read stdin input")
 		}
 	}
 	return nil
