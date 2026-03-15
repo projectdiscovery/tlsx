@@ -429,3 +429,56 @@ func Test_CTLogsModeOutputOptions(t *testing.T) {
 		})
 	}
 }
+
+// Test that comma-separated values in -l file are split correctly (#859)
+func Test_CommaSeparatedInputFile_normalizeAndQueueInputs(t *testing.T) {
+	// Create a temp file with comma-separated hosts on a single line
+	tmpFile, err := os.CreateTemp(t.TempDir(), "hosts-*.txt")
+	require.NoError(t, err)
+	_, err = tmpFile.WriteString("example.com,example.org,example.net\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tmpFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 10)
+	err = runner.normalizeAndQueueInputs(inputs)
+	require.NoError(t, err)
+	close(inputs)
+
+	var got []string
+	for task := range inputs {
+		got = append(got, task.host)
+	}
+	require.ElementsMatch(t, []string{"example.com", "example.org", "example.net"}, got)
+}
+
+// Test that a single value per line still works (#859 regression)
+func Test_SingleInputPerLine_normalizeAndQueueInputs(t *testing.T) {
+	tmpFile, err := os.CreateTemp(t.TempDir(), "hosts-*.txt")
+	require.NoError(t, err)
+	_, err = tmpFile.WriteString("example.com\nexample.org\n")
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tmpFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 10)
+	err = runner.normalizeAndQueueInputs(inputs)
+	require.NoError(t, err)
+	close(inputs)
+
+	var got []string
+	for task := range inputs {
+		got = append(got, task.host)
+	}
+	require.ElementsMatch(t, []string{"example.com", "example.org"}, got)
+}
