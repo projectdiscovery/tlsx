@@ -65,7 +65,7 @@ func NewUploadWriterCallback(ctx context.Context, creds *pdcpauth.PDCPCredential
 	u := &UploadWriter{
 		creds:  creds,
 		done:   make(chan struct{}, 1),
-		data:   make(chan *clients.Response, 8), // default buffer size
+		data:   make(chan *clients.Response, 1000), // increased buffer size
 		TeamID: "",
 	}
 	var err error
@@ -91,7 +91,11 @@ func NewUploadWriterCallback(ctx context.Context, creds *pdcpauth.PDCPCredential
 // GetWriterCallback returns the writer callback
 func (u *UploadWriter) GetWriterCallback() func(*clients.Response) {
 	return func(resp *clients.Response) {
-		u.data <- resp
+		select {
+		case u.data <- resp:
+		default:
+			gologger.Warning().Msgf("PDCP upload buffer full, skipping result")
+		}
 	}
 }
 
