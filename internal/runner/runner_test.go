@@ -208,6 +208,173 @@ func getTaskInputFromFile(filename string, ports []string) ([]taskInput, error) 
 	return ret, nil
 }
 
+func Test_CommaSeparatedInputFile(t *testing.T) {
+	// Create a temporary file with comma-separated inputs
+	tempFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	// Write comma-separated prefixes to the file
+	content := "192.168.1.0/24,192.168.2.0/24,192.168.3.0/24\n"
+	_, err = tempFile.WriteString(content)
+	require.NoError(t, err)
+	tempFile.Close()
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tempFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 100)
+	
+	// Test normalizeAndQueueInputs with the file
+	go func() {
+		err := runner.normalizeAndQueueInputs(inputs)
+		require.NoError(t, err)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	// We expect 3 CIDR ranges, each expanding to 256 IPs
+	// But for testing purposes, we just verify that we got multiple inputs
+	// and that they start with the expected prefixes
+	require.Greater(t, len(got), 0, "should have processed inputs from comma-separated file")
+	
+	// Check that we have inputs from all three prefixes
+	hasFirstPrefix := false
+	hasSecondPrefix := false
+	hasThirdPrefix := false
+	
+	for _, task := range got {
+		if strings.HasPrefix(task.host, "192.168.1.") {
+			hasFirstPrefix = true
+		}
+		if strings.HasPrefix(task.host, "192.168.2.") {
+			hasSecondPrefix = true
+		}
+		if strings.HasPrefix(task.host, "192.168.3.") {
+			hasThirdPrefix = true
+		}
+	}
+	
+	assert.True(t, hasFirstPrefix, "should have inputs from first prefix")
+	assert.True(t, hasSecondPrefix, "should have inputs from second prefix")
+	assert.True(t, hasThirdPrefix, "should have inputs from third prefix")
+}
+
+func Test_CommaSeparatedInputFileWithWhitespace(t *testing.T) {
+	// Create a temporary file with comma-separated inputs with whitespace
+	tempFile, err := os.CreateTemp("", "tlsx-test-whitespace-*.txt")
+	require.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	// Write comma-separated prefixes with whitespace to the file
+	content := "192.168.1.0/24, 192.168.2.0/24 , 192.168.3.0/24\n"
+	_, err = tempFile.WriteString(content)
+	require.NoError(t, err)
+	tempFile.Close()
+
+	options := &clients.Options{
+		Ports:     []string{"443"},
+		InputList: tempFile.Name(),
+	}
+	runner := &Runner{options: options}
+
+	inputs := make(chan taskInput, 100)
+	
+	// Test normalizeAndQueueInputs with the file
+	go func() {
+		err := runner.normalizeAndQueueInputs(inputs)
+		require.NoError(t, err)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+
+	// Check that whitespace was trimmed and all prefixes were processed
+	hasFirstPrefix := false
+	hasSecondPrefix := false
+	hasThirdPrefix := false
+	
+	for _, task := range got {
+		if strings.HasPrefix(task.host, "192.168.1.") {
+			hasFirstPrefix = true
+		}
+		if strings.HasPrefix(task.host, "192.168.2.") {
+			hasSecondPrefix = true
+		}
+		if strings.HasPrefix(task.host, "192.168.3.") {
+			hasThirdPrefix = true
+		}
+	}
+	
+	assert.True(t, hasFirstPrefix, "should have inputs from first prefix")
+	assert.True(t, hasSecondPrefix, "should have inputs from second prefix")
+	assert.True(t, hasThirdPrefix, "should have inputs from third prefix")
+}
+
+func Test_CommaSeparatedStdin(t *testing.T) {
+	// Test comma-separated values from stdin
+	oldStdin := os.Stdin
+	r, w, _ := os.Pipe()
+	os.Stdin = r
+	
+	// Write comma-separated input to stdin
+	go func() {
+		_, err := w.WriteString("192.168.1.0/24,192.168.2.0/24\n")
+		require.NoError(t, err)
+		w.Close()
+	}()
+
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+	runner.hasStdin = true
+	runner.hasStdinSet = true
+
+	inputs := make(chan taskInput, 100)
+	
+	// Test normalizeAndQueueInputs with stdin
+	go func() {
+		err := runner.normalizeAndQueueInputs(inputs)
+		require.NoError(t, err)
+		close(inputs)
+	}()
+
+	var got []taskInput
+	for task := range inputs {
+		got = append(got, task)
+	}
+	
+	// Restore stdin
+	os.Stdin = oldStdin
+
+	// Check that both prefixes were processed
+	hasFirstPrefix := false
+	hasSecondPrefix := false
+	
+	for _, task := range got {
+		if strings.HasPrefix(task.host, "192.168.1.") {
+			hasFirstPrefix = true
+		}
+		if strings.HasPrefix(task.host, "192.168.2.") {
+			hasSecondPrefix = true
+		}
+	}
+	
+	assert.True(t, hasFirstPrefix, "should have inputs from first prefix")
+	assert.True(t, hasSecondPrefix, "should have inputs from second prefix")
+}
+
 func Test_CTLogsModeValidation(t *testing.T) {
 	// Test that CT logs mode and input mode cannot be used together
 	// This validation is now done in the main package, so this test should be removed
