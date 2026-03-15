@@ -440,14 +440,7 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				// Split comma-separated values to match -u flag behavior
-				items := strings.Split(text, ",")
-				for _, item := range items {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processCommaSeparatedLine(text, inputs)
 			}
 		}
 	}
@@ -456,18 +449,23 @@ func (r *Runner) normalizeAndQueueInputs(inputs chan taskInput) error {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text != "" {
-				// Split comma-separated values to match -u flag behavior
-				items := strings.Split(text, ",")
-				for _, item := range items {
-					item = strings.TrimSpace(item)
-					if item != "" {
-						r.processInputItem(item, inputs)
-					}
-				}
+				r.processCommaSeparatedLine(text, inputs)
 			}
 		}
 	}
 	return nil
+}
+
+// processCommaSeparatedLine splits a line on commas and processes each item,
+// matching the comma-separated value handling of the -u flag.
+func (r *Runner) processCommaSeparatedLine(text string, inputs chan taskInput) {
+	items := strings.Split(text, ",")
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			r.processInputItem(item, inputs)
+		}
+	}
 }
 
 // resolveFQDN resolves a FQDN and returns the IP addresses

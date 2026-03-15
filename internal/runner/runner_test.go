@@ -324,14 +324,18 @@ func Test_CommaSeparatedInputFileWithWhitespace(t *testing.T) {
 func Test_CommaSeparatedStdin(t *testing.T) {
 	// Test comma-separated values from stdin
 	oldStdin := os.Stdin
-	r, w, _ := os.Pipe()
+	defer func() { os.Stdin = oldStdin }()
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err, "failed to create pipe")
 	os.Stdin = r
-	
-	// Write comma-separated input to stdin
+
+	// Write comma-separated input to stdin in a goroutine
+	errCh := make(chan error, 1)
 	go func() {
-		_, err := w.WriteString("192.168.1.0/24,192.168.2.0/24\n")
-		require.NoError(t, err)
+		_, writeErr := w.WriteString("192.168.1.0/24,192.168.2.0/24\n")
 		w.Close()
+		errCh <- writeErr
 	}()
 
 	options := &clients.Options{
@@ -342,11 +346,11 @@ func Test_CommaSeparatedStdin(t *testing.T) {
 	runner.hasStdinSet = true
 
 	inputs := make(chan taskInput, 100)
-	
-	// Test normalizeAndQueueInputs with stdin
+
+	// Run normalizeAndQueueInputs with stdin
+	normalizeErrCh := make(chan error, 1)
 	go func() {
-		err := runner.normalizeAndQueueInputs(inputs)
-		require.NoError(t, err)
+		normalizeErrCh <- runner.normalizeAndQueueInputs(inputs)
 		close(inputs)
 	}()
 
@@ -354,14 +358,14 @@ func Test_CommaSeparatedStdin(t *testing.T) {
 	for task := range inputs {
 		got = append(got, task)
 	}
-	
-	// Restore stdin
-	os.Stdin = oldStdin
+
+	require.NoError(t, <-errCh, "stdin write failed")
+	require.NoError(t, <-normalizeErrCh, "normalizeAndQueueInputs failed")
 
 	// Check that both prefixes were processed
 	hasFirstPrefix := false
 	hasSecondPrefix := false
-	
+
 	for _, task := range got {
 		if strings.HasPrefix(task.host, "192.168.1.") {
 			hasFirstPrefix = true
@@ -370,7 +374,7 @@ func Test_CommaSeparatedStdin(t *testing.T) {
 			hasSecondPrefix = true
 		}
 	}
-	
+
 	assert.True(t, hasFirstPrefix, "should have inputs from first prefix")
 	assert.True(t, hasSecondPrefix, "should have inputs from second prefix")
 }
