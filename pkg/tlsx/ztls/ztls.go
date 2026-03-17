@@ -140,7 +140,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	err = c.tlsHandshakeWithTimeout(tlsConn, conn, ctx)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
@@ -262,7 +262,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		if c.options.Timeout != 0 {
 			handshakeCtx, cancel = context.WithTimeout(handshakeCtx, time.Duration(c.options.Timeout)*time.Second)
 		}
-		if err := c.tlsHandshakeWithTimeout(conn, handshakeCtx); err == nil {
+		if err := c.tlsHandshakeWithTimeout(conn, baseConn, handshakeCtx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
@@ -328,8 +328,11 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout.
+// rawConn is the underlying TCP connection; on timeout we close it
+// instead of tlsConn because zcrypto's Close() acquires the handshake
+// mutex, causing deadlock when the handshake is blocked on I/O.
+func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, rawConn net.Conn, ctx context.Context) error {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- tlsConn.Handshake()
@@ -342,7 +345,16 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 		}
 		return err
 	case <-ctx.Done():
-		_ = tlsConn.Close()
+		// Prefer a completed handshake that arrived simultaneously with the deadline
+		select {
+		case err := <-errChan:
+			if err == tls.ErrCertsOnly {
+				return nil
+			}
+			return err
+		default:
+		}
+		_ = rawConn.Close()
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
 	}
 }
