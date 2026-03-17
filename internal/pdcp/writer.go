@@ -52,6 +52,7 @@ type UploadWriter struct {
 	assetGroupID   string
 	assetGroupName string
 	counter        atomic.Int32
+	droppedCounter atomic.Int32
 	closed         atomic.Bool
 	TeamID         string
 }
@@ -94,6 +95,7 @@ func (u *UploadWriter) GetWriterCallback() func(*clients.Response) {
 		select {
 		case u.data <- resp:
 		default:
+			u.droppedCounter.Add(1)
 			gologger.Warning().Msgf("PDCP upload buffer full, skipping result")
 		}
 	}
@@ -128,6 +130,9 @@ func (u *UploadWriter) autoCommit(ctx context.Context) {
 			gologger.Verbose().Msgf("UI dashboard setup skipped, no results found to upload")
 		} else {
 			gologger.Info().Msgf("Found %v results, View found results in dashboard : %v", u.counter.Load(), getAssetsDashBoardURL(u.assetGroupID, u.TeamID))
+		}
+		if dropped := u.droppedCounter.Load(); dropped > 0 {
+			gologger.Warning().Msgf("Dropped %v results due to upload buffer overflow", dropped)
 		}
 	}()
 	// temporary buffer to store the results
