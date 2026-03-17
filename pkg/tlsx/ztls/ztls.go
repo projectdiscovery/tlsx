@@ -257,12 +257,18 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		conn := tls.Client(baseConn, baseCfg)
 		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		ctx := context.Background()
+		var cancel context.CancelFunc
+		if c.options.Timeout != 0 {
+			ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
+		}
 		if err := c.tlsHandshakeWithTimeout(conn, ctx); err == nil {
 			h1 := conn.GetHandshakeLog()
 			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
 		}
-		cancel()
+		if cancel != nil {
+			cancel()
+		}
 		_ = conn.Close() // also closes baseConn internally
 	}
 	return enumeratedCiphers, nil

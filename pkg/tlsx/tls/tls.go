@@ -236,12 +236,18 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 
 		conn := tls.Client(baseConn, baseCfg)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		ctx := context.Background()
+		var cancel context.CancelFunc
+		if c.options.Timeout != 0 {
+			ctx, cancel = context.WithTimeout(ctx, time.Duration(c.options.Timeout)*time.Second)
+		}
 		if err := conn.HandshakeContext(ctx); err == nil {
 			ciphersuite := conn.ConnectionState().CipherSuite
 			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
 		}
-		cancel()
+		if cancel != nil {
+			cancel()
+		}
 		_ = conn.Close() // close baseConn internally
 	}
 	return enumeratedCiphers, nil
