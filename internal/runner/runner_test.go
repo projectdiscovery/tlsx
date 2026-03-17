@@ -380,6 +380,77 @@ func Test_CTLogsModeWithAllProbes(t *testing.T) {
 	}
 }
 
+func Test_CommaSeparatedFileInput(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected []string
+	}{
+		{
+			name:     "comma-separated entries",
+			content:  "scanme.sh,example.com",
+			expected: []string{"scanme.sh", "example.com"},
+		},
+		{
+			name:     "comma-separated with spaces",
+			content:  "host1.com , host2.com , host3.com",
+			expected: []string{"host1.com", "host2.com", "host3.com"},
+		},
+		{
+			name:     "single entry no comma",
+			content:  "scanme.sh",
+			expected: []string{"scanme.sh"},
+		},
+		{
+			name:     "trailing comma filtered",
+			content:  "a.com,b.com,",
+			expected: []string{"a.com", "b.com"},
+		},
+		{
+			name:     "host with port",
+			content:  "example.com:8443,scanme.sh:443",
+			expected: []string{"example.com", "scanme.sh"},
+		},
+		{
+			name:     "multiple lines with commas",
+			content:  "a.com,b.com\nc.com,d.com",
+			expected: []string{"a.com", "b.com", "c.com", "d.com"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpFile, err := os.CreateTemp("", "tlsx-test-*.txt")
+			require.NoError(t, err)
+			defer os.Remove(tmpFile.Name())
+
+			_, err = tmpFile.WriteString(tc.content)
+			require.NoError(t, err)
+			require.NoError(t, tmpFile.Close())
+
+			options := &clients.Options{
+				Ports:     []string{"443"},
+				InputList: tmpFile.Name(),
+			}
+			runner := &Runner{options: options}
+
+			inputs := make(chan taskInput, 100)
+			errCh := make(chan error, 1)
+			go func() {
+				errCh <- runner.normalizeAndQueueInputs(inputs)
+				close(inputs)
+			}()
+
+			var hosts []string
+			for task := range inputs {
+				hosts = append(hosts, task.host)
+			}
+			require.NoError(t, <-errCh)
+			require.ElementsMatch(t, tc.expected, hosts)
+		})
+	}
+}
+
 func Test_CTLogsModeOutputOptions(t *testing.T) {
 	// Test that CT logs mode works with various output options
 	testCases := []struct {
