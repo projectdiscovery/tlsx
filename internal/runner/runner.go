@@ -396,9 +396,26 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			gologger.Info().Msgf("Processing input %s:%s", task.host, task.port)
 		}
 
-		response, err := tlsxService.ConnectWithOptions(task.host, task.ip, task.port, clients.ConnectOptions{SNI: task.sni})
+		var response *clients.Response
+		var err error
+		// Use a per-connection timeout to prevent indefinite hangs
+		connTimeout := time.Duration(r.options.Timeout) * time.Second
+		if connTimeout <= 0 {
+			connTimeout = 10 * time.Second
+		}
+		// For enum modes that make multiple connections, allow more time
+		if r.options.TlsVersionsEnum || r.options.TlsCiphersEnum {
+			connTimeout *= 3
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), connTimeout)
+		response, err = r.connectWithTimeout(ctx, tlsxService, task.host, task.ip, task.port, task.sni)
+		cancel()
 		if err != nil {
-			gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
+			if ctx.Err() == context.DeadlineExceeded {
+				gologger.Warning().Msgf("Could not connect input %s: timeout after %v", task.Address(), connTimeout)
+			} else {
+				gologger.Warning().Msgf("Could not connect input %s: %s", task.Address(), err)
+			}
 		}
 
 		if response == nil {
@@ -415,6 +432,25 @@ func (r *Runner) processInputElementWorker(inputs chan taskInput, wg *sync.WaitG
 			callback := r.pdcpWriter.GetWriterCallback()
 			callback(response)
 		}
+	}
+}
+
+// connectWithTimeout wraps ConnectWithOptions with a context timeout to prevent indefinite hangs
+func (r *Runner) connectWithTimeout(ctx context.Context, tlsxService *tlsx.Service, host, ip, port, sni string) (*clients.Response, error) {
+	type result struct {
+		response *clients.Response
+		err      error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		resp, err := tlsxService.ConnectWithOptions(host, ip, port, clients.ConnectOptions{SNI: sni})
+		ch <- result{resp, err}
+	}()
+	select {
+	case res := <-ch:
+		return res.response, res.err
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 
