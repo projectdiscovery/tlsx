@@ -332,7 +332,7 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context)
 	case <-ctx.Done():
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
 	case err := <-errChan:
-		if err == tls.ErrCertsOnly {
+		if errors.Is(err, tls.ErrCertsOnly) {
 			err = nil
 		}
 		return err
