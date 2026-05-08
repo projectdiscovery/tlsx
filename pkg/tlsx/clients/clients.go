@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"context"
 	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
@@ -519,6 +520,7 @@ type ConnectOptions struct {
 	SNI         string
 	VersionTLS  string
 	Ciphers     []string
+	Ctx       context.Context
 	CipherLevel []CipherSecLevel // Only used in cipher enum mode
 	EnumMode    EnumMode         // Enumeration Mode (version or ciphers)
 }
