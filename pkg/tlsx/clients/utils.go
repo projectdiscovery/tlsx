@@ -16,6 +16,9 @@ import (
 )
 
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
+	if cert == nil {
+		return nil
+	}
 	domainNames := []string{cert.Subject.CommonName}
 	domainNames = append(domainNames, cert.DNSNames...)
 	response := &CertificateResponse{
