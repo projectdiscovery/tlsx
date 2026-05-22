@@ -163,33 +163,34 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		TLSConnection: "ztls",
 		ServerName:    config.ServerName,
 	}
-	if hl != nil && hl.ServerCertificates != nil {
-		response.CertificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
-		if response.CertificateResponse != nil {
-			response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+	if hl != nil {
+		if hl.ServerCertificates != nil {
+			response.CertificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
+			if response.CertificateResponse != nil {
+				response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+			}
+			if c.options.TLSChain {
+				for _, cert := range hl.ServerCertificates.Chain {
+					response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
+				}
+			}
 		}
-	}
-	if hl.ServerHello != nil {
-		response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
-		response.Cipher = hl.ServerHello.CipherSuite.String()
-	}
-
-	if c.options.TLSChain {
-		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
+		if hl.ServerHello != nil {
+			response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
+			response.Cipher = hl.ServerHello.CipherSuite.String()
 		}
-	}
-	if c.options.Ja3 {
-		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
-	}
-	if c.options.Ja3s {
-		response.Ja3sHash = ja3.GetJa3sHash(hl.ServerHello)
-	}
-	if c.options.ClientHello {
-		response.ClientHello = hl.ClientHello
-	}
-	if c.options.ServerHello {
-		response.ServerHello = hl.ServerHello
+		if c.options.Ja3 {
+			response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
+		}
+		if c.options.Ja3s {
+			response.Ja3sHash = ja3.GetJa3sHash(hl.ServerHello)
+		}
+		if c.options.ClientHello {
+			response.ClientHello = hl.ClientHello
+		}
+		if c.options.ServerHello {
+			response.ServerHello = hl.ServerHello
+		}
 	}
 
 	if response.Version != "tls13" {
