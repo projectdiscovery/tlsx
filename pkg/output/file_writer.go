@@ -11,7 +11,7 @@ type fileWriter struct {
 	writer *bufio.Writer
 }
 
-// NewFileOutputWriter creates a new buffered writer for a file
+// newFileOutputWriter creates a new buffered writer for a file
 func newFileOutputWriter(file string) (*fileWriter, error) {
 	output, err := os.Create(file)
 	if err != nil {
@@ -20,7 +20,7 @@ func newFileOutputWriter(file string) (*fileWriter, error) {
 	return &fileWriter{file: output, writer: bufio.NewWriter(output)}, nil
 }
 
-// WriteString writes an output to the underlying file
+// Write writes an output to the underlying file
 func (w *fileWriter) Write(data []byte) error {
 	_, err := w.writer.Write(data)
 	if err != nil {
@@ -30,12 +30,15 @@ func (w *fileWriter) Write(data []byte) error {
 	return err
 }
 
-// Close closes the underlying writer flushing everything to disk
+// Close closes the underlying writer flushing everything to disk.
+// The file is always closed even when Flush fails, preventing fd leaks.
 func (w *fileWriter) Close() error {
-	if err := w.writer.Flush(); err != nil {
-		return err
-	}
+	flushErr := w.writer.Flush()
 	//nolint:errcheck // we don't care whether sync failed or succeeded.
 	w.file.Sync()
-	return w.file.Close()
+	closeErr := w.file.Close()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }

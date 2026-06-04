@@ -46,6 +46,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if c.options.Timeout < 3 {
 		c.options.Timeout = 3
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+	defer cancel()
+
 	// validate dialer before using
 	if c.dialer == nil {
 		var err error
@@ -56,7 +59,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	// There is no guarantee that dialed ip is same as ip used by openssl
 	// this is only used to avoid inconsistencies
-	rawConn, err := c.dialer.Dial(context.TODO(), "tcp", opensslOpts.Address)
+	rawConn, err := c.dialer.Dial(ctx, "tcp", opensslOpts.Address)
 	if err != nil || rawConn == nil {
 		return nil, errorutils.NewWithErr(err).WithTag(PkgTag, "fastdialer").Msgf("could not dial address:%v", opensslOpts.Address) //nolint
 	}
@@ -68,8 +71,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
-	defer cancel()
 	// Here _ contains handshake errors and other errors returned by openssl
 	resp, errx := getResponse(ctx, opensslOpts)
 	if errx != nil {
@@ -120,16 +121,18 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label(PkgTag).Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		opensslOpts.Cipher = []string{v}
-		stats.IncrementOpensslTLSConnections()
+		func() {
+			opensslOpts.Cipher = []string{v}
+			stats.IncrementOpensslTLSConnections()
 
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
-		defer cancel()
+			ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.options.Timeout)*time.Second)
+			defer cancel()
 
-		if resp, errx := getResponse(ctx, opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
-			// 0000 indicates handshake failure
-			enumeratedCiphers = append(enumeratedCiphers, resp.Session.Cipher)
-		}
+			if resp, errx := getResponse(ctx, opensslOpts); errx == nil && resp.Session.Cipher != "0000" {
+				// 0000 indicates handshake failure
+				enumeratedCiphers = append(enumeratedCiphers, resp.Session.Cipher)
+			}
+		}()
 	}
 	return enumeratedCiphers, nil
 }

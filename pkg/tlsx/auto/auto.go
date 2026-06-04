@@ -3,8 +3,6 @@
 package auto
 
 import (
-	"sync"
-
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
@@ -84,9 +82,8 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 }
 
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
-	wg := &sync.WaitGroup{}
 	ciphersFound := []string{}
-	cipherMutex := &sync.Mutex{}
+
 	allClients := []clients.Implementation{}
 	if c.opensslClient != nil {
 		allClients = append(allClients, c.opensslClient)
@@ -99,17 +96,11 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}
 
 	for _, v := range allClients {
-		wg.Add(1)
-		go func(clientx clients.Implementation) {
-			defer wg.Done()
-			if res, _ := clientx.EnumerateCiphers(hostname, ip, port, options); len(res) > 0 {
-				cipherMutex.Lock()
-				ciphersFound = append(ciphersFound, res...)
-				cipherMutex.Unlock()
-			}
-		}(v)
+		if res, _ := v.EnumerateCiphers(hostname, ip, port, options); len(res) > 0 {
+			ciphersFound = append(ciphersFound, res...)
+		}
 	}
-	wg.Wait()
+
 	//Dedupe and return
 	return sliceutil.Dedupe(ciphersFound), nil
 }

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -118,20 +119,37 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to setup connection").WithTag("ctls") //nolint
 	}
-	// defer rawConn.Close() //internally done by conn.Close() so just a placeholder
 
 	var clientCertRequired bool
-
 	conn := tls.Client(rawConn, config)
-	err = conn.HandshakeContext(ctx)
-	if err != nil {
-		if clients.IsClientCertRequiredError(err) {
-			clientCertRequired = true
-		} else {
-			_ = rawConn.Close()
-			return nil, errorutil.NewWithTag("ctls", "could not do handshake").Wrap(err) //nolint
+
+	// Some TLS servers accept the TCP connection but never
+	// respond to the ClientHello. Without an explicit timeout
+	// at the handshake level, the process can block indefinitely,
+	// eventually stalling large-scale scans.
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- conn.HandshakeContext(ctx)
+	}()
+
+	select {
+	case <-ctx.Done():
+		// Closing the raw connection is safer as TLS layers might hold internal locks.
+		_ = rawConn.Close()
+		// Synchronously drain the channel to ensure the goroutine exits before returning.
+		<-errChan
+		return nil, errorutil.NewWithTag("ctls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
+	case err = <-errChan:
+		if err != nil {
+			if clients.IsClientCertRequiredError(err) {
+				clientCertRequired = true
+			} else {
+				_ = rawConn.Close()
+				return nil, errorutil.NewWithTag("ctls", "could not do handshake").Wrap(err) //nolint
+			}
 		}
 	}
+
 	defer func() {
 		_ = conn.Close()
 	}()
@@ -142,6 +160,16 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 	tlsVersion := versionToTLSVersionString[connectionState.Version]
 	tlsCipher := tls.CipherSuiteName(connectionState.CipherSuite)
+
+	// Read the negotiated key exchange group (available from Go 1.25+).
+	// In TLS 1.3 the cipher suite name no longer encodes the key agreement
+	// mechanism (e.g. both X25519 and X25519MLKEM768 report the same
+	// TLS_AES_128_GCM_SHA256 suite), so CurveID is the only way to distinguish
+	// classical from post-quantum key exchange.
+	keyExchange := ""
+	if connectionState.CurveID != 0 {
+		keyExchange = connectionState.CurveID.String()
+	}
 
 	leafCertificate := connectionState.PeerCertificates[0]
 	certificateChain := connectionState.PeerCertificates[1:]
@@ -160,6 +188,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Port:                port,
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
+		KeyExchange:         keyExchange,
 		TLSConnection:       "ctls",
 		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,
@@ -171,10 +200,6 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		}
 	}
 
-	// crypto/tls allows for completing the handshake without a client certificate being provided even if one is required
-	// and doesn't return an error until the underyling connection is actually used. As a result, we will temporarily
-	// skip setting ClientCertRequired for TLS 1.3 servers since we don't yet know at this stage whether or not
-	// a client certificate is required.
 	if response.Version != "tls13" {
 		response.ClientCertRequired = &clientCertRequired
 	}
@@ -205,6 +230,18 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		address = net.JoinHostPort(hostname, port)
 	}
 
+	if len(toEnumerate) == 0 {
+		return enumeratedCiphers, nil
+	}
+
+	// Internal validation to prevent deadlocks if options are not clamped elsewhere.
+	if c.options.Timeout <= 0 {
+		c.options.Timeout = 5
+	}
+	if c.options.CipherConcurrency <= 0 {
+		c.options.CipherConcurrency = 1
+	}
+
 	threads := c.options.CipherConcurrency
 	if len(toEnumerate) < threads {
 		threads = len(toEnumerate)
@@ -226,22 +263,42 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}()
 
 	for _, v := range toEnumerate {
-		// create new baseConn and pass it to tlsclient
-		baseConn, err := pool.Acquire(context.Background())
-		if err != nil {
-			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ctls") //nolint
-		}
-		stats.IncrementCryptoTLSConnections()
-		baseCfg.CipherSuites = []uint16{tlsCiphers[v]}
+		func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+			defer cancel()
 
-		conn := tls.Client(baseConn, baseCfg)
+			baseConn, err := pool.Acquire(ctx)
+			if err != nil || baseConn == nil {
+				return
+			}
+			defer baseConn.Close() //nolint:errcheck
 
-		if err := conn.Handshake(); err == nil {
-			ciphersuite := conn.ConnectionState().CipherSuite
-			enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
-		}
-		_ = conn.Close() // close baseConn internally
+			stats.IncrementCryptoTLSConnections()
+
+			cfg := baseCfg.Clone()
+			cfg.CipherSuites = []uint16{tlsCiphers[v]}
+			conn := tls.Client(baseConn, cfg)
+			defer conn.Close() //nolint:errcheck
+
+			errChan := make(chan error, 1)
+			go func() {
+				errChan <- conn.HandshakeContext(ctx)
+			}()
+
+			select {
+			case <-ctx.Done():
+				_ = baseConn.Close()
+				<-errChan
+			case err := <-errChan:
+				if err == nil {
+					ciphersuite := conn.ConnectionState().CipherSuite
+					enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
+				}
+			}
+		}()
 	}
+
+	sort.Strings(enumeratedCiphers)
 	return enumeratedCiphers, nil
 }
 

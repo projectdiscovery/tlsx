@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -126,13 +127,11 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to setup connection").WithTag("ztls") //nolint
 	}
-	defer func() {
-		_ = conn.Close()
-	}() //internally done by conn.Close() so just a placeholder
 
 	// get resolvedIp
 	resolvedIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if err != nil {
+		_ = conn.Close()
 		return nil, err
 	}
 
@@ -140,11 +139,12 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 	// new tls connection
 	tlsConn := tls.Client(conn, config)
-	err = c.tlsHandshakeWithTimeout(tlsConn, ctx)
+	err = c.tlsHandshakeWithTimeout(tlsConn, conn, ctx)
 	if err != nil {
 		if clients.IsClientCertRequiredError(err) {
 			clientCertRequired = true
 		} else {
+			_ = tlsConn.Close()
 			return nil, errorutil.NewWithTag("ztls", "could not do tls handshake").Wrap(err) //nolint
 		}
 	}
@@ -163,42 +163,36 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		TLSConnection: "ztls",
 		ServerName:    config.ServerName,
 	}
-	if hl != nil && hl.ServerCertificates != nil {
-		response.CertificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
-		if response.CertificateResponse != nil {
-			response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+	if hl != nil {
+		if hl.ServerCertificates != nil {
+			response.CertificateResponse = ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(hl.ServerCertificates.Certificate))
+			if response.CertificateResponse != nil {
+				response.Untrusted = clients.IsZTLSUntrustedCA(hl.ServerCertificates.Chain)
+			}
+			if c.options.TLSChain {
+				for _, cert := range hl.ServerCertificates.Chain {
+					response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
+				}
+			}
+		}
+		if hl.ServerHello != nil {
+			response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
+			response.Cipher = hl.ServerHello.CipherSuite.String()
+		}
+		if c.options.Ja3 {
+			response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
+		}
+		if c.options.Ja3s {
+			response.Ja3sHash = ja3.GetJa3sHash(hl.ServerHello)
+		}
+		if c.options.ClientHello {
+			response.ClientHello = hl.ClientHello
+		}
+		if c.options.ServerHello {
+			response.ServerHello = hl.ServerHello
 		}
 	}
-	if hl.ServerHello != nil {
-		response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
-		response.Cipher = hl.ServerHello.CipherSuite.String()
-	}
 
-	if c.options.TLSChain {
-		for _, cert := range hl.ServerCertificates.Chain {
-			response.Chain = append(response.Chain, ConvertCertificateToResponse(c.options, hostname, ParseSimpleTLSCertificate(cert)))
-		}
-	}
-	if c.options.Ja3 {
-		response.Ja3Hash = ja3.GetJa3Hash(hl.ClientHello)
-	}
-	if c.options.Ja3s {
-		response.Ja3sHash = ja3.GetJa3sHash(hl.ServerHello)
-	}
-	if c.options.ClientHello {
-		response.ClientHello = hl.ClientHello
-	}
-	if c.options.ServerHello {
-		response.ServerHello = hl.ServerHello
-	}
-
-	// crypto/tls allows for completing the handshake without a client certificate being provided even if one is required
-	// and doesn't return an error until the underyling connection is actually used. As a result, we will temporarily
-	// skip setting ClientCertRequired for TLS 1.3 servers since we don't yet know at this stage whether or not
-	// a client certificate is required.
-	//
-	// Note: ztls currently doesn't support TLS 1.3 but we are adding this here just to be cautious in case it is added
-	// at a future date.
 	if response.Version != "tls13" {
 		response.ClientCertRequired = &clientCertRequired
 	}
@@ -219,6 +213,18 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		address = net.JoinHostPort(ip, port)
 	} else {
 		address = net.JoinHostPort(hostname, port)
+	}
+
+	if len(toEnumerate) == 0 {
+		return enumeratedCiphers, nil
+	}
+
+	// Internal validation to prevent deadlocks if options are not clamped elsewhere.
+	if c.options.Timeout <= 0 {
+		c.options.Timeout = 5
+	}
+	if c.options.CipherConcurrency <= 0 {
+		c.options.CipherConcurrency = 1
 	}
 
 	threads := c.options.CipherConcurrency
@@ -249,20 +255,44 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
 	for _, v := range toEnumerate {
-		baseConn, err := pool.Acquire(context.Background())
-		if err != nil {
-			return enumeratedCiphers, errorutil.NewWithErr(err).WithTag("ztls") //nolint
-		}
-		stats.IncrementZcryptoTLSConnections()
-		conn := tls.Client(baseConn, baseCfg)
-		baseCfg.CipherSuites = []uint16{ztlsCiphers[v]}
+		func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+			defer cancel()
 
-		if err := c.tlsHandshakeWithTimeout(conn, context.TODO()); err == nil {
-			h1 := conn.GetHandshakeLog()
-			enumeratedCiphers = append(enumeratedCiphers, h1.ServerHello.CipherSuite.String())
-		}
-		_ = conn.Close() // also closes baseConn internally
+			baseConn, err := pool.Acquire(ctx)
+			if err != nil || baseConn == nil {
+				return
+			}
+			defer baseConn.Close() //nolint:errcheck
+
+			stats.IncrementZcryptoTLSConnections()
+
+			cfg := baseCfg.Clone()
+			cfg.CipherSuites = []uint16{ztlsCiphers[v]}
+			tlsConn := tls.Client(baseConn, cfg)
+			defer tlsConn.Close() //nolint:errcheck
+
+			errChan := make(chan error, 1)
+			go func() {
+				errChan <- tlsConn.Handshake()
+			}()
+
+			select {
+			case <-ctx.Done():
+				_ = baseConn.Close()
+				<-errChan
+			case err := <-errChan:
+				if err == nil || err == tls.ErrCertsOnly {
+					hl := tlsConn.GetHandshakeLog()
+					if hl != nil && hl.ServerHello != nil {
+						enumeratedCiphers = append(enumeratedCiphers, hl.ServerHello.CipherSuite.String())
+					}
+				}
+			}
+		}()
 	}
+
+	sort.Strings(enumeratedCiphers)
 	return enumeratedCiphers, nil
 }
 
@@ -320,20 +350,29 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 	return config, nil
 }
 
-// tlsHandshakeWithCtx attempts tls handshake with given timeout
-func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, ctx context.Context) error {
+// tlsHandshakeWithTimeout attempts tls handshake with given timeout
+func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, rawConn net.Conn, ctx context.Context) error {
+	// Some TLS servers accept the TCP connection but never
+	// respond to the ClientHello. Without an explicit timeout
+	// at the handshake level, the process can block indefinitely,
+	// eventually stalling large-scale scans.
 	errChan := make(chan error, 1)
-	defer close(errChan)
+
+	go func() {
+		errChan <- tlsConn.Handshake()
+	}()
 
 	select {
 	case <-ctx.Done():
-		return errorutil.NewWithTag("ztls", "timeout while attempting handshake") //nolint
-	case errChan <- tlsConn.Handshake():
+		// Closing the raw connection is safer as TLS layers might hold internal locks.
+		_ = rawConn.Close()
+		// Synchronously drain the channel to ensure the goroutine exits before returning.
+		<-errChan
+		return errorutil.NewWithTag("ztls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
+	case err := <-errChan:
+		if err == tls.ErrCertsOnly {
+			err = nil
+		}
+		return err
 	}
-
-	err := <-errChan
-	if err == tls.ErrCertsOnly {
-		err = nil
-	}
-	return err
 }

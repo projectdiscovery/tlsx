@@ -20,6 +20,9 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	results := []string{}
 	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 
+	if duration <= 0 {
+		duration = 5
+	}
 	timeout := time.Duration(duration) * time.Second
 
 	// using connection pool as we need multiple probes
@@ -37,30 +40,32 @@ func HashWithDialer(dialer *fastdialer.Dialer, host string, port int, duration i
 	}() //nolint
 
 	for _, probe := range gojarm.GetProbes(host, port) {
-		conn, err := pool.Acquire(context.TODO())
-		if err != nil {
-			continue
-		}
-		if conn == nil {
-			continue
-		}
-		_ = conn.SetWriteDeadline(time.Now().Add(timeout))
-		_, err = conn.Write(gojarm.BuildProbe(probe))
-		if err != nil {
-			results = append(results, "")
+		func() {
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+
+			conn, err := pool.Acquire(ctx)
+			if err != nil || conn == nil {
+				return
+			}
+			_ = conn.SetWriteDeadline(time.Now().Add(timeout))
+			_, err = conn.Write(gojarm.BuildProbe(probe))
+			if err != nil {
+				results = append(results, "")
+				_ = conn.Close()
+				return
+			}
+			_ = conn.SetReadDeadline(time.Now().Add(timeout))
+			buff := make([]byte, 1484)
+			_, _ = conn.Read(buff)
 			_ = conn.Close()
-			continue
-		}
-		_ = conn.SetReadDeadline(time.Now().Add(timeout))
-		buff := make([]byte, 1484)
-		_, _ = conn.Read(buff)
-		_ = conn.Close()
-		ans, err := gojarm.ParseServerHello(buff, probe)
-		if err != nil {
-			results = append(results, "")
-			continue
-		}
-		results = append(results, ans)
+			ans, err := gojarm.ParseServerHello(buff, probe)
+			if err != nil {
+				results = append(results, "")
+				return
+			}
+			results = append(results, ans)
+		}()
 	}
 	hash := gojarm.RawHashToFuzzyHash(strings.Join(results, ","))
 	return hash, nil

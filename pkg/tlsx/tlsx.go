@@ -1,6 +1,7 @@
 package tlsx
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -138,6 +139,7 @@ func (s *Service) enumTlsVersions(host, ip, port string, options clients.Connect
 			enumeratedTlsVersions = append(enumeratedTlsVersions, tlsVersion)
 		}
 	}
+	sort.Strings(enumeratedTlsVersions)
 	return enumeratedTlsVersions, nil
 }
 

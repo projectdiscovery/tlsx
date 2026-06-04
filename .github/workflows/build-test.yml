@@ -8,22 +8,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    name: Lint Test
+    if: ${{ !endsWith(github.actor, '[bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: projectdiscovery/actions/setup/go@v1
+      - uses: projectdiscovery/actions/golangci-lint/v2@v1
+
   build:
     name: Test Builds
+    needs: [lint]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        go-version: [1.24.x]
-
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Check out code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: projectdiscovery/actions/setup/go@v1
 
       - name: Build
         run: go build .
@@ -46,4 +49,3 @@ jobs:
         working-directory: examples/
         env:
           PDCP_API_KEY: "${{ secrets.PDCP_API_KEY }}"
-      

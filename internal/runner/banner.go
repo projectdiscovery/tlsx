@@ -31,6 +31,15 @@ func (r *Runner) validateOptions() error {
 	if r.options.Retries == 0 {
 		r.options.Retries = 1
 	}
+	if r.options.Concurrency <= 0 {
+		r.options.Concurrency = 300
+	}
+	if r.options.Timeout <= 0 {
+		r.options.Timeout = 5
+	}
+	if r.options.CipherConcurrency <= 0 {
+		r.options.CipherConcurrency = 10
+	}
 	probeSpecified := r.options.SO || r.options.TLSVersion || r.options.Cipher || r.options.Expired || r.options.SelfSigned || r.options.Hash != "" || r.options.Jarm || r.options.MisMatched || r.options.Revoked || r.options.WildcardCertCheck
 	if r.options.RespOnly && probeSpecified {
 		return errkit.New("resp-only flag can only be used with san and cn flags")
