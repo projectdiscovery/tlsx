@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -262,41 +263,63 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		_ = pool.Close()
 	}()
 
-	for _, v := range toEnumerate {
-		func() {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
-			defer cancel()
+	// enumerate ciphers concurrently bounded by CipherConcurrency; the pool keeps
+	// dialing fresh connections so each worker can acquire one independently.
+	var (
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+		ciphersCh = make(chan string)
+	)
+	enumerate := func(v string) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		defer cancel()
 
-			baseConn, err := pool.Acquire(ctx)
-			if err != nil || baseConn == nil {
-				return
+		baseConn, err := pool.Acquire(ctx)
+		if err != nil || baseConn == nil {
+			return
+		}
+		defer baseConn.Close() //nolint:errcheck
+
+		stats.IncrementCryptoTLSConnections()
+
+		cfg := baseCfg.Clone()
+		cfg.CipherSuites = []uint16{tlsCiphers[v]}
+		conn := tls.Client(baseConn, cfg)
+		defer conn.Close() //nolint:errcheck
+
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- conn.HandshakeContext(ctx)
+		}()
+
+		select {
+		case <-ctx.Done():
+			_ = baseConn.Close()
+			<-errChan
+		case err := <-errChan:
+			if err == nil {
+				ciphersuite := conn.ConnectionState().CipherSuite
+				mu.Lock()
+				enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
+				mu.Unlock()
 			}
-			defer baseConn.Close() //nolint:errcheck
+		}
+	}
 
-			stats.IncrementCryptoTLSConnections()
-
-			cfg := baseCfg.Clone()
-			cfg.CipherSuites = []uint16{tlsCiphers[v]}
-			conn := tls.Client(baseConn, cfg)
-			defer conn.Close() //nolint:errcheck
-
-			errChan := make(chan error, 1)
-			go func() {
-				errChan <- conn.HandshakeContext(ctx)
-			}()
-
-			select {
-			case <-ctx.Done():
-				_ = baseConn.Close()
-				<-errChan
-			case err := <-errChan:
-				if err == nil {
-					ciphersuite := conn.ConnectionState().CipherSuite
-					enumeratedCiphers = append(enumeratedCiphers, tls.CipherSuiteName(ciphersuite))
-				}
+	wg.Add(threads)
+	for i := 0; i < threads; i++ {
+		go func() {
+			defer wg.Done()
+			for v := range ciphersCh {
+				enumerate(v)
 			}
 		}()
 	}
+	for _, v := range toEnumerate {
+		ciphersCh <- v
+	}
+	close(ciphersCh)
+	wg.Wait()
 
 	sort.Strings(enumeratedCiphers)
 	return enumeratedCiphers, nil

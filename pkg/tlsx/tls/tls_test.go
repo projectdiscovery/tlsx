@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"runtime"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -121,6 +123,84 @@ func TestClientCertRequired(t *testing.T) {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+// TestEnumerateCiphersConcurrent verifies the concurrent cipher enumeration
+// returns the full, deduplicated set the server accepts and stays race free
+// (run with -race) regardless of CipherConcurrency.
+func TestEnumerateCiphersConcurrent(t *testing.T) {
+	log.SetOutput(io.Discard)
+
+	serverCiphers := []uint16{
+		ctls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		ctls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		ctls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+	}
+	expected := make([]string, 0, len(serverCiphers))
+	for _, c := range serverCiphers {
+		expected = append(expected, ctls.CipherSuiteName(c))
+	}
+	sort.Strings(expected)
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "OK")
+	}))
+	server.TLS = &ctls.Config{
+		MinVersion:   ctls.VersionTLS12,
+		MaxVersion:   ctls.VersionTLS12,
+		CipherSuites: serverCiphers,
+	}
+	server.StartTLS()
+	defer server.Close()
+
+	parsedURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	host := parsedURL.Hostname()
+	port := parsedURL.Port()
+
+	for _, concurrency := range []int{1, 4, 16} {
+		t.Run(fmt.Sprintf("concurrency_%d", concurrency), func(t *testing.T) {
+			dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer dialer.Close()
+
+			client, err := tls.New(&clients.Options{
+				Fastdialer:        dialer,
+				Timeout:           5,
+				CipherConcurrency: concurrency,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := client.EnumerateCiphers(host, host, port, clients.ConnectOptions{
+				VersionTLS: "tls12",
+				EnumMode:   clients.Cipher,
+			})
+			if err != nil {
+				t.Skipf("EnumerateCiphers failed (environment-dependent): %s", err)
+			}
+			// multiple cipher names can negotiate to the same suite, so dedup
+			// before comparing the accepted set against the server config.
+			seen := map[string]struct{}{}
+			uniq := make([]string, 0, len(got))
+			for _, c := range got {
+				if _, ok := seen[c]; ok {
+					continue
+				}
+				seen[c] = struct{}{}
+				uniq = append(uniq, c)
+			}
+			sort.Strings(uniq)
+			if !reflect.DeepEqual(uniq, expected) {
+				t.Fatalf("concurrency %d: expected %v, got %v", concurrency, expected, uniq)
+			}
+		})
+	}
 }
 
 func TestHandshakeTimeoutLeak(t *testing.T) {

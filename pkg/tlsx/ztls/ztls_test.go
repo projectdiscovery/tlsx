@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
+	"sort"
 	"testing"
 
 	ctls "crypto/tls"
@@ -106,4 +108,83 @@ func TestClientCertRequired(t *testing.T) {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+// TestEnumerateCiphersConcurrent verifies the concurrent cipher enumeration
+// yields the same accepted set regardless of CipherConcurrency and stays race
+// free (run with -race).
+func TestEnumerateCiphersConcurrent(t *testing.T) {
+	log.SetOutput(io.Discard)
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "OK")
+	}))
+	server.TLS = &ctls.Config{
+		MinVersion: ctls.VersionTLS12,
+		MaxVersion: ctls.VersionTLS12,
+		CipherSuites: []uint16{
+			ctls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			ctls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		},
+	}
+	server.StartTLS()
+	defer server.Close()
+
+	parsedURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	host := parsedURL.Hostname()
+	port := parsedURL.Port()
+
+	dedup := func(in []string) []string {
+		seen := map[string]struct{}{}
+		out := make([]string, 0, len(in))
+		for _, c := range in {
+			if _, ok := seen[c]; ok {
+				continue
+			}
+			seen[c] = struct{}{}
+			out = append(out, c)
+		}
+		sort.Strings(out)
+		return out
+	}
+
+	var baseline []string
+	for _, concurrency := range []int{1, 4, 16} {
+		t.Run(fmt.Sprintf("concurrency_%d", concurrency), func(t *testing.T) {
+			dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer dialer.Close()
+
+			client, err := ztls.New(&clients.Options{
+				Fastdialer:        dialer,
+				Timeout:           5,
+				CipherConcurrency: concurrency,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := client.EnumerateCiphers(host, host, port, clients.ConnectOptions{
+				VersionTLS: "tls12",
+				EnumMode:   clients.Cipher,
+			})
+			if err != nil {
+				t.Skipf("EnumerateCiphers failed (environment-dependent): %s", err)
+			}
+			got = dedup(got)
+			if len(got) == 0 {
+				t.Fatalf("concurrency %d: expected at least one cipher, got none", concurrency)
+			}
+			if baseline == nil {
+				baseline = got
+			} else if !reflect.DeepEqual(got, baseline) {
+				t.Fatalf("concurrency %d: expected %v, got %v", concurrency, baseline, got)
+			}
+		})
+	}
 }

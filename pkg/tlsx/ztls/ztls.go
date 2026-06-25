@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -254,43 +255,65 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 	}
 	gologger.Debug().Label("ztls").Msgf("Starting cipher enumeration with %v ciphers in %v", len(toEnumerate), options.VersionTLS)
 
-	for _, v := range toEnumerate {
-		func() {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
-			defer cancel()
+	// enumerate ciphers concurrently bounded by CipherConcurrency; the pool keeps
+	// dialing fresh connections so each worker can acquire one independently.
+	var (
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+		ciphersCh = make(chan string)
+	)
+	enumerate := func(v string) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.options.Timeout)*time.Second)
+		defer cancel()
 
-			baseConn, err := pool.Acquire(ctx)
-			if err != nil || baseConn == nil {
-				return
-			}
-			defer baseConn.Close() //nolint:errcheck
+		baseConn, err := pool.Acquire(ctx)
+		if err != nil || baseConn == nil {
+			return
+		}
+		defer baseConn.Close() //nolint:errcheck
 
-			stats.IncrementZcryptoTLSConnections()
+		stats.IncrementZcryptoTLSConnections()
 
-			cfg := baseCfg.Clone()
-			cfg.CipherSuites = []uint16{ztlsCiphers[v]}
-			tlsConn := tls.Client(baseConn, cfg)
-			defer tlsConn.Close() //nolint:errcheck
+		cfg := baseCfg.Clone()
+		cfg.CipherSuites = []uint16{ztlsCiphers[v]}
+		tlsConn := tls.Client(baseConn, cfg)
+		defer tlsConn.Close() //nolint:errcheck
 
-			errChan := make(chan error, 1)
-			go func() {
-				errChan <- tlsConn.Handshake()
-			}()
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- tlsConn.Handshake()
+		}()
 
-			select {
-			case <-ctx.Done():
-				_ = baseConn.Close()
-				<-errChan
-			case err := <-errChan:
-				if err == nil || err == tls.ErrCertsOnly {
-					hl := tlsConn.GetHandshakeLog()
-					if hl != nil && hl.ServerHello != nil {
-						enumeratedCiphers = append(enumeratedCiphers, hl.ServerHello.CipherSuite.String())
-					}
+		select {
+		case <-ctx.Done():
+			_ = baseConn.Close()
+			<-errChan
+		case err := <-errChan:
+			if err == nil || err == tls.ErrCertsOnly {
+				hl := tlsConn.GetHandshakeLog()
+				if hl != nil && hl.ServerHello != nil {
+					mu.Lock()
+					enumeratedCiphers = append(enumeratedCiphers, hl.ServerHello.CipherSuite.String())
+					mu.Unlock()
 				}
+			}
+		}
+	}
+
+	wg.Add(threads)
+	for i := 0; i < threads; i++ {
+		go func() {
+			defer wg.Done()
+			for v := range ciphersCh {
+				enumerate(v)
 			}
 		}()
 	}
+	for _, v := range toEnumerate {
+		ciphersCh <- v
+	}
+	close(ciphersCh)
+	wg.Wait()
 
 	sort.Strings(enumeratedCiphers)
 	return enumeratedCiphers, nil
