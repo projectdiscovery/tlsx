@@ -8,10 +8,10 @@ require (
 	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.72
 	github.com/projectdiscovery/dnsx v1.3.0
 	github.com/projectdiscovery/fastdialer v0.5.13
-	github.com/projectdiscovery/goflags v0.1.74
+	github.com/projectdiscovery/goflags v0.1.75
 	github.com/projectdiscovery/gologger v1.1.71
 	github.com/projectdiscovery/mapcidr v1.1.97
 	github.com/projectdiscovery/utils v0.11.1
@@ -20,7 +20,7 @@ require (
 	github.com/tylertreat/BoomFilters v0.0.0-20250630160909-db6545748bc4
 	github.com/zmap/zcrypto v0.0.0-20240803002437-3a861682ac77
 	go.uber.org/multierr v1.11.0
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
+	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 )
 
 require (
@@ -42,7 +42,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/gaissmai/bart v0.28.0 // indirect
+	github.com/gaissmai/bart v0.28.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/tidwall/buntdb v1.3.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
@@ -89,7 +89,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cloudflare/cfssl v1.6.4
-	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08 // indirect
+	github.com/cnf/structhash v0.0.0-20250313080605-df4c6cc74a9a // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -100,11 +100,11 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
-	github.com/projectdiscovery/cdncheck v1.2.44 // indirect
+	github.com/projectdiscovery/cdncheck v1.2.46 // indirect
 	github.com/projectdiscovery/hmap v0.0.101 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.42 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.43 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.115 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.3.18
+	github.com/projectdiscovery/retryablehttp-go v1.3.20
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2 // indirect
