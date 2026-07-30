@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -19,9 +21,6 @@ const cipherSuiteAPI = "https://ciphersuite.info/api/cs/"
 // truncated response. Without it a silent upstream change writes `{}` and every
 // cipher is reported as `unknown` by cipher-enum.
 const minExpectedCiphers = 300
-
-// stores ciphers with stats ex: "AES128-SHA256": "Weak"
-var ciphers map[string]string = map[string]string{}
 
 // securityLevels maps the security levels returned by the API to the levels
 // expected by assets.CipherSecLevel consumers.
@@ -49,28 +48,59 @@ func main() {
 	flag.StringVar(&cipherfile, "out-ciphers", "../../assets/cipherstatus_data.json", "File to write cipher stats")
 	flag.Parse()
 
-	FetchAndLoadCiphers(cipherSuiteAPI)
-
-	if len(ciphers) < minExpectedCiphers {
-		gologger.Fatal().Msgf("refusing to write cipherstatus: got %v ciphers, expected at least %v", len(ciphers), minExpectedCiphers)
+	ciphers, err := fetchAndLoadCiphers(cipherSuiteAPI)
+	if err != nil || len(ciphers) < minExpectedCiphers {
+		reason := fmt.Sprintf("got %d ciphers (want >= %d)", len(ciphers), minExpectedCiphers)
+		if err != nil {
+			reason = err.Error()
+		}
+		if skipOverwrite(cipherfile, reason) {
+			return
+		}
+		gologger.Fatal().Msgf("refusing to write cipherstatus: %s (no usable existing dataset to keep)", reason)
 	}
 
 	bin, err := json.Marshal(ciphers)
 	if err != nil {
+		if skipOverwrite(cipherfile, err.Error()) {
+			return
+		}
 		gologger.Fatal().Msgf("failed to marshal cipherstats %v", err)
 	}
-	err = os.WriteFile(cipherfile, bin, 0600)
-	if err != nil {
+	if err := os.WriteFile(cipherfile, bin, 0600); err != nil {
 		gologger.Fatal().Msgf("failed to write ciphers to file got %v", err)
 	}
 	gologger.Print().Msgf("updated cipherstatus.json, total unique ciphers : %v\n", len(ciphers))
 }
 
-func FetchAndLoadCiphers(url string) {
+// skipOverwrite leaves a filled dataset alone when the refresh failed or came
+// back empty/truncated. Returns true when the existing file was kept.
+func skipOverwrite(cipherfile, reason string) bool {
+	existing, err := loadExistingCipherCount(cipherfile)
+	if err != nil || existing < minExpectedCiphers {
+		return false
+	}
+	gologger.Warning().Msgf("skipping cipherstatus overwrite (%s); keeping existing dataset with %d ciphers", reason, existing)
+	return true
+}
+
+func loadExistingCipherCount(path string) (int, error) {
+	bin, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+	var existing map[string]string
+	if err := json.Unmarshal(bin, &existing); err != nil {
+		return 0, err
+	}
+	return len(existing), nil
+}
+
+func fetchAndLoadCiphers(url string) (map[string]string, error) {
 	client := &http.Client{Timeout: 60 * time.Second}
 	res, err := client.Get(url)
 	if err != nil {
-		gologger.Fatal().Msg(err.Error())
+		return nil, err
 	}
 	defer func() {
 		if err := res.Body.Close(); err != nil {
@@ -78,14 +108,21 @@ func FetchAndLoadCiphers(url string) {
 		}
 	}()
 	if res.StatusCode != http.StatusOK {
-		gologger.Fatal().Msgf("status code error: %d %s", res.StatusCode, res.Status)
+		return nil, fmt.Errorf("status code error: %d %s", res.StatusCode, res.Status)
 	}
+	return loadCiphersFromReader(res.Body)
+}
 
+func loadCiphersFromReader(r io.Reader) (map[string]string, error) {
 	var response cipherSuiteResponse
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		gologger.Fatal().Msgf("failed to decode ciphersuites got %v", err)
+	if err := json.NewDecoder(r).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode ciphersuites: %w", err)
 	}
+	return mapCiphersFromResponse(response), nil
+}
 
+func mapCiphersFromResponse(response cipherSuiteResponse) map[string]string {
+	ciphers := make(map[string]string, len(response.CipherSuites)*3)
 	for _, entry := range response.CipherSuites {
 		for name, suite := range entry {
 			level, ok := securityLevels[strings.ToLower(suite.Security)]
@@ -100,4 +137,5 @@ func FetchAndLoadCiphers(url string) {
 			}
 		}
 	}
+	return ciphers
 }
