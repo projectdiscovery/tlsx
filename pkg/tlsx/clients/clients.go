@@ -122,7 +122,9 @@ type Options struct {
 	Untrusted bool
 	// MisMatched displays if the cert is mismatched
 	MisMatched bool
-	// Revoked displays if the cert is revoked
+	// Revoked enables certificate revocation checks (CRL/OCSP via cfssl).
+	// Off by default: enabling this downloads full CRLs and can consume large
+	// amounts of memory under high concurrency.
 	Revoked bool
 	// HardFail defines Revoke status when there are parse failures or other errors
 	// If HardFail is true then on any error certificate is considered as revoked
@@ -434,9 +436,10 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 	return true
 }
 
-// IsTLSRevoked returns true if the certificate has been revoked or failed to parse
+// IsTLSRevoked returns true if the certificate has been revoked or failed to parse.
+// Revocation checks (CRL/OCSP) only run when options.Revoked is enabled.
 func IsTLSRevoked(options *Options, cert *x509.Certificate) bool {
-	if cert == nil {
+	if !options.Revoked || cert == nil {
 		return options.HardFail
 	}
 	// - false, false: an error was encountered while checking revocations.

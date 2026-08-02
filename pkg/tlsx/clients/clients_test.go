@@ -234,3 +234,15 @@ func TestIsUntrustedCA(t *testing.T) {
 		})
 	}
 }
+
+func TestIsTLSRevokedSkippedUnlessEnabled(t *testing.T) {
+	// Unreachable CRL URL: if the -revoked guard regresses, this would attempt a network fetch.
+	cert := &x509.Certificate{
+		CRLDistributionPoints: []string{"http://127.0.0.1:1/should-not-fetch.crl"},
+	}
+
+	assert.False(t, IsTLSRevoked(&Options{}, cert))
+	assert.True(t, IsTLSRevoked(&Options{HardFail: true}, cert))
+	assert.False(t, IsTLSRevoked(&Options{Revoked: true}, nil))
+	assert.True(t, IsTLSRevoked(&Options{Revoked: true, HardFail: true}, nil))
+}

@@ -103,7 +103,7 @@ func readFlags(args ...string) error {
 		flagSet.BoolVarP(&options.Expired, "expired", "ex", false, "display host with host expired certificate"),
 		flagSet.BoolVarP(&options.SelfSigned, "self-signed", "ss", false, "display host with self-signed certificate"),
 		flagSet.BoolVarP(&options.MisMatched, "mismatched", "mm", false, "display host with mismatched certificate"),
-		flagSet.BoolVarP(&options.Revoked, "revoked", "re", false, "display host with revoked certificate"),
+		flagSet.BoolVarP(&options.Revoked, "revoked", "re", false, "display host with revoked certificate (warning: downloads full CRLs/OCSP per cert; high memory/network cost at scale — off by default)"),
 		flagSet.BoolVarP(&options.Untrusted, "untrusted", "un", false, "display host with untrusted certificate"),
 	)
 
@@ -121,7 +121,7 @@ func readFlags(args ...string) error {
 		flagSet.BoolVarP(&options.TLSChain, "tls-chain", "tc", false, "include certificates chain in json output"),
 		flagSet.BoolVarP(&options.VerifyServerCertificate, "verify-cert", "vc", false, "enable verification of server certificate"),
 		flagSet.StringVarP(&options.OpenSSLBinary, "openssl-binary", "ob", "", "OpenSSL Binary Path"),
-		flagSet.BoolVarP(&options.HardFail, "hardfail", "hf", false, "strategy to use if encountered errors while checking revocation status"),
+		flagSet.BoolVarP(&options.HardFail, "hardfail", "hf", false, "treat revocation check errors as revoked (requires -revoked)"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "socks5 proxy to use for tlsx"),
 	)
 
