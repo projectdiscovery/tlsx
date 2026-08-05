@@ -3,14 +3,13 @@ module github.com/projectdiscovery/tlsx
 go 1.25.0
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/google/certificate-transparency-go v1.3.2
 	github.com/hdm/jarm-go v0.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.72
 	github.com/projectdiscovery/dnsx v1.3.0
-	github.com/projectdiscovery/fastdialer v0.5.13
+	github.com/projectdiscovery/fastdialer v0.5.14
 	github.com/projectdiscovery/goflags v0.1.75
 	github.com/projectdiscovery/gologger v1.1.71
 	github.com/projectdiscovery/mapcidr v1.1.97
@@ -30,7 +29,6 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
-	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/glamour v0.8.0 // indirect
 	github.com/charmbracelet/lipgloss v0.13.0 // indirect
@@ -104,7 +102,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.101 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.43 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.115 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.3.20
+	github.com/projectdiscovery/retryablehttp-go v1.3.21
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2 // indirect
