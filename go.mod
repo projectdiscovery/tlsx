@@ -119,3 +119,12 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// v1.3.0 was re-tagged onto a different commit after publication; v1.3.1 and
+// v1.3.2 were deleted from GitHub. All three still resolve through the module
+// proxy, so they stay selectable but cannot be fetched from the origin.
+retract (
+	v1.3.0
+	v1.3.1
+	v1.3.2
+)
