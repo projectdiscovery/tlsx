@@ -96,8 +96,7 @@ func New(options *clients.Options) (*Runner, error) {
 			return nil, errkit.Wrap(err, "could not parse proxy")
 		}
 		dialer, err := proxy.FromURL(proxyURL, &net.Dialer{
-			Timeout:   dialerTimeout,
-			DualStack: true,
+			Timeout: dialerTimeout,
 		})
 		if err != nil {
 			return nil, errkit.Wrap(err, "could not create proxy dialer")
