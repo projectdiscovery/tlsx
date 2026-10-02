@@ -26,9 +26,10 @@ import (
 
 // Client is a TLS grabbing client using crypto/tls
 type Client struct {
-	dialer    *fastdialer.Dialer
-	tlsConfig *tls.Config
-	options   *clients.Options
+	dialer           *fastdialer.Dialer
+	tlsConfig        *tls.Config
+	options          *clients.Options
+	configuredGroups []string
 }
 
 // versionStringToTLSVersion converts tls version string to version
@@ -69,6 +70,16 @@ func New(options *clients.Options) (*Client, error) {
 		// unless explicitly specified client should advertise all supported ciphers
 		// Note: Go stdlib by default only advertises a safe/default list of ciphers
 		c.tlsConfig.CipherSuites = AllCiphers
+	}
+	if len(options.TLSGroups) > 0 {
+		// note: crypto/tls ignores the order of CurvePreferences and uses
+		// its own internal preference order among the configured groups
+		groups, names, err := toTLSGroups(options.TLSGroups)
+		if err != nil {
+			return nil, errorutil.NewWithTag("ctls", "could not get tls groups").Wrap(err) //nolint
+		}
+		c.tlsConfig.CurvePreferences = groups
+		c.configuredGroups = names
 	}
 	if options.CACertificate != "" {
 		caCert, err := os.ReadFile(options.CACertificate)
@@ -190,6 +201,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		KeyExchange:         keyExchange,
+		ConfiguredGroups:    c.configuredGroups,
 		TLSConnection:       "ctls",
 		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,

@@ -65,3 +65,23 @@ func getDNSdata(hostname string) ([]string, error) {
 
 	return targets, nil
 }
+
+func TestTLSGroupsScanMode(t *testing.T) {
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
+
+	for _, mode := range []string{"ztls", "openssl", "auto"} {
+		_, err := tlsx.New(&clients.Options{ScanMode: mode, TLSGroups: []string{"X25519"}, Fastdialer: dialer})
+		if err == nil {
+			t.Errorf("expected tls-groups to be rejected with scan mode %v", mode)
+		}
+	}
+	for _, mode := range []string{"ctls", ""} {
+		if _, err := tlsx.New(&clients.Options{ScanMode: mode, TLSGroups: []string{"X25519"}, Fastdialer: dialer}); err != nil {
+			t.Errorf("expected tls-groups to be accepted with scan mode %q, got %v", mode, err)
+		}
+	}
+}
