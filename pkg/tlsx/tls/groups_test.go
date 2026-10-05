@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestToTLSGroups verifies group name parsing, canonical names and rejection
+// of unknown, empty and duplicate names.
 func TestToTLSGroups(t *testing.T) {
 	groups, names, err := toTLSGroups([]string{"X25519MLKEM768", "x25519", "CURVEP256", "CurveP384", "CurveP521"})
 	require.NoError(t, err)
@@ -24,6 +26,8 @@ func TestToTLSGroups(t *testing.T) {
 	}
 }
 
+// TestSupportedTLSGroups ensures every advertised group name maps to a curve
+// whose crypto/tls name is the same canonical spelling.
 func TestSupportedTLSGroups(t *testing.T) {
 	require.Len(t, tlsGroups, len(SupportedTLSGroups))
 	for _, name := range SupportedTLSGroups {

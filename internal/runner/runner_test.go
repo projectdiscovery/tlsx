@@ -453,6 +453,8 @@ func Test_CommaSeparatedInputList_normalizeAndQueueInputs(t *testing.T) {
 	assert.Len(t, hosts, 2, "exactly two hosts should be queued from a single comma-separated line")
 }
 
+// Test_TLSGroupsRequireCTLS ensures CLI validation rejects tls-groups with any
+// scan mode other than ctls, including modes forced by other options.
 func Test_TLSGroupsRequireCTLS(t *testing.T) {
 	for mode, wantErr := range map[string]bool{"auto": true, "ztls": true, "openssl": true, "ctls": false} {
 		options := &clients.Options{Inputs: []string{"example.com"}, ScanMode: mode, TLSGroups: []string{"X25519"}}

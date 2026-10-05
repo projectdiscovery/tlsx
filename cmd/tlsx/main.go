@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"strings"
 
@@ -168,6 +169,9 @@ func readFlags(args ...string) error {
 	if err != nil {
 		return errkit.Wrapf(err, "could not parse flags")
 	}
+	if err := validateTLSGroupsFlag(flagSet, options.TLSGroups); err != nil {
+		return err
+	}
 	hasStdin := fileutil.HasStdin()
 
 	// Validation: CT logs mode and input mode cannot be used together
@@ -204,4 +208,21 @@ func init() {
 	if os.Getenv("DEBUG") != "" {
 		errkit.EnableTrace = true
 	}
+}
+
+// validateTLSGroupsFlag rejects an explicitly supplied -tls-groups value that
+// parses to no groups (e.g. an empty string or only commas), which would
+// otherwise silently fall back to an unrestricted handshake with the
+// default groups.
+func validateTLSGroupsFlag(flagSet *goflags.FlagSet, groups []string) error {
+	var supplied bool
+	flagSet.CommandLine.Visit(func(f *flag.Flag) {
+		if f.Name == "tls-groups" || f.Name == "tg" {
+			supplied = true
+		}
+	})
+	if supplied && len(groups) == 0 {
+		return errkit.New("tls-groups requires at least one group (" + strings.Join(tls.SupportedTLSGroups, ",") + ")")
+	}
+	return nil
 }

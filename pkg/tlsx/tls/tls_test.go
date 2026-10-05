@@ -343,6 +343,8 @@ func TestHighConcurrencyTimeouts(t *testing.T) {
 	}
 }
 
+// TestTLSGroups verifies that configured groups restrict the negotiated key
+// exchange against a local TLS server and are reported in the response.
 func TestTLSGroups(t *testing.T) {
 	log.SetOutput(io.Discard)
 
@@ -425,8 +427,48 @@ func TestTLSGroups(t *testing.T) {
 	}
 }
 
+// TestTLSGroupsInvalid ensures the ctls client rejects unsupported group names.
 func TestTLSGroupsInvalid(t *testing.T) {
 	if _, err := tls.New(&clients.Options{TLSGroups: []string{"X448"}}); err == nil {
 		t.Fatal("expected error for unsupported tls group")
+	}
+}
+
+// TestTLSGroupsResponseIsolation ensures each response gets its own copy of the
+// configured groups, so modifying one response cannot affect later ones.
+func TestTLSGroupsResponseIsolation(t *testing.T) {
+	log.SetOutput(io.Discard)
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer server.Close()
+	parsedUrl, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
+
+	client, err := tls.New(&clients.Options{Fastdialer: dialer, TLSGroups: []string{"X25519"}, Timeout: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host := parsedUrl.Hostname()
+	first, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first.ConfiguredGroups[0] = "tampered"
+
+	second, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(second.ConfiguredGroups, []string{"X25519"}) {
+		t.Errorf("expected configured groups [X25519], got %v", second.ConfiguredGroups)
 	}
 }

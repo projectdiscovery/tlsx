@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -201,7 +202,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		KeyExchange:         keyExchange,
-		ConfiguredGroups:    c.configuredGroups,
+		ConfiguredGroups:    slices.Clone(c.configuredGroups),
 		TLSConnection:       "ctls",
 		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,

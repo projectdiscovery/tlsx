@@ -66,6 +66,8 @@ func getDNSdata(hostname string) ([]string, error) {
 	return targets, nil
 }
 
+// TestTLSGroupsScanMode ensures tls groups are only accepted with the ctls
+// scan mode (or the empty default, which resolves to ctls).
 func TestTLSGroupsScanMode(t *testing.T) {
 	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
 	if err != nil {
