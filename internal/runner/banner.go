@@ -69,6 +69,9 @@ func (r *Runner) validateOptions() error {
 	if r.options.CertsOnly || r.options.Ja3 || r.options.Ja3s {
 		r.options.ScanMode = "ztls" // force setting ztls when using certs-only
 	}
+	if len(r.options.TLSGroups) > 0 && r.options.ScanMode != "ctls" {
+		return errkit.New("tls-groups can only be used with ctls scan mode (-sm ctls)")
+	}
 	if r.options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 	}

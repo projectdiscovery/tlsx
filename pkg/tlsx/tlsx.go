@@ -11,6 +11,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	"github.com/projectdiscovery/utils/errkit"
 	errorutil "github.com/projectdiscovery/utils/errors" //nolint
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
@@ -23,6 +24,12 @@ type Service struct {
 
 // New creates a new tlsx service module
 func New(options *clients.Options) (*Service, error) {
+	// other backends don't support restricting key exchange groups, and auto
+	// mode could silently fall back to an unrestricted handshake
+	if len(options.TLSGroups) > 0 && options.ScanMode != "ctls" && options.ScanMode != "" {
+		return nil, errkit.Newf("tls-groups is only supported with ctls scan mode, got %v", options.ScanMode)
+	}
+
 	service := &Service{
 		options: options,
 	}

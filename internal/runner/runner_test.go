@@ -452,3 +452,23 @@ func Test_CommaSeparatedInputList_normalizeAndQueueInputs(t *testing.T) {
 	assert.Contains(t, hosts, "scanme.sh", "second comma-separated host should be queued")
 	assert.Len(t, hosts, 2, "exactly two hosts should be queued from a single comma-separated line")
 }
+
+// Test_TLSGroupsRequireCTLS ensures CLI validation rejects tls-groups with any
+// scan mode other than ctls, including modes forced by other options.
+func Test_TLSGroupsRequireCTLS(t *testing.T) {
+	for mode, wantErr := range map[string]bool{"auto": true, "ztls": true, "openssl": true, "ctls": false} {
+		options := &clients.Options{Inputs: []string{"example.com"}, ScanMode: mode, TLSGroups: []string{"X25519"}}
+		runner := &Runner{options: options, hasStdinSet: true}
+		err := runner.validateOptions()
+		if wantErr {
+			require.Error(t, err, mode)
+		} else {
+			require.NoError(t, err, mode)
+		}
+	}
+
+	// ja3 forces ztls, which cannot honor tls-groups
+	options := &clients.Options{Inputs: []string{"example.com"}, ScanMode: "ctls", Ja3: true, TLSGroups: []string{"X25519"}}
+	runner := &Runner{options: options, hasStdinSet: true}
+	require.Error(t, runner.validateOptions())
+}
