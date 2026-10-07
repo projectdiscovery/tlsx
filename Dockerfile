@@ -1,4 +1,4 @@
-FROM alpine:3.21.2
+FROM alpine:latest
 
 LABEL org.opencontainers.image.authors="ProjectDiscovery"
 LABEL org.opencontainers.image.description="A fast and configurable TLS grabber focused on TLS based data collection and analysis."
