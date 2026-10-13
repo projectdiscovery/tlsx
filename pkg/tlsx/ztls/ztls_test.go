@@ -188,3 +188,56 @@ func TestEnumerateCiphersConcurrent(t *testing.T) {
 		})
 	}
 }
+
+func TestZTLSNegotiatesTLS13(t *testing.T) {
+	log.SetOutput(io.Discard)
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "OK")
+	}))
+	server.TLS = &ctls.Config{
+		MinVersion: ctls.VersionTLS13,
+		MaxVersion: ctls.VersionTLS13,
+	}
+	server.StartTLS()
+	defer server.Close()
+
+	parsedURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
+
+	client, err := ztls.New(&clients.Options{Fastdialer: dialer, Timeout: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host := parsedURL.Hostname()
+	resp, err := client.ConnectWithOptions(host, host, parsedURL.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatalf("tls 1.3 handshake: %s", err)
+	}
+	if resp.Version != "tls13" {
+		t.Fatalf("expected tls13, got %q", resp.Version)
+	}
+	if resp.ClientCertRequired != nil {
+		t.Fatal("expected client cert requirement to be omitted for tls 1.3")
+	}
+}
+
+func TestEnumerateCiphersRejectsTLS13(t *testing.T) {
+	client, err := ztls.New(&clients.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.EnumerateCiphers("example.com", "example.com", "443", clients.ConnectOptions{VersionTLS: "tls13"})
+	if err == nil {
+		t.Fatal("expected cipher enumeration to reject tls 1.3")
+	}
+}

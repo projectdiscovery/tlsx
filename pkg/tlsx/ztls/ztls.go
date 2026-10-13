@@ -44,6 +44,7 @@ var versionStringToTLSVersion = map[string]uint16{
 	"tls10": tls.VersionTLS10,
 	"tls11": tls.VersionTLS11,
 	"tls12": tls.VersionTLS12,
+	"tls13": tls.VersionTLS13,
 }
 
 // versionToTLSVersionString converts tls version to version string
@@ -52,6 +53,16 @@ var versionToTLSVersionString = map[uint16]string{
 	tls.VersionTLS10: "tls10",
 	tls.VersionTLS11: "tls11",
 	tls.VersionTLS12: "tls12",
+	tls.VersionTLS13: "tls13",
+}
+
+// negotiatedVersion returns the version the server selected. TLS 1.3 keeps
+// ServerHello.version at TLS 1.2 and reports the real version in supported_versions.
+func negotiatedVersion(hello *tls.ServerHello) uint16 {
+	if hello.SupportedVersions != nil && hello.SupportedVersions.SelectedVersion != 0 {
+		return uint16(hello.SupportedVersions.SelectedVersion)
+	}
+	return uint16(hello.Version)
 }
 
 // New creates a new grabbing client using crypto/tls
@@ -61,7 +72,7 @@ func New(options *clients.Options) (*Client, error) {
 		tlsConfig: &tls.Config{
 			CertsOnly:          options.CertsOnly,
 			MinVersion:         tls.VersionSSL30,
-			MaxVersion:         tls.VersionTLS12,
+			MaxVersion:         tls.VersionTLS13,
 			InsecureSkipVerify: !options.VerifyServerCertificate,
 		},
 		options: options,
@@ -177,7 +188,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 			}
 		}
 		if hl.ServerHello != nil {
-			response.Version = versionToTLSVersionString[uint16(hl.ServerHello.Version)]
+			response.Version = versionToTLSVersionString[negotiatedVersion(hl.ServerHello)]
 			response.Cipher = hl.ServerHello.CipherSuite.String()
 		}
 		if c.options.Ja3 {
@@ -203,6 +214,10 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 
 // EnumerateCiphers enumerate target with ciphers supported by ztls
 func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.ConnectOptions) ([]string, error) {
+	if options.VersionTLS == "tls13" {
+		return nil, errorutil.NewWithTag("ztls", "cipher enum not supported in ztls with tls1.3") //nolint
+	}
+
 	// filter ciphers based on given seclevel
 	toEnumerate := clients.GetCiphersWithLevel(AllCiphersNames, options.CipherLevel...)
 
@@ -289,7 +304,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 			_ = baseConn.Close()
 			<-errChan
 		case err := <-errChan:
-			if err == nil || err == tls.ErrCertsOnly {
+			if err == nil {
 				hl := tlsConn.GetHandshakeLog()
 				if hl != nil && hl.ServerHello != nil {
 					mu.Lock()
@@ -393,9 +408,6 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, rawConn net.Conn, ct
 		<-errChan
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
 	case err := <-errChan:
-		if err == tls.ErrCertsOnly {
-			err = nil
-		}
 		return err
 	}
 }
