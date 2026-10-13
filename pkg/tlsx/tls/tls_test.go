@@ -342,3 +342,133 @@ func TestHighConcurrencyTimeouts(t *testing.T) {
 		t.Errorf("High concurrency leak: started with %d, ended with %d (concurrent: %d)", before, after, concurrentCount)
 	}
 }
+
+// TestTLSGroups verifies that configured groups restrict the negotiated key
+// exchange against a local TLS server and are reported in the response.
+func TestTLSGroups(t *testing.T) {
+	log.SetOutput(io.Discard)
+
+	cases := []struct {
+		name         string
+		serverGroups []ctls.CurveID
+		clientGroups []string
+		wantKeyEx    string
+		wantGroups   []string
+		wantErr      bool
+	}{
+		{
+			name:         "post-quantum hybrid",
+			clientGroups: []string{"X25519MLKEM768"},
+			wantKeyEx:    "X25519MLKEM768",
+			wantGroups:   []string{"X25519MLKEM768"},
+		},
+		{
+			name:         "classical only",
+			clientGroups: []string{"x25519"},
+			wantKeyEx:    "X25519",
+			wantGroups:   []string{"X25519"},
+		},
+		{
+			name:         "server picks from the configured groups",
+			serverGroups: []ctls.CurveID{ctls.CurveP384},
+			clientGroups: []string{"X25519", "CurveP384"},
+			wantKeyEx:    "CurveP384",
+			wantGroups:   []string{"X25519", "CurveP384"},
+		},
+		{
+			name:         "no common group",
+			serverGroups: []ctls.CurveID{ctls.X25519},
+			clientGroups: []string{"CurveP256"},
+			wantErr:      true,
+		},
+	}
+
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			server.TLS = &ctls.Config{CurvePreferences: tc.serverGroups}
+			server.StartTLS()
+			defer server.Close()
+
+			parsedUrl, err := url.Parse(server.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client, err := tls.New(&clients.Options{Fastdialer: dialer, TLSGroups: tc.clientGroups, Timeout: 5})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			host := parsedUrl.Hostname()
+			resp, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected handshake error, got key exchange %q", resp.KeyExchange)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.KeyExchange != tc.wantKeyEx {
+				t.Errorf("expected key exchange %q, got %q", tc.wantKeyEx, resp.KeyExchange)
+			}
+			if !reflect.DeepEqual(resp.ConfiguredGroups, tc.wantGroups) {
+				t.Errorf("expected configured groups %v, got %v", tc.wantGroups, resp.ConfiguredGroups)
+			}
+		})
+	}
+}
+
+// TestTLSGroupsInvalid ensures the ctls client rejects unsupported group names.
+func TestTLSGroupsInvalid(t *testing.T) {
+	if _, err := tls.New(&clients.Options{TLSGroups: []string{"X448"}}); err == nil {
+		t.Fatal("expected error for unsupported tls group")
+	}
+}
+
+// TestTLSGroupsResponseIsolation ensures each response gets its own copy of the
+// configured groups, so modifying one response cannot affect later ones.
+func TestTLSGroupsResponseIsolation(t *testing.T) {
+	log.SetOutput(io.Discard)
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer server.Close()
+	parsedUrl, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
+
+	client, err := tls.New(&clients.Options{Fastdialer: dialer, TLSGroups: []string{"X25519"}, Timeout: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host := parsedUrl.Hostname()
+	first, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first.ConfiguredGroups[0] = "tampered"
+
+	second, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(second.ConfiguredGroups, []string{"X25519"}) {
+		t.Errorf("expected configured groups [X25519], got %v", second.ConfiguredGroups)
+	}
+}

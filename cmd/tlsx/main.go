@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/projectdiscovery/tlsx/internal/runner"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/utils/errkit"
 	errorutils "github.com/projectdiscovery/utils/errors" //nolint
 	fileutil "github.com/projectdiscovery/utils/file"
@@ -112,6 +114,7 @@ func readFlags(args ...string) error {
 		flagSet.StringSliceVarP(&options.Resolvers, "resolvers", "r", nil, "list of resolvers to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.TLSGroups, "tls-groups", "tg", nil, "key exchange groups to offer, ctls scan mode only ("+strings.Join(tls.SupportedTLSGroups, ",")+")", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.BoolVarP(&options.RandomForEmptyServerName, "random-sni", "rs", false, "use random sni when empty"),
 		flagSet.BoolVarP(&options.ReversePtrSNI, "rev-ptr-sni", "rps", false, "perform reverse PTR to retrieve SNI from IP"),
@@ -166,6 +169,9 @@ func readFlags(args ...string) error {
 	if err != nil {
 		return errkit.Wrapf(err, "could not parse flags")
 	}
+	if err := validateTLSGroupsFlag(flagSet, options.TLSGroups); err != nil {
+		return err
+	}
 	hasStdin := fileutil.HasStdin()
 
 	// Validation: CT logs mode and input mode cannot be used together
@@ -202,4 +208,21 @@ func init() {
 	if os.Getenv("DEBUG") != "" {
 		errkit.EnableTrace = true
 	}
+}
+
+// validateTLSGroupsFlag rejects an explicitly supplied -tls-groups value that
+// parses to no groups (e.g. an empty string or only commas), which would
+// otherwise silently fall back to an unrestricted handshake with the
+// default groups.
+func validateTLSGroupsFlag(flagSet *goflags.FlagSet, groups []string) error {
+	var supplied bool
+	flagSet.CommandLine.Visit(func(f *flag.Flag) {
+		if f.Name == "tls-groups" || f.Name == "tg" {
+			supplied = true
+		}
+	})
+	if supplied && len(groups) == 0 {
+		return errkit.New("tls-groups requires at least one group (" + strings.Join(tls.SupportedTLSGroups, ",") + ")")
+	}
+	return nil
 }
