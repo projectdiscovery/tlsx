@@ -56,6 +56,9 @@ var versionToTLSVersionString = map[uint16]string{
 
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
+	if len(options.TLSGroups) > 0 {
+		return nil, errorutil.NewWithTag("ztls", "tls-groups is only supported with scan-mode ctls")
+	}
 	c := &Client{
 		dialer: options.Fastdialer,
 		tlsConfig: &tls.Config{
