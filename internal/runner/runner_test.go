@@ -452,3 +452,82 @@ func Test_CommaSeparatedInputList_normalizeAndQueueInputs(t *testing.T) {
 	assert.Contains(t, hosts, "scanme.sh", "second comma-separated host should be queued")
 	assert.Len(t, hosts, 2, "exactly two hosts should be queued from a single comma-separated line")
 }
+
+func Test_ValidateOptions_TLSGroups(t *testing.T) {
+	tests := []struct {
+		name        string
+		scanMode    string
+		tlsGroups   []string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "valid ctls single group",
+			scanMode:    "ctls",
+			tlsGroups:   []string{"X25519MLKEM768"},
+			expectError: false,
+		},
+		{
+			name:        "valid ctls multiple groups",
+			scanMode:    "ctls",
+			tlsGroups:   []string{"X25519MLKEM768", "X25519", "CurveP256"},
+			expectError: false,
+		},
+		{
+			name:        "reject with auto scan-mode",
+			scanMode:    "auto",
+			tlsGroups:   []string{"X25519MLKEM768"},
+			expectError: true,
+			errorMsg:    "tls-groups is only supported with scan-mode ctls",
+		},
+		{
+			name:        "reject with ztls scan-mode",
+			scanMode:    "ztls",
+			tlsGroups:   []string{"X25519MLKEM768"},
+			expectError: true,
+			errorMsg:    "tls-groups is only supported with scan-mode ctls",
+		},
+		{
+			name:        "reject with openssl scan-mode",
+			scanMode:    "openssl",
+			tlsGroups:   []string{"X25519MLKEM768"},
+			expectError: true,
+			errorMsg:    "tls-groups is only supported with scan-mode ctls",
+		},
+		{
+			name:        "reject invalid group name",
+			scanMode:    "ctls",
+			tlsGroups:   []string{"InvalidGroupName"},
+			expectError: true,
+			errorMsg:    "invalid tls-groups",
+		},
+		{
+			name:        "empty tls-groups is allowed",
+			scanMode:    "ctls",
+			tlsGroups:   nil,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			options := &clients.Options{
+				ScanMode:  tt.scanMode,
+				TLSGroups: tt.tlsGroups,
+				Inputs:    []string{"example.com"},
+			}
+			runner := &Runner{options: options}
+			runner.hasStdin = false
+
+			err := runner.validateOptions()
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

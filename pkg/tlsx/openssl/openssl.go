@@ -24,6 +24,9 @@ type Client struct {
 
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
+	if len(options.TLSGroups) > 0 {
+		return nil, errorutils.NewWithTag("openssl", "tls-groups is only supported with scan-mode ctls")
+	}
 	if !IsAvailable() {
 		return nil, ErrNotAvailable
 	}

@@ -188,3 +188,17 @@ func TestEnumerateCiphersConcurrent(t *testing.T) {
 		})
 	}
 }
+
+
+func TestZtlsRejectsTLSGroups(t *testing.T) {
+	options := &clients.Options{
+		TLSGroups: []string{"X25519MLKEM768"},
+	}
+	client, err := ztls.New(options)
+	if err == nil {
+		t.Fatal("expected error when configuring TLSGroups with ztls, got nil")
+	}
+	if client != nil {
+		t.Fatal("expected client to be nil on error")
+	}
+}

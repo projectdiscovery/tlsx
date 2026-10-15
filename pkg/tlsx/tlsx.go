@@ -90,7 +90,24 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	if err != nil {
 		wrappedErr := errorutil.NewWithTag("auto", "could not connect to host").Wrap(err) //nolint
 		if s.options.ProbeStatus {
-			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false, ServerName: options.SNI}, wrappedErr
+			var configuredGroups []string
+			if len(s.options.TLSGroups) > 0 {
+				if curves, _ := clients.ToCurveIDs(s.options.TLSGroups); len(curves) > 0 {
+					configuredGroups = clients.CurveIDsToNames(curves)
+				}
+			} else if len(options.TLSGroups) > 0 {
+				if curves, _ := clients.ToCurveIDs(options.TLSGroups); len(curves) > 0 {
+					configuredGroups = clients.CurveIDsToNames(curves)
+				}
+			}
+			return &clients.Response{
+				Host:             host,
+				Port:             port,
+				Error:            err.Error(),
+				ProbeStatus:      false,
+				ServerName:       options.SNI,
+				ConfiguredGroups: configuredGroups,
+			}, wrappedErr
 		}
 		return nil, wrappedErr
 	}

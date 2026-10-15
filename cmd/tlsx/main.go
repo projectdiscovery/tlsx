@@ -112,6 +112,7 @@ func readFlags(args ...string) error {
 		flagSet.StringSliceVarP(&options.Resolvers, "resolvers", "r", nil, "list of resolvers to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringVarP(&options.CACertificate, "cacert", "cc", "", "client certificate authority file"),
 		flagSet.StringSliceVarP(&options.Ciphers, "cipher-input", "ci", nil, "ciphers to use with tls connection", goflags.FileCommaSeparatedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.TLSGroups, "tls-groups", "tg", nil, "tls key-exchange groups to use with tls connection (ctls only)", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.StringSliceVar(&options.ServerName, "sni", nil, "tls sni hostname to use", goflags.FileCommaSeparatedStringSliceOptions),
 		flagSet.BoolVarP(&options.RandomForEmptyServerName, "random-sni", "rs", false, "use random sni when empty"),
 		flagSet.BoolVarP(&options.ReversePtrSNI, "rev-ptr-sni", "rps", false, "perform reverse PTR to retrieve SNI from IP"),

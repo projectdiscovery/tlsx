@@ -24,6 +24,9 @@ type Client struct {
 
 // New creates a new grabbing client using auto fallback
 func New(options *clients.Options) (*Client, error) {
+	if len(options.TLSGroups) > 0 {
+		return nil, errorutils.NewWithTag("auto", "tls-groups is only supported with scan-mode ctls")
+	}
 	tlsClient, tlsErr := tls.New(options)
 	ztlsClient, ztlsErr := ztls.New(options)
 	opensslClient, opensslErr := openssl.New(options)

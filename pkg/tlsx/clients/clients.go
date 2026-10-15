@@ -90,6 +90,8 @@ type Options struct {
 	Ports goflags.StringSlice
 	// Ciphers is a list of custom ciphers to use for connection
 	Ciphers goflags.StringSlice
+	// TLSGroups is a list of custom TLS key-exchange groups to use for connection (ctls only)
+	TLSGroups goflags.StringSlice
 	// CACertificate is the CA certificate for connection
 	CACertificate string
 	// MinVersion is the minimum tls version that is acceptable
@@ -214,6 +216,8 @@ type Response struct {
 	// can audit post-quantum readiness and classical-curve usage.
 	// Populated from Go 1.25+ which sets CurveID after the handshake.
 	KeyExchange string `json:"key_exchange,omitempty"`
+	// ConfiguredGroups is the list of configured TLS key-exchange groups
+	ConfiguredGroups []string `json:"configured_groups,omitempty"`
 	// CertificateResponse is the leaf certificate embedded in json
 	*CertificateResponse `json:",inline"`
 	// TLSConnection is the client used for TLS connection
@@ -528,6 +532,7 @@ type ConnectOptions struct {
 	SNI         string
 	VersionTLS  string
 	Ciphers     []string
+	TLSGroups   []string
 	CipherLevel []CipherSecLevel // Only used in cipher enum mode
 	EnumMode    EnumMode         // Enumeration Mode (version or ciphers)
 }
