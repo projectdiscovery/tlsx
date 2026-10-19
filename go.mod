@@ -17,7 +17,7 @@ require (
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tylertreat/BoomFilters v0.0.0-20250630160909-db6545748bc4
-	github.com/zmap/zcrypto v0.0.0-20260906180147-3ed30b1e9340
+	github.com/zmap/zcrypto v0.0.0-20261015050653-aa1de3126e87
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 )
@@ -104,7 +104,7 @@ require (
 	github.com/projectdiscovery/retryablehttp-go v1.3.29
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/weppos/publicsuffix-go v0.50.4-0.20260821095816-b0fdb5c2d345 // indirect
+	github.com/weppos/publicsuffix-go v0.50.4-0.20260918082853-3c3d7dc4a0cb // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/net v0.58.0

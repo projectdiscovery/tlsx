@@ -38,9 +38,12 @@ type Client struct {
 	options   *clients.Options
 }
 
+// versionSSL30 is deprecated in zcrypto, but tlsx still has to probe for it.
+const versionSSL30 = tls.VersionSSL30 //nolint:staticcheck
+
 // versionStringToTLSVersion converts tls version string to version
 var versionStringToTLSVersion = map[string]uint16{
-	"ssl30": tls.VersionSSL30,
+	"ssl30": versionSSL30,
 	"tls10": tls.VersionTLS10,
 	"tls11": tls.VersionTLS11,
 	"tls12": tls.VersionTLS12,
@@ -49,7 +52,7 @@ var versionStringToTLSVersion = map[string]uint16{
 
 // versionToTLSVersionString converts tls version to version string
 var versionToTLSVersionString = map[uint16]string{
-	tls.VersionSSL30: "ssl30",
+	versionSSL30:     "ssl30",
 	tls.VersionTLS10: "tls10",
 	tls.VersionTLS11: "tls11",
 	tls.VersionTLS12: "tls12",
@@ -71,7 +74,7 @@ func New(options *clients.Options) (*Client, error) {
 		dialer: options.Fastdialer,
 		tlsConfig: &tls.Config{
 			CertsOnly:          options.CertsOnly,
-			MinVersion:         tls.VersionSSL30,
+			MinVersion:         versionSSL30,
 			MaxVersion:         tls.VersionTLS13,
 			InsecureSkipVerify: !options.VerifyServerCertificate,
 		},
