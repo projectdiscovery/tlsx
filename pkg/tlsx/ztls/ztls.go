@@ -305,7 +305,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		select {
 		case <-ctx.Done():
 			_ = baseConn.Close()
-			<-errChan
+			<-errChan //nolint:errcheck
 		case err := <-errChan:
 			if err == nil {
 				hl := tlsConn.GetHandshakeLog()
@@ -408,7 +408,7 @@ func (c *Client) tlsHandshakeWithTimeout(tlsConn *tls.Conn, rawConn net.Conn, ct
 		// Closing the raw connection is safer as TLS layers might hold internal locks.
 		_ = rawConn.Close()
 		// Synchronously drain the channel to ensure the goroutine exits before returning.
-		<-errChan
+		<-errChan //nolint:errcheck
 		return errorutil.NewWithTag("ztls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
 	case err := <-errChan:
 		return err
