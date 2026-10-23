@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -408,7 +409,7 @@ func IsMisMatchedCert(host string, alternativeNames []string) bool {
 	for _, alternativeName := range alternativeNames {
 		// if not wildcard, return false if name matches the host
 		if !strings.Contains(alternativeName, "*") {
-			if strings.EqualFold(alternativeName, host) {
+			if strings.EqualFold(alternativeName, host) || isSameIP(alternativeName, host) {
 				return false
 			}
 		} else {
@@ -484,6 +485,12 @@ func IsZTLSUntrustedCA(certs []ztls.SimpleCertificate) bool {
 		}
 	}
 	return false
+}
+
+// isSameIP returns true if both names are IP addresses and they are equal
+func isSameIP(name, host string) bool {
+	hostIP := net.ParseIP(host)
+	return hostIP != nil && hostIP.Equal(net.ParseIP(name))
 }
 
 // matchWildCardToken matches the wildcardName token and host token

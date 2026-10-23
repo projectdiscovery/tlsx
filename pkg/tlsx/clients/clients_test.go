@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"math/big"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -38,6 +39,10 @@ func TestIsMisMatchedCert(t *testing.T) {
 		{args{host: "xyz.subdomain.target.com", names: []string{"*.target.com"}}, true},
 		{args{host: "xyz.subdomain.target.com", names: []string{"*.subdomain.target.com"}}, false},
 
+		// ip addresses
+		{args{host: "1.1.1.1", names: []string{"1.1.1.1", "cloudflare-dns.com"}}, false},
+		{args{host: "2606:4700:4700:0:0:0:0:1111", names: []string{"2606:4700:4700::1111"}}, false},
+
 		// negative scenarios
 		{args{host: "bar.foo.example.net", names: []string{"*.example.net"}}, true},
 		{args{host: "target.com", names: []string{"other-target.com"}}, true},
@@ -57,6 +62,19 @@ func TestIsMisMatchedCert(t *testing.T) {
 			assert.Equal(t, test.want, got)
 		})
 	}
+}
+
+func TestConvertx509toResponseMisMatchedIP(t *testing.T) {
+	cert := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "cloudflare-dns.com"},
+		DNSNames:     []string{"cloudflare-dns.com", "one.one.one.one"},
+		IPAddresses:  []net.IP{net.ParseIP("1.1.1.1"), net.ParseIP("2606:4700:4700::1111")},
+	}
+
+	assert.False(t, Convertx509toResponse(&Options{}, "1.1.1.1", cert, false).MisMatched)
+	assert.False(t, Convertx509toResponse(&Options{}, "2606:4700:4700::1111", cert, false).MisMatched)
+	assert.True(t, Convertx509toResponse(&Options{}, "8.8.8.8", cert, false).MisMatched)
 }
 
 func Test_matchWildCardToken(t *testing.T) {

@@ -25,7 +25,7 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 		NotAfter:     cert.NotAfter,
 		Expired:      IsExpired(cert.NotAfter),
 		SelfSigned:   IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId, cert.DNSNames),
-		MisMatched:   IsMisMatchedCert(hostname, domainNames),
+		MisMatched:   IsMisMatchedCert(hostname, append(IPAddressesToStrings(cert.IPAddresses), domainNames...)),
 		Revoked:      IsTLSRevoked(options, cert),
 		WildCardCert: IsWildCardCert(domainNames),
 		IssuerCN:     cert.Issuer.CommonName,
@@ -48,6 +48,15 @@ func Convertx509toResponse(options *Options, hostname string, cert *x509.Certifi
 		response.Domains = GetUniqueDomainsFromCert(response)
 	}
 	return response
+}
+
+// IPAddressesToStrings returns the string form of the certificate IP addresses
+func IPAddressesToStrings(ips []net.IP) []string {
+	names := make([]string, 0, len(ips))
+	for _, ip := range ips {
+		names = append(names, ip.String())
+	}
+	return names
 }
 
 // GetUniqueDomainsFromCert returns unique domains extracted from certificate response
