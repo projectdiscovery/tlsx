@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -404,6 +405,15 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte, SANs []string) bool {
 
 // IsMisMatchedCert returns true if cert names(subject common name + alternative names) does not contain host
 func IsMisMatchedCert(host string, alternativeNames []string) bool {
+	if hostIP := net.ParseIP(host); hostIP != nil {
+		for _, alternativeName := range alternativeNames {
+			if altIP := net.ParseIP(alternativeName); altIP != nil {
+				if hostIP.Equal(altIP) {
+					return false
+				}
+			}
+		}
+	}
 	hostTokens := strings.Split(host, ".")
 	for _, alternativeName := range alternativeNames {
 		// if not wildcard, return false if name matches the host

@@ -18,6 +18,11 @@ import (
 func Convertx509toResponse(options *Options, hostname string, cert *x509.Certificate, showcert bool) *CertificateResponse {
 	domainNames := []string{cert.Subject.CommonName}
 	domainNames = append(domainNames, cert.DNSNames...)
+	for _, ip := range cert.IPAddresses {
+		if ip != nil {
+			domainNames = append(domainNames, ip.String())
+		}
+	}
 	response := &CertificateResponse{
 		SubjectAN:    cert.DNSNames,
 		Emails:       cert.EmailAddresses,

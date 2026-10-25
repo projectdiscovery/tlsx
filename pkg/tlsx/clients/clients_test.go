@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"net"
 	"fmt"
 	"math/big"
 	"strings"
@@ -48,6 +49,14 @@ func TestIsMisMatchedCert(t *testing.T) {
 		{args{host: "*.com", names: []string{"other-target.com", "subdomain.target.com"}}, true},
 		{args{host: "subdomain.target.com", names: []string{"other-target.com", "subdomain.target.*"}}, true},
 		{args{host: "subdomain.target.com", names: []string{"subdomain.*.com", "other-target.com"}}, true},
+
+		// IP SAN scenarios
+		{args{host: "1.1.1.1", names: []string{"cloudflare-dns.com", "1.1.1.1"}}, false},
+		{args{host: "1.1.1.1", names: []string{"cloudflare-dns.com", "8.8.8.8"}}, true},
+		{args{host: "2606:4700:4700::1111", names: []string{"cloudflare-dns.com", "2606:4700:4700:0:0:0:0:1111"}}, false},
+		{args{host: "2606:4700:4700:0:0:0:0:1111", names: []string{"2606:4700:4700::1111"}}, false},
+		{args{host: "2606:4700:4700::1111", names: []string{"2001:4860:4860::8888"}}, true},
+		{args{host: "example.com", names: []string{"1.1.1.1"}}, true},
 	}
 
 	for _, test := range tests {
@@ -245,4 +254,25 @@ func TestIsTLSRevokedSkippedUnlessEnabled(t *testing.T) {
 	assert.True(t, IsTLSRevoked(&Options{HardFail: true}, cert))
 	assert.False(t, IsTLSRevoked(&Options{Revoked: true}, nil))
 	assert.True(t, IsTLSRevoked(&Options{Revoked: true, HardFail: true}, nil))
+}
+
+func TestConvertx509toResponse_IPSans(t *testing.T) {
+	cert := &x509.Certificate{
+		Subject: pkix.Name{
+			CommonName: "cloudflare-dns.com",
+		},
+		DNSNames:    []string{"cloudflare-dns.com", "*.cloudflare-dns.com"},
+		IPAddresses: []net.IP{net.ParseIP("1.1.1.1"), net.ParseIP("2606:4700:4700::1111")},
+		NotBefore:   time.Now().Add(-1 * time.Hour),
+		NotAfter:    time.Now().Add(24 * time.Hour),
+	}
+
+	resp4 := Convertx509toResponse(&Options{}, "1.1.1.1", cert, false)
+	assert.False(t, resp4.MisMatched, "expected 1.1.1.1 not to be mismatched")
+
+	resp6 := Convertx509toResponse(&Options{}, "2606:4700:4700:0:0:0:0:1111", cert, false)
+	assert.False(t, resp6.MisMatched, "expected IPv6 target in full notation not to be mismatched")
+
+	respOther := Convertx509toResponse(&Options{}, "8.8.8.8", cert, false)
+	assert.True(t, respOther.MisMatched, "expected 8.8.8.8 to be mismatched")
 }

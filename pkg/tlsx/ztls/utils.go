@@ -40,6 +40,12 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 	if cert == nil {
 		return nil
 	}
+	domainNames := append(cert.DNSNames, cert.Subject.CommonName)
+	for _, ip := range cert.IPAddresses {
+		if ip != nil {
+			domainNames = append(domainNames, ip.String())
+		}
+	}
 	response := &clients.CertificateResponse{
 		SubjectAN:    cert.DNSNames,
 		Emails:       cert.EmailAddresses,
@@ -47,7 +53,7 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 		NotAfter:     cert.NotAfter,
 		Expired:      clients.IsExpired(cert.NotAfter),
 		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId, cert.DNSNames),
-		MisMatched:   clients.IsMisMatchedCert(hostname, append(cert.DNSNames, cert.Subject.CommonName)),
+		MisMatched:   clients.IsMisMatchedCert(hostname, domainNames),
 		Revoked:      clients.IsZTLSRevoked(options, cert),
 		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerDN:     cert.Issuer.String(),
