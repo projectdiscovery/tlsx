@@ -216,7 +216,8 @@ type Response struct {
 	// can audit post-quantum readiness and classical-curve usage.
 	// Populated from Go 1.25+ which sets CurveID after the handshake.
 	KeyExchange string `json:"key_exchange,omitempty"`
-	// ConfiguredGroups is the list of configured TLS key-exchange groups
+	// ConfiguredGroups is the set of TLS key-exchange groups the caller configured.
+	// It is not the ClientHello order. crypto/tls picks the handshake group from this set.
 	ConfiguredGroups []string `json:"configured_groups,omitempty"`
 	// CertificateResponse is the leaf certificate embedded in json
 	*CertificateResponse `json:",inline"`

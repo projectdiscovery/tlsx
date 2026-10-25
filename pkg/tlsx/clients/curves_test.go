@@ -83,9 +83,9 @@ func TestCurveIDsToNames(t *testing.T) {
 		tls.CurveP256,
 		tls.CurveP384,
 		tls.CurveP521,
-		SecP256r1MLKEM768,
-		SecP384r1MLKEM1024,
-		MLKEM1024,
+		tls.SecP256r1MLKEM768,
+		tls.SecP384r1MLKEM1024,
+		tls.MLKEM1024,
 	}
 
 	expected := []string{
