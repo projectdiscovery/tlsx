@@ -70,6 +70,13 @@ func New(options *clients.Options) (*Client, error) {
 		// Note: Go stdlib by default only advertises a safe/default list of ciphers
 		c.tlsConfig.CipherSuites = AllCiphers
 	}
+	if len(options.TLSGroups) > 0 {
+		if customCurves, err := clients.ToCurveIDs(options.TLSGroups); err != nil {
+			return nil, errorutil.NewWithTag("ctls", "could not get tls groups").Wrap(err) //nolint
+		} else {
+			c.tlsConfig.CurvePreferences = customCurves
+		}
+	}
 	if options.CACertificate != "" {
 		caCert, err := os.ReadFile(options.CACertificate)
 		if err != nil {
@@ -138,7 +145,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		// Closing the raw connection is safer as TLS layers might hold internal locks.
 		_ = rawConn.Close()
 		// Synchronously drain the channel to ensure the goroutine exits before returning.
-		<-errChan
+		if handshakeErr := <-errChan; handshakeErr != nil {
+			return nil, errorutil.NewWithTag("ctls", "timeout while attempting handshake").Wrap(handshakeErr) //nolint
+		}
 		return nil, errorutil.NewWithTag("ctls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
 	case err = <-errChan:
 		if err != nil {
@@ -181,6 +190,11 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 	}
 
 	now := time.Now()
+	var configuredGroups []string
+	if len(config.CurvePreferences) > 0 && (len(c.options.TLSGroups) > 0 || len(options.TLSGroups) > 0) {
+		configuredGroups = clients.CurveIDsToNames(config.CurvePreferences)
+	}
+
 	response := &clients.Response{
 		Timestamp:           &now,
 		Host:                hostname,
@@ -190,6 +204,7 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		Version:             tlsVersion,
 		Cipher:              tlsCipher,
 		KeyExchange:         keyExchange,
+		ConfiguredGroups:    configuredGroups,
 		TLSConnection:       "ctls",
 		CertificateResponse: clients.Convertx509toResponse(c.options, hostname, leafCertificate, c.options.Cert),
 		ServerName:          config.ServerName,
@@ -295,7 +310,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		select {
 		case <-ctx.Done():
 			_ = baseConn.Close()
-			<-errChan
+			if handshakeErr := <-errChan; handshakeErr != nil {
+				return
+			}
 		case err := <-errChan:
 			if err == nil {
 				ciphersuite := conn.ConnectionState().CipherSuite
@@ -372,6 +389,15 @@ func (c *Client) getConfig(hostname, ip, port string, options clients.ConnectOpt
 			return nil, errorutil.NewWithTag("ctls", "could not get tls ciphers").Wrap(err) //nolint
 		}
 		c.tlsConfig.CipherSuites = customCiphers
+	}
+	if len(options.TLSGroups) > 0 {
+		customCurves, err := clients.ToCurveIDs(options.TLSGroups)
+		if err != nil {
+			return nil, errorutil.NewWithTag("ctls", "could not get tls groups").Wrap(err) //nolint
+		}
+		cfg := config.Clone()
+		cfg.CurvePreferences = customCurves
+		config = cfg
 	}
 	if options.EnumMode == clients.Cipher && !stringsutil.EqualFoldAny(options.VersionTLS, SupportedTlsVersions...) {
 		return nil, errorutil.NewWithTag("ctls", "cipher enum with version %v not implemented", options.VersionTLS) //nolint
