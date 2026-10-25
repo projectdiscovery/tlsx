@@ -145,7 +145,9 @@ func (c *Client) ConnectWithOptions(hostname, ip, port string, options clients.C
 		// Closing the raw connection is safer as TLS layers might hold internal locks.
 		_ = rawConn.Close()
 		// Synchronously drain the channel to ensure the goroutine exits before returning.
-		_ = <-errChan
+		if handshakeErr := <-errChan; handshakeErr != nil {
+			return nil, errorutil.NewWithTag("ctls", "timeout while attempting handshake").Wrap(handshakeErr) //nolint
+		}
 		return nil, errorutil.NewWithTag("ctls", "timeout while attempting handshake").Wrap(ctx.Err()) //nolint
 	case err = <-errChan:
 		if err != nil {
@@ -308,7 +310,9 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		select {
 		case <-ctx.Done():
 			_ = baseConn.Close()
-			_ = <-errChan
+			if handshakeErr := <-errChan; handshakeErr != nil {
+				return
+			}
 		case err := <-errChan:
 			if err == nil {
 				ciphersuite := conn.ConnectionState().CipherSuite
