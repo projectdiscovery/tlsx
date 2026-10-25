@@ -11,6 +11,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/output/stats"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/utils/errkit"
 	errorutils "github.com/projectdiscovery/utils/errors" //nolint
 	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
@@ -25,7 +26,7 @@ type Client struct {
 // New creates a new grabbing client using crypto/tls
 func New(options *clients.Options) (*Client, error) {
 	if len(options.TLSGroups) > 0 {
-		return nil, errorutils.NewWithTag("openssl", "tls-groups is only supported with scan-mode ctls")
+		return nil, errkit.New("tls-groups is only supported with scan-mode ctls")
 	}
 	if !IsAvailable() {
 		return nil, ErrNotAvailable

@@ -290,7 +290,7 @@ func (c *Client) EnumerateCiphers(hostname, ip, port string, options clients.Con
 		select {
 		case <-ctx.Done():
 			_ = baseConn.Close()
-			<-errChan
+			_ = <-errChan
 		case err := <-errChan:
 			if err == nil || err == tls.ErrCertsOnly {
 				hl := tlsConn.GetHandshakeLog()

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 // SupportedTLSGroups contains all canonical TLS key-exchange group names supported by ctls.
@@ -86,7 +86,7 @@ func ToCurveIDs(items []string) ([]tls.CurveID, error) {
 			}
 		}
 		if !ok {
-			return nil, errorutil.NewWithTag("ctls", "unsupported tls group: %s", trimmed)
+			return nil, errkit.Newf("unsupported tls group: %s", trimmed)
 		}
 		curves = append(curves, curveID)
 	}
