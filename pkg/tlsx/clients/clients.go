@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -402,8 +403,34 @@ func IsSelfSigned(authorityKeyID, subjectKeyID []byte, SANs []string) bool {
 	return false
 }
 
+// hostAsIP parses a host that may be a raw IP, a bracketed IPv6 address, or an IPv6 address with a zone.
+func hostAsIP(host string) net.IP {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip
+	}
+	unwrapped := host
+	if strings.HasPrefix(unwrapped, "[") {
+		if end := strings.IndexByte(unwrapped, ']'); end > 1 {
+			unwrapped = unwrapped[1:end]
+		}
+	}
+	if zone := strings.IndexByte(unwrapped, '%'); zone >= 0 {
+		unwrapped = unwrapped[:zone]
+	}
+	return net.ParseIP(unwrapped)
+}
+
 // IsMisMatchedCert returns true if cert names(subject common name + alternative names) does not contain host
 func IsMisMatchedCert(host string, alternativeNames []string) bool {
+	if hostIP := hostAsIP(host); hostIP != nil {
+		for _, alternativeName := range alternativeNames {
+			if altIP := hostAsIP(alternativeName); altIP != nil {
+				if hostIP.Equal(altIP) {
+					return false
+				}
+			}
+		}
+	}
 	hostTokens := strings.Split(host, ".")
 	for _, alternativeName := range alternativeNames {
 		// if not wildcard, return false if name matches the host
