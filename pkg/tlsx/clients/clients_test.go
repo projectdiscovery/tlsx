@@ -57,6 +57,12 @@ func TestIsMisMatchedCert(t *testing.T) {
 		{args{host: "2606:4700:4700:0:0:0:0:1111", names: []string{"2606:4700:4700::1111"}}, false},
 		{args{host: "2606:4700:4700::1111", names: []string{"2001:4860:4860::8888"}}, true},
 		{args{host: "example.com", names: []string{"1.1.1.1"}}, true},
+
+		// Bracketed and zone-scoped IPv6 hosts still match the certificate IP SAN.
+		{args{host: "[2606:4700:4700::1111]", names: []string{"2606:4700:4700::1111"}}, false},
+		{args{host: "fe80::1%eth0", names: []string{"fe80::1"}}, false},
+		{args{host: "[fe80::1%eth0]", names: []string{"fe80::1"}}, false},
+		{args{host: "[2001:db8::1]", names: []string{"2001:db8::2"}}, true},
 	}
 
 	for _, test := range tests {
