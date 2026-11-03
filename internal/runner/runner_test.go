@@ -531,3 +531,35 @@ func Test_ValidateOptions_TLSGroups(t *testing.T) {
 		})
 	}
 }
+
+func Test_InputIPv6_processInputItem(t *testing.T) {
+	options := &clients.Options{
+		Ports: []string{"443"},
+	}
+	runner := &Runner{options: options}
+
+	tests := []struct {
+		input    string
+		expected taskInput
+	}{
+		{input: "2001:db8::1", expected: taskInput{host: "2001:db8::1", port: "443"}},
+		{input: "[2001:db8::1]", expected: taskInput{host: "2001:db8::1", port: "443"}},
+		{input: "[2001:db8::1]:8443", expected: taskInput{host: "2001:db8::1", port: "8443"}},
+		{input: "https://[2001:db8::1]", expected: taskInput{host: "2001:db8::1", port: "443"}},
+		{input: "https://[2001:db8::1]:8443/path", expected: taskInput{host: "2001:db8::1", port: "8443"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			inputs := make(chan taskInput)
+			go func() {
+				runner.processInputItem(tt.input, inputs)
+				defer close(inputs)
+			}()
+			var got []taskInput
+			for task := range inputs {
+				got = append(got, task)
+			}
+			require.ElementsMatch(t, []taskInput{tt.expected}, got, "could not get correct taskInputs")
+		})
+	}
+}

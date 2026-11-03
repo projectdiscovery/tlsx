@@ -560,11 +560,14 @@ func (r *Runner) getHostPortFromInput(input string) (string, string) {
 		}
 	}
 	if strings.Contains(host, ":") {
-		if host, port, err := net.SplitHostPort(host); err != nil {
-			return "", ""
-		} else {
+		if host, port, err := net.SplitHostPort(host); err == nil {
 			return host, port
 		}
+		// IPv6 address without a port, either bare or in brackets
+		if ip := strings.TrimSuffix(strings.TrimPrefix(host, "["), "]"); iputil.IsIPv6(ip) {
+			return ip, ""
+		}
+		return "", ""
 	}
 	return host, ""
 }
