@@ -101,7 +101,8 @@ type Options struct {
 	MaxVersion string
 	// Resolvers contains custom resolvers for the tlsx client
 	Resolvers goflags.StringSlice
-	// ScanMode is the tls connection mode to use
+	// ScanMode is the tls connection mode to use: ctls, ztls, openssl or auto.
+	// An empty value means ctls; any other value makes tlsx.New fail.
 	ScanMode string
 	// VerifyServerCertificate enables optional verification of server certificates
 	VerifyServerCertificate bool

@@ -51,10 +51,12 @@ func New(options *clients.Options) (*Service, error) {
 		service.client, err = openssl.New(options)
 	case "auto":
 		service.client, err = auto.New(options)
-	default:
-		// Default mode is TLS
+	case "":
 		service.client, err = tls.New(options)
 		options.ScanMode = "ctls"
+	default:
+		// falling back to ctls would hide a typo behind a different tls engine
+		return nil, errkit.Newf("scan mode %v not supported (supported: ctls, ztls, openssl, auto)", options.ScanMode)
 	}
 	if err != nil {
 		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err) //nolint
