@@ -10,12 +10,12 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.73
 	github.com/projectdiscovery/dnsx v1.3.1
-	github.com/projectdiscovery/fastdialer v0.5.26
+	github.com/projectdiscovery/fastdialer v0.6.0
 	github.com/projectdiscovery/goflags v0.2.1
-	github.com/projectdiscovery/gologger v1.1.73
+	github.com/projectdiscovery/gologger v1.1.74
 	github.com/projectdiscovery/mapcidr v1.1.97
-	github.com/projectdiscovery/retryablehttp-go v1.3.31
-	github.com/projectdiscovery/utils v0.11.10-0.20261013234757-73f5497aaf2e
+	github.com/projectdiscovery/retryablehttp-go v1.3.32
+	github.com/projectdiscovery/utils v0.11.11
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tylertreat/BoomFilters v0.0.0-20250630160909-db6545748bc4
@@ -57,7 +57,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -77,7 +77,7 @@ require (
 	github.com/projectdiscovery/cdncheck v1.2.50 // indirect
 	github.com/projectdiscovery/hmap v0.0.102 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.54 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.56 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.116 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
