@@ -1,0 +1,127 @@
+#compdef tlsx
+
+_tlsx() {
+    _arguments -s -S \
+        '-u[Target host to scan]:host:' \
+        '-host[Target host to scan]:host:' \
+        '-l[Target list file]:file:_files' \
+        '-list[Target list file]:file:_files' \
+        '-p[Target port to connect]:port:' \
+        '-port[Target port to connect]:port:' \
+        '-sm[TLS connection mode]:mode:(ctls ztls openssl auto)' \
+        '-scan-mode[TLS connection mode]:mode:(ctls ztls openssl auto)' \
+        '-ps[Enable pre-handshake TLS connection]' \
+        '-pre-handshake[Enable pre-handshake TLS connection]' \
+        '-sa[Scan all IPs for a host]' \
+        '-scan-all-ips[Scan all IPs for a host]' \
+        '-iv[IP versions to use]:version:(4 6)' \
+        '-ip-version[IP versions to use]:version:(4 6)' \
+        '-san[Display subject alternative names]' \
+        '-cn[Display subject common names]' \
+        '-so[Display subject organization name]' \
+        '-tv[Display used TLS version]' \
+        '-tls-version[Display used TLS version]' \
+        '-cipher[Display used cipher]' \
+        '-hash[Certificate fingerprint hashes]:hash:(md5 sha1 sha256)' \
+        '-jarm[Display JARM fingerprint]' \
+        '-ja3[Display JA3 fingerprint]' \
+        '-ja3s[Display JA3S fingerprint]' \
+        '-wc[Display wildcard certificate hosts]' \
+        '-wildcard-cert[Display wildcard certificate hosts]' \
+        '-tps[Display TLS probe status]' \
+        '-probe-status[Display TLS probe status]' \
+        '-ve[Enumerate supported TLS versions]' \
+        '-version-enum[Enumerate supported TLS versions]' \
+        '-ce[Enumerate supported ciphers]' \
+        '-cipher-enum[Enumerate supported ciphers]' \
+        '-ct[Cipher types]:type:(all secure insecure weak)' \
+        '-cipher-type[Cipher types]:type:(all secure insecure weak)' \
+        '-ch[Include client hello in JSON output]' \
+        '-client-hello[Include client hello in JSON output]' \
+        '-sh[Include server hello in JSON output]' \
+        '-server-hello[Include server hello in JSON output]' \
+        '-se[Display certificate serial number]' \
+        '-serial[Display certificate serial number]' \
+        '-ctl[Enable CT logs streaming mode]' \
+        '-ct-logs[Enable CT logs streaming mode]' \
+        '-cb[Start CT log streaming from index 0]' \
+        '-ctl-beginning[Start CT log streaming from index 0]' \
+        '-cti[Custom CT log start index]:index:' \
+        '-ctl-index[Custom CT log start index]:index:' \
+        '-ex[Display expired certificates]' \
+        '-expired[Display expired certificates]' \
+        '-ss[Display self-signed certificates]' \
+        '-self-signed[Display self-signed certificates]' \
+        '-mm[Display mismatched certificates]' \
+        '-mismatched[Display mismatched certificates]' \
+        '-re[Display revoked certificates]' \
+        '-revoked[Display revoked certificates]' \
+        '-un[Display untrusted certificates]' \
+        '-untrusted[Display untrusted certificates]' \
+        '-config[Path to configuration file]:file:_files' \
+        '-r[Resolvers to use]:resolver:' \
+        '-resolvers[Resolvers to use]:resolver:' \
+        '-cc[Client CA certificate file]:file:_files' \
+        '-cacert[Client CA certificate file]:file:_files' \
+        '-ci[Ciphers to use]:cipher:' \
+        '-cipher-input[Ciphers to use]:cipher:' \
+        '-tg[TLS key-exchange groups]:group:' \
+        '-tls-groups[TLS key-exchange groups]:group:' \
+        '-sni[SNI hostname]:hostname:' \
+        '-rs[Use random SNI when empty]' \
+        '-random-sni[Use random SNI when empty]' \
+        '-rps[Use reverse PTR for SNI]' \
+        '-rev-ptr-sni[Use reverse PTR for SNI]' \
+        '-min-version[Minimum TLS version]:version:(ssl30 tls10 tls11 tls12 tls13)' \
+        '-max-version[Maximum TLS version]:version:(ssl30 tls10 tls11 tls12 tls13)' \
+        '-cert[Include certificates in JSON output]' \
+        '-certificate[Include certificates in JSON output]' \
+        '-tc[Include certificate chain in JSON output]' \
+        '-tls-chain[Include certificate chain in JSON output]' \
+        '-vc[Verify server certificate]' \
+        '-verify-cert[Verify server certificate]' \
+        '-ob[OpenSSL binary path]:file:_files' \
+        '-openssl-binary[OpenSSL binary path]:file:_files' \
+        '-hf[Treat revocation check errors as revoked]' \
+        '-hardfail[Treat revocation check errors as revoked]' \
+        '-proxy[SOCKS5 proxy]:proxy:' \
+        '-c[Concurrent threads]:count:' \
+        '-concurrency[Concurrent threads]:count:' \
+        '-cec[Cipher enumeration concurrency]:count:' \
+        '-cipher-concurrency[Cipher enumeration concurrency]:count:' \
+        '-timeout[TLS connection timeout in seconds]:seconds:' \
+        '-retry[Number of retries]:count:' \
+        '-delay[Delay between connections]:duration:' \
+        '-up[Update tlsx]' \
+        '-update[Update tlsx]' \
+        '-duc[Disable automatic update check]' \
+        '-disable-update-check[Disable automatic update check]' \
+        '-o[Output file]:file:_files' \
+        '-output[Output file]:file:_files' \
+        '-j[JSON output]' \
+        '-json[JSON output]' \
+        '-dns[Display DNS data]' \
+        '-ro[Display response only]' \
+        '-resp-only[Display response only]' \
+        '-silent[Silent mode]' \
+        '-nc[Disable color]' \
+        '-no-color[Disable color]' \
+        '-v[Verbose output]' \
+        '-verbose[Verbose output]' \
+        '-version[Show version]' \
+        '-pd[Upload results to PDCP dashboard]' \
+        '-dashboard[Upload results to PDCP dashboard]' \
+        '-pdu[Upload output file to PDCP dashboard]:file:_files' \
+        '-dashboard-upload[Upload output file to PDCP dashboard]:file:_files' \
+        '-auth[PDCP API key]:key:' \
+        '-tid[PDCP team ID]:id:' \
+        '-team-id[PDCP team ID]:id:' \
+        '-aid[Existing PDCP asset ID]:id:' \
+        '-asset-id[Existing PDCP asset ID]:id:' \
+        '-aname[PDCP asset group name]:name:' \
+        '-asset-name[PDCP asset group name]:name:' \
+        '-health-check[Run diagnostic check]' \
+        '-hc[Run diagnostic check]'
+}
+
+_tlsx "$@"
