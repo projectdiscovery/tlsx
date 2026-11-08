@@ -22,7 +22,7 @@ require (
 	github.com/zmap/zcrypto v0.0.0-20261015050653-aa1de3126e87
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 )
 
 require (
