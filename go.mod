@@ -10,12 +10,12 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.73
 	github.com/projectdiscovery/dnsx v1.3.1
-	github.com/projectdiscovery/fastdialer v0.6.0
+	github.com/projectdiscovery/fastdialer v0.6.2
 	github.com/projectdiscovery/goflags v0.2.1
-	github.com/projectdiscovery/gologger v1.1.74
+	github.com/projectdiscovery/gologger v1.1.75
 	github.com/projectdiscovery/mapcidr v1.1.97
-	github.com/projectdiscovery/retryablehttp-go v1.3.32
-	github.com/projectdiscovery/utils v0.11.11
+	github.com/projectdiscovery/retryablehttp-go v1.3.34
+	github.com/projectdiscovery/utils v0.11.12
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tylertreat/BoomFilters v0.0.0-20250630160909-db6545748bc4
@@ -29,7 +29,6 @@ require (
 	aead.dev/minisign v0.2.0 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Mzack9999/gcache v0.0.0-20230410081825-519e28eab057 // indirect
-	github.com/Mzack9999/go-http-digest-auth-client v0.6.1-0.20220414142836-eb8883508809 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/akrylysov/pogreb v0.10.1 // indirect
 	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
@@ -75,10 +74,10 @@ require (
 	github.com/projectdiscovery/asnmap v1.1.1 // indirect
 	github.com/projectdiscovery/blackrock v0.0.2 // indirect
 	github.com/projectdiscovery/cdncheck v1.2.50 // indirect
-	github.com/projectdiscovery/hmap v0.0.102 // indirect
+	github.com/projectdiscovery/hmap v0.0.104 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.56 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.116 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.57 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.118 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
