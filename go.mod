@@ -1,6 +1,6 @@
 module github.com/projectdiscovery/tlsx
 
-go 1.27
+go 1.27.3
 
 require (
 	github.com/cloudflare/cfssl v1.7.1
