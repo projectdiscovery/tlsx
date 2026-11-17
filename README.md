@@ -43,7 +43,7 @@ A fast and configurable TLS grabber focused on TLS based **data collection and a
 
 ## Installation
 
-tlsx requires **Go 1.26.10** to install successfully. To install, just run the below command or download pre-compiled binary from [release page](https://github.com/projectdiscovery/tlsx/releases).
+tlsx requires **Go 1.27.3** to install successfully. To install, just run the below command or download pre-compiled binary from [release page](https://github.com/projectdiscovery/tlsx/releases).
 
 ```console
 go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest
@@ -185,7 +185,7 @@ $ tlsx -list host_list.txt
 
 **Port Input:**
 
-**tlsx** connects on port **443** by default, which can be customized using `-port / -p` flag, single or multiple ports can be specified using comma sperated input or new line delimited file containing list of ports to connect. 
+**tlsx** connects on port **443** by default, which can be customized using `-port / -p` flag, single or multiple ports can be specified using comma separated input or new line delimited file containing list of ports to connect. 
 
 
 Example of comma-separated port input: 

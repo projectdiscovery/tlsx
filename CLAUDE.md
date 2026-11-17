@@ -64,7 +64,7 @@ Implementation in `pkg/tlsx/`:
 
 ## Development Notes
 
-- **Go version**: Requires Go 1.26.10+
+- **Go version**: Requires Go 1.27.3+
 - **Dependencies**: Heavy use of ProjectDiscovery libraries (dnsx, fastdialer, goflags, gologger)
 - **External tools**: Optional OpenSSL binary for specialized TLS operations
 - **Concurrency**: Built-in support for concurrent TLS connections with configurable limits
