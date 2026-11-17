@@ -490,8 +490,25 @@ func IsZTLSUntrustedCA(certs []ztls.SimpleCertificate) bool {
 
 // isSameIP returns true if both names are IP addresses and they are equal
 func isSameIP(name, host string) bool {
-	hostIP := net.ParseIP(host)
-	return hostIP != nil && hostIP.Equal(net.ParseIP(name))
+	hostIP := hostAsIP(host)
+	return hostIP != nil && hostIP.Equal(hostAsIP(name))
+}
+
+// hostAsIP parses a host that may be a raw IP, a bracketed IPv6 address, or an IPv6 address with a zone.
+func hostAsIP(host string) net.IP {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip
+	}
+	unwrapped := host
+	if strings.HasPrefix(unwrapped, "[") {
+		if end := strings.IndexByte(unwrapped, ']'); end > 1 {
+			unwrapped = unwrapped[1:end]
+		}
+	}
+	if zone := strings.IndexByte(unwrapped, '%'); zone >= 0 {
+		unwrapped = unwrapped[:zone]
+	}
+	return net.ParseIP(unwrapped)
 }
 
 // matchWildCardToken matches the wildcardName token and host token
