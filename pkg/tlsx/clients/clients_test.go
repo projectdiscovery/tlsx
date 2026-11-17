@@ -42,6 +42,10 @@ func TestIsMisMatchedCert(t *testing.T) {
 		// ip addresses
 		{args{host: "1.1.1.1", names: []string{"1.1.1.1", "cloudflare-dns.com"}}, false},
 		{args{host: "2606:4700:4700:0:0:0:0:1111", names: []string{"2606:4700:4700::1111"}}, false},
+		{args{host: "[2606:4700:4700::1111]", names: []string{"2606:4700:4700::1111"}}, false},
+		{args{host: "fe80::1%eth0", names: []string{"fe80::1"}}, false},
+		{args{host: "[fe80::1%eth0]", names: []string{"fe80::1"}}, false},
+		{args{host: "[2001:db8::1]", names: []string{"2001:db8::2"}}, true},
 
 		// negative scenarios
 		{args{host: "bar.foo.example.net", names: []string{"*.example.net"}}, true},
