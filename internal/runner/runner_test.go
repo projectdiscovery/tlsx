@@ -453,83 +453,24 @@ func Test_CommaSeparatedInputList_normalizeAndQueueInputs(t *testing.T) {
 	assert.Len(t, hosts, 2, "exactly two hosts should be queued from a single comma-separated line")
 }
 
-func Test_ValidateOptions_TLSGroups(t *testing.T) {
-	tests := []struct {
-		name        string
-		scanMode    string
-		tlsGroups   []string
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:        "valid ctls single group",
-			scanMode:    "ctls",
-			tlsGroups:   []string{"X25519MLKEM768"},
-			expectError: false,
-		},
-		{
-			name:        "valid ctls multiple groups",
-			scanMode:    "ctls",
-			tlsGroups:   []string{"X25519MLKEM768", "X25519", "CurveP256"},
-			expectError: false,
-		},
-		{
-			name:        "reject with auto scan-mode",
-			scanMode:    "auto",
-			tlsGroups:   []string{"X25519MLKEM768"},
-			expectError: true,
-			errorMsg:    "tls-groups is only supported with scan-mode ctls",
-		},
-		{
-			name:        "reject with ztls scan-mode",
-			scanMode:    "ztls",
-			tlsGroups:   []string{"X25519MLKEM768"},
-			expectError: true,
-			errorMsg:    "tls-groups is only supported with scan-mode ctls",
-		},
-		{
-			name:        "reject with openssl scan-mode",
-			scanMode:    "openssl",
-			tlsGroups:   []string{"X25519MLKEM768"},
-			expectError: true,
-			errorMsg:    "tls-groups is only supported with scan-mode ctls",
-		},
-		{
-			name:        "reject invalid group name",
-			scanMode:    "ctls",
-			tlsGroups:   []string{"InvalidGroupName"},
-			expectError: true,
-			errorMsg:    "invalid tls-groups",
-		},
-		{
-			name:        "empty tls-groups is allowed",
-			scanMode:    "ctls",
-			tlsGroups:   nil,
-			expectError: false,
-		},
+// Test_TLSGroupsRequireCTLS ensures CLI validation rejects tls-groups with any
+// scan mode other than ctls, including modes forced by other options.
+func Test_TLSGroupsRequireCTLS(t *testing.T) {
+	for mode, wantErr := range map[string]bool{"auto": true, "ztls": true, "openssl": true, "ctls": false} {
+		options := &clients.Options{Inputs: []string{"example.com"}, ScanMode: mode, TLSGroups: []string{"X25519"}}
+		runner := &Runner{options: options, hasStdinSet: true}
+		err := runner.validateOptions()
+		if wantErr {
+			require.Error(t, err, mode)
+		} else {
+			require.NoError(t, err, mode)
+		}
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			options := &clients.Options{
-				ScanMode:  tt.scanMode,
-				TLSGroups: tt.tlsGroups,
-				Inputs:    []string{"example.com"},
-			}
-			runner := &Runner{options: options}
-			runner.hasStdin = false
-
-			err := runner.validateOptions()
-			if tt.expectError {
-				require.Error(t, err)
-				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
-				}
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
+	// ja3 forces ztls, which cannot honor tls-groups
+	options := &clients.Options{Inputs: []string{"example.com"}, ScanMode: "ctls", Ja3: true, TLSGroups: []string{"X25519"}}
+	runner := &Runner{options: options, hasStdinSet: true}
+	require.Error(t, runner.validateOptions())
 }
 
 func Test_InputIPv6_processInputItem(t *testing.T) {

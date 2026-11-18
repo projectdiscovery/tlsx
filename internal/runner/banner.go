@@ -5,7 +5,6 @@ import (
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/utils/errkit"
 	fileutil "github.com/projectdiscovery/utils/file"
 	updateutils "github.com/projectdiscovery/utils/update"
@@ -19,7 +18,7 @@ var banner = fmt.Sprintf(`
    |_| |____|___/_/\_\	%s
 `, version)
 
-const version = "v1.4.0"
+const version = "v1.5.0"
 
 // validateOptions validates the provided options for crawler
 func (r *Runner) validateOptions() error {
@@ -70,21 +69,15 @@ func (r *Runner) validateOptions() error {
 	if r.options.CertsOnly || r.options.Ja3 || r.options.Ja3s {
 		r.options.ScanMode = "ztls" // force setting ztls when using certs-only
 	}
+	if len(r.options.TLSGroups) > 0 && r.options.ScanMode != "ctls" {
+		return errkit.New("tls-groups can only be used with ctls scan mode (-sm ctls)")
+	}
 	if r.options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 	}
 
 	if r.options.Jarm && r.options.Delay != "" {
 		gologger.Info().Label("WRN").Msg("Using connection pooling for jarm hash calculation, delay will not work as expected")
-	}
-
-	if len(r.options.TLSGroups) > 0 {
-		if r.options.ScanMode != "ctls" {
-			return errkit.New("tls-groups is only supported with scan-mode ctls")
-		}
-		if _, err := clients.ToCurveIDs(r.options.TLSGroups); err != nil {
-			return errkit.Wrap(err, "invalid tls-groups")
-		}
 	}
 	return nil
 }

@@ -63,7 +63,7 @@ func init() {
 func openSSLSetup() errorutils.Error { //nolint
 	result, err := execOpenSSL(context.TODO(), []string{"version"})
 	if err != nil {
-		return errorutils.NewWithErr(err).WithTag("openssl").Msgf(result.Stderr) //nolint
+		return errorutils.NewWithErr(err).WithTag("openssl").Msgf("%s", result.Stderr) //nolint
 	}
 	arr := strings.Fields(result.Stdout)
 	if len(arr) < 2 {

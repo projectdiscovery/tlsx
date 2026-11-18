@@ -11,6 +11,7 @@ import (
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/ztls"
+	"github.com/projectdiscovery/utils/errkit"
 	errorutil "github.com/projectdiscovery/utils/errors" //nolint
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
@@ -23,6 +24,12 @@ type Service struct {
 
 // New creates a new tlsx service module
 func New(options *clients.Options) (*Service, error) {
+	// other backends don't support restricting key exchange groups, and auto
+	// mode could silently fall back to an unrestricted handshake
+	if len(options.TLSGroups) > 0 && options.ScanMode != "ctls" && options.ScanMode != "" {
+		return nil, errkit.Newf("tls-groups is only supported with ctls scan mode, got %v", options.ScanMode)
+	}
+
 	service := &Service{
 		options: options,
 	}
@@ -44,10 +51,12 @@ func New(options *clients.Options) (*Service, error) {
 		service.client, err = openssl.New(options)
 	case "auto":
 		service.client, err = auto.New(options)
-	default:
-		// Default mode is TLS
+	case "":
 		service.client, err = tls.New(options)
 		options.ScanMode = "ctls"
+	default:
+		// falling back to ctls would hide a typo behind a different tls engine
+		return nil, errkit.Newf("scan mode %v not supported (supported: ctls, ztls, openssl, auto)", options.ScanMode)
 	}
 	if err != nil {
 		return nil, errorutil.NewWithTag("auto", "could not create tls service").Wrap(err) //nolint
@@ -90,24 +99,7 @@ func (s *Service) ConnectWithOptions(host, ip, port string, options clients.Conn
 	if err != nil {
 		wrappedErr := errorutil.NewWithTag("auto", "could not connect to host").Wrap(err) //nolint
 		if s.options.ProbeStatus {
-			var configuredGroups []string
-			if len(s.options.TLSGroups) > 0 {
-				if curves, _ := clients.ToCurveIDs(s.options.TLSGroups); len(curves) > 0 {
-					configuredGroups = clients.CurveIDsToNames(curves)
-				}
-			} else if len(options.TLSGroups) > 0 {
-				if curves, _ := clients.ToCurveIDs(options.TLSGroups); len(curves) > 0 {
-					configuredGroups = clients.CurveIDsToNames(curves)
-				}
-			}
-			return &clients.Response{
-				Host:             host,
-				Port:             port,
-				Error:            err.Error(),
-				ProbeStatus:      false,
-				ServerName:       options.SNI,
-				ConfiguredGroups: configuredGroups,
-			}, wrappedErr
+			return &clients.Response{Host: host, Port: port, Error: err.Error(), ProbeStatus: false, ServerName: options.SNI}, wrappedErr
 		}
 		return nil, wrappedErr
 	}

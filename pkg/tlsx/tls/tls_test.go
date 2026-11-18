@@ -20,8 +20,6 @@ import (
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/tls"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestClientCertRequired(t *testing.T) {
@@ -345,147 +343,132 @@ func TestHighConcurrencyTimeouts(t *testing.T) {
 	}
 }
 
-func TestConfigurableTLSGroups(t *testing.T) {
+// TestTLSGroups verifies that configured groups restrict the negotiated key
+// exchange against a local TLS server and are reported in the response.
+func TestTLSGroups(t *testing.T) {
 	log.SetOutput(io.Discard)
 
-	t.Run("single_group_success", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprintf(w, "OK")
-		}))
-		server.TLS.CurvePreferences = []ctls.CurveID{ctls.CurveP256}
-		defer server.Close()
+	cases := []struct {
+		name         string
+		serverGroups []ctls.CurveID
+		clientGroups []string
+		wantKeyEx    string
+		wantGroups   []string
+		wantErr      bool
+	}{
+		{
+			name:         "post-quantum hybrid",
+			clientGroups: []string{"X25519MLKEM768"},
+			wantKeyEx:    "X25519MLKEM768",
+			wantGroups:   []string{"X25519MLKEM768"},
+		},
+		{
+			name:         "classical only",
+			clientGroups: []string{"x25519"},
+			wantKeyEx:    "X25519",
+			wantGroups:   []string{"X25519"},
+		},
+		{
+			name:         "server picks from the configured groups",
+			serverGroups: []ctls.CurveID{ctls.CurveP384},
+			clientGroups: []string{"X25519", "CurveP384"},
+			wantKeyEx:    "CurveP384",
+			wantGroups:   []string{"X25519", "CurveP384"},
+		},
+		{
+			name:         "no common group",
+			serverGroups: []ctls.CurveID{ctls.X25519},
+			clientGroups: []string{"CurveP256"},
+			wantErr:      true,
+		},
+	}
 
-		parsedUrl, err := url.Parse(server.URL)
-		require.NoError(t, err)
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
 
-		dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
-		require.NoError(t, err)
-		defer dialer.Close()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			server.TLS = &ctls.Config{CurvePreferences: tc.serverGroups}
+			server.StartTLS()
+			defer server.Close()
 
-		client, err := tls.New(&clients.Options{
-			Fastdialer: dialer,
-			TLSGroups:  []string{"CurveP256"},
-			Timeout:    5,
+			parsedUrl, err := url.Parse(server.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client, err := tls.New(&clients.Options{Fastdialer: dialer, TLSGroups: tc.clientGroups, Timeout: 5})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			host := parsedUrl.Hostname()
+			resp, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected handshake error, got key exchange %q", resp.KeyExchange)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.KeyExchange != tc.wantKeyEx {
+				t.Errorf("expected key exchange %q, got %q", tc.wantKeyEx, resp.KeyExchange)
+			}
+			if !reflect.DeepEqual(resp.ConfiguredGroups, tc.wantGroups) {
+				t.Errorf("expected configured groups %v, got %v", tc.wantGroups, resp.ConfiguredGroups)
+			}
 		})
-		require.NoError(t, err)
+	}
+}
 
-		resp, err := client.ConnectWithOptions(parsedUrl.Hostname(), parsedUrl.Hostname(), parsedUrl.Port(), clients.ConnectOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		assert.True(t, resp.ProbeStatus)
-		assert.Equal(t, []string{"CurveP256"}, resp.ConfiguredGroups)
-		assert.Equal(t, "CurveP256", resp.KeyExchange)
-	})
+// TestTLSGroupsInvalid ensures the ctls client rejects unsupported group names.
+func TestTLSGroupsInvalid(t *testing.T) {
+	if _, err := tls.New(&clients.Options{TLSGroups: []string{"X448"}}); err == nil {
+		t.Fatal("expected error for unsupported tls group")
+	}
+}
 
-	t.Run("unsupported_group_handshake_failure", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprintf(w, "OK")
-		}))
-		server.TLS.CurvePreferences = []ctls.CurveID{ctls.CurveP256}
-		defer server.Close()
+// TestTLSGroupsResponseIsolation ensures each response gets its own copy of the
+// configured groups, so modifying one response cannot affect later ones.
+func TestTLSGroupsResponseIsolation(t *testing.T) {
+	log.SetOutput(io.Discard)
 
-		parsedUrl, err := url.Parse(server.URL)
-		require.NoError(t, err)
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer server.Close()
+	parsedUrl, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
-		require.NoError(t, err)
-		defer dialer.Close()
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
 
-		client, err := tls.New(&clients.Options{
-			Fastdialer: dialer,
-			TLSGroups:  []string{"CurveP384"},
-			Timeout:    5,
-		})
-		require.NoError(t, err)
+	client, err := tls.New(&clients.Options{Fastdialer: dialer, TLSGroups: []string{"X25519"}, Timeout: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		resp, err := client.ConnectWithOptions(parsedUrl.Hostname(), parsedUrl.Hostname(), parsedUrl.Port(), clients.ConnectOptions{})
-		require.Error(t, err)
-		assert.Nil(t, resp)
-	})
+	host := parsedUrl.Hostname()
+	first, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first.ConfiguredGroups[0] = "tampered"
 
-	t.Run("preference_ordering", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprintf(w, "OK")
-		}))
-		server.TLS.CurvePreferences = []ctls.CurveID{ctls.CurveP256, ctls.X25519}
-		defer server.Close()
-
-		parsedUrl, err := url.Parse(server.URL)
-		require.NoError(t, err)
-
-		dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
-		require.NoError(t, err)
-		defer dialer.Close()
-
-		client, err := tls.New(&clients.Options{
-			Fastdialer: dialer,
-			TLSGroups:  []string{"X25519", "CurveP256"},
-			Timeout:    5,
-		})
-		require.NoError(t, err)
-
-		resp, err := client.ConnectWithOptions(parsedUrl.Hostname(), parsedUrl.Hostname(), parsedUrl.Port(), clients.ConnectOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		assert.True(t, resp.ProbeStatus)
-		assert.Equal(t, []string{"X25519", "CurveP256"}, resp.ConfiguredGroups)
-		assert.Equal(t, "X25519", resp.KeyExchange)
-	})
-
-	t.Run("default_when_omitted", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprintf(w, "OK")
-		}))
-		defer server.Close()
-
-		parsedUrl, err := url.Parse(server.URL)
-		require.NoError(t, err)
-
-		dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
-		require.NoError(t, err)
-		defer dialer.Close()
-
-		client, err := tls.New(&clients.Options{
-			Fastdialer: dialer,
-			Timeout:    5,
-		})
-		require.NoError(t, err)
-
-		resp, err := client.ConnectWithOptions(parsedUrl.Hostname(), parsedUrl.Hostname(), parsedUrl.Port(), clients.ConnectOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		assert.True(t, resp.ProbeStatus)
-		assert.Nil(t, resp.ConfiguredGroups)
-		assert.NotEmpty(t, resp.KeyExchange)
-	})
-
-	t.Run("connect_options_override", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprintf(w, "OK")
-		}))
-		server.TLS.CurvePreferences = []ctls.CurveID{ctls.CurveP256, ctls.X25519}
-		defer server.Close()
-
-		parsedUrl, err := url.Parse(server.URL)
-		require.NoError(t, err)
-
-		dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
-		require.NoError(t, err)
-		defer dialer.Close()
-
-		client, err := tls.New(&clients.Options{
-			Fastdialer: dialer,
-			Timeout:    5,
-		})
-		require.NoError(t, err)
-
-		resp, err := client.ConnectWithOptions(parsedUrl.Hostname(), parsedUrl.Hostname(), parsedUrl.Port(), clients.ConnectOptions{
-			TLSGroups: []string{"CurveP256"},
-		})
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		assert.True(t, resp.ProbeStatus)
-		assert.Equal(t, []string{"CurveP256"}, resp.ConfiguredGroups)
-		assert.Equal(t, "CurveP256", resp.KeyExchange)
-	})
+	second, err := client.ConnectWithOptions(host, host, parsedUrl.Port(), clients.ConnectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(second.ConfiguredGroups, []string{"X25519"}) {
+		t.Errorf("expected configured groups [X25519], got %v", second.ConfiguredGroups)
+	}
 }

@@ -40,12 +40,6 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 	if cert == nil {
 		return nil
 	}
-	domainNames := append(cert.DNSNames, cert.Subject.CommonName)
-	for _, ip := range cert.IPAddresses {
-		if ip != nil {
-			domainNames = append(domainNames, ip.String())
-		}
-	}
 	response := &clients.CertificateResponse{
 		SubjectAN:    cert.DNSNames,
 		Emails:       cert.EmailAddresses,
@@ -53,7 +47,7 @@ func ConvertCertificateToResponse(options *clients.Options, hostname string, cer
 		NotAfter:     cert.NotAfter,
 		Expired:      clients.IsExpired(cert.NotAfter),
 		SelfSigned:   clients.IsSelfSigned(cert.AuthorityKeyId, cert.SubjectKeyId, cert.DNSNames),
-		MisMatched:   clients.IsMisMatchedCert(hostname, domainNames),
+		MisMatched:   clients.IsMisMatchedCert(hostname, append(clients.IPAddressesToStrings(cert.IPAddresses), append(cert.DNSNames, cert.Subject.CommonName)...)),
 		Revoked:      clients.IsZTLSRevoked(options, cert),
 		WildCardCert: clients.IsWildCardCert(append(cert.DNSNames, cert.Subject.CommonName)),
 		IssuerDN:     cert.Issuer.String(),
@@ -424,10 +418,4 @@ var ztlsCiphers = map[string]uint16{
 	"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD":   tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD,
 	"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD": tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD,
 	"TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD":     tls.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD,
-	"SSL_RSA_WITH_RC2_CBC_MD5":                          tls.SSL_RSA_WITH_RC2_CBC_MD5,
-	"SSL_RSA_WITH_IDEA_CBC_MD5":                         tls.SSL_RSA_WITH_IDEA_CBC_MD5,
-	"SSL_RSA_WITH_DES_CBC_MD5":                          tls.SSL_RSA_WITH_DES_CBC_MD5,
-	"SSL_RSA_WITH_3DES_EDE_CBC_MD5":                     tls.SSL_RSA_WITH_3DES_EDE_CBC_MD5,
-	"SSL_EN_RC2_128_CBC_WITH_MD5":                       tls.SSL_EN_RC2_128_CBC_WITH_MD5,
-	"OP_PCL_TLS10_AES_128_CBC_SHA512":                   tls.OP_PCL_TLS10_AES_128_CBC_SHA512,
 }

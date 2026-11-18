@@ -2,7 +2,10 @@ package tls
 
 import (
 	"crypto/tls"
+	"slices"
+	"strings"
 
+	"github.com/projectdiscovery/utils/errkit"
 	errorutil "github.com/projectdiscovery/utils/errors" //nolint
 )
 
@@ -20,6 +23,44 @@ func init() {
 	for name := range versionStringToTLSVersion {
 		SupportedTlsVersions = append(SupportedTlsVersions, name)
 	}
+}
+
+// SupportedTLSGroups is the list of key exchange group names accepted by toTLSGroups
+var SupportedTLSGroups = []string{"X25519MLKEM768", "X25519", "CurveP256", "CurveP384", "CurveP521"}
+
+// toTLSGroups converts key exchange group names (matched case-insensitively)
+// to curve IDs, also returning the canonical group names.
+func toTLSGroups(items []string) ([]tls.CurveID, []string, error) {
+	var (
+		groups []tls.CurveID
+		names  []string
+	)
+	for _, item := range items {
+		var group tls.CurveID
+		for _, name := range SupportedTLSGroups {
+			if strings.EqualFold(item, name) {
+				group = tlsGroups[name]
+				break
+			}
+		}
+		if group == 0 {
+			return nil, nil, errkit.Newf("tls group %v not supported (supported: %v)", item, strings.Join(SupportedTLSGroups, ","))
+		}
+		if slices.Contains(groups, group) {
+			return nil, nil, errkit.Newf("tls group %v specified more than once", item)
+		}
+		groups = append(groups, group)
+		names = append(names, group.String())
+	}
+	return groups, names, nil
+}
+
+var tlsGroups = map[string]tls.CurveID{
+	"X25519MLKEM768": tls.X25519MLKEM768,
+	"X25519":         tls.X25519,
+	"CurveP256":      tls.CurveP256,
+	"CurveP384":      tls.CurveP384,
+	"CurveP521":      tls.CurveP521,
 }
 
 func toTLSCiphers(items []string) ([]uint16, error) {

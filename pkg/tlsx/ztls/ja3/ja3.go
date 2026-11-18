@@ -27,7 +27,6 @@ const (
 	extensionALPN                 uint16 = 16
 	extensionExtendedMasterSecret uint16 = 23
 	extensionSessionTicket        uint16 = 35
-	extensionNextProtoNeg         uint16 = 13172 // not IANA assigned
 	extensionRenegotiationInfo    uint16 = 0xff01
 	extensionExtendedRandom       uint16 = 0x0028 // not IANA assigned
 	extensionSCT                  uint16 = 18
@@ -58,10 +57,6 @@ func GetJa3Hash(clientHello *tls.ClientHello) string {
 	// Extensions
 	if len(clientHello.ServerName) > 0 {
 		byteString = appendExtension(byteString, extensionServerName)
-	}
-
-	if clientHello.NextProtoNeg {
-		byteString = appendExtension(byteString, extensionNextProtoNeg)
 	}
 
 	if clientHello.OcspStapling {
@@ -172,10 +167,6 @@ func GetJa3sHash(serverHello *tls.ServerHello) string {
 	}
 
 	// Extensions
-	if serverHello.NextProtoNeg {
-		byteString = appendExtension(byteString, extensionNextProtoNeg)
-	}
-
 	if serverHello.OcspStapling {
 		byteString = appendExtension(byteString, extensionStatusRequest)
 	}

@@ -2,6 +2,7 @@ package tlsx_test
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
@@ -64,4 +65,79 @@ func getDNSdata(hostname string) ([]string, error) {
 	targets = append(targets, dnsData.AAAA...)
 
 	return targets, nil
+}
+
+// TestTLSGroupsScanMode ensures tls groups are only accepted with the ctls
+// scan mode (or the empty default, which resolves to ctls).
+func TestTLSGroupsScanMode(t *testing.T) {
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dialer.Close()
+
+	for _, mode := range []string{"ztls", "openssl", "auto"} {
+		_, err := tlsx.New(&clients.Options{ScanMode: mode, TLSGroups: []string{"X25519"}, Fastdialer: dialer})
+		if err == nil {
+			t.Errorf("expected tls-groups to be rejected with scan mode %v", mode)
+		}
+	}
+	for _, mode := range []string{"ctls", ""} {
+		if _, err := tlsx.New(&clients.Options{ScanMode: mode, TLSGroups: []string{"X25519"}, Fastdialer: dialer}); err != nil {
+			t.Errorf("expected tls-groups to be accepted with scan mode %q, got %v", mode, err)
+		}
+	}
+}
+
+// TestNewScanMode ensures New accepts only the documented scan modes, so a
+// typo or the wrong case fails instead of silently running ctls.
+func TestNewScanMode(t *testing.T) {
+	t.Parallel()
+
+	dialer, err := fastdialer.NewDialer(fastdialer.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Cleanup, not defer: the parallel subtests run after this function returns.
+	t.Cleanup(dialer.Close)
+
+	// The empty mode keeps its historical ctls default.
+	valid := map[string]string{"": "ctls", "ctls": "ctls", "ztls": "ztls", "openssl": "openssl", "auto": "auto"}
+	for mode, want := range valid {
+		t.Run(strconv.Quote(mode), func(t *testing.T) {
+			t.Parallel()
+
+			opts := &clients.Options{ScanMode: mode, Fastdialer: dialer}
+
+			_, err := tlsx.New(opts)
+			if errors.Is(err, openssl.ErrNotAvailable) {
+				t.Skip("openssl not available")
+			}
+
+			if err != nil {
+				t.Fatalf("New() error = %v, want nil", err)
+			}
+
+			if opts.ScanMode != want {
+				t.Errorf("ScanMode after New() = %q, want %q", opts.ScanMode, want)
+			}
+		})
+	}
+
+	for _, mode := range []string{"ZTLS", "Auto", "typo", " ctls"} {
+		t.Run(strconv.Quote(mode), func(t *testing.T) {
+			t.Parallel()
+
+			opts := &clients.Options{ScanMode: mode, Fastdialer: dialer}
+
+			_, err := tlsx.New(opts)
+			if err == nil {
+				t.Error("New() error = nil, want unsupported scan mode error")
+			}
+
+			if opts.ScanMode != mode {
+				t.Errorf("ScanMode after New() = %q, want it unchanged", opts.ScanMode)
+			}
+		})
+	}
 }
