@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/projectdiscovery/goflags"
@@ -199,6 +200,12 @@ func readFlags(args ...string) error {
 			return errkit.Wrapf(err, "could not read config file")
 		}
 	}
+
+	// Validated after the config file is merged so that -hash values coming
+	// from -config are checked as well.
+	if err := validateHashFlag(options.Hash); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -208,6 +215,25 @@ func init() {
 	if os.Getenv("DEBUG") != "" {
 		errkit.EnableTrace = true
 	}
+}
+
+// supportedHashAlgorithms lists the certificate hashes that -hash can print.
+var supportedHashAlgorithms = []string{"md5", "sha1", "sha256"}
+
+// validateHashFlag rejects -hash values that the text writer cannot resolve.
+// An unknown algorithm used to be skipped while still emitting its brackets, so
+// "-hash foo" printed an empty "[]" next to the host, which reads like a missing
+// fingerprint rather than a typo.
+func validateHashFlag(hashOption string) error {
+	if hashOption == "" {
+		return nil
+	}
+	for _, algorithm := range strings.Split(hashOption, ",") {
+		if !slices.Contains(supportedHashAlgorithms, algorithm) {
+			return errkit.Newf("hash: unsupported algorithm %q (supported: %s)", algorithm, strings.Join(supportedHashAlgorithms, ","))
+		}
+	}
+	return nil
 }
 
 // validateTLSGroupsFlag rejects an explicitly supplied -tls-groups value that
