@@ -35,3 +35,32 @@ func TestValidateTLSGroupsFlag(t *testing.T) {
 		}
 	}
 }
+
+// TestValidateHashFlag ensures an unsupported -hash algorithm is rejected
+// instead of printing an empty "[]" block next to the host.
+func TestValidateHashFlag(t *testing.T) {
+	cases := []struct {
+		hash    string
+		wantErr bool
+	}{
+		{hash: ""},
+		{hash: "md5"},
+		{hash: "sha1"},
+		{hash: "sha256"},
+		{hash: "md5,sha1,sha256"},
+		{hash: "foo", wantErr: true},
+		{hash: "MD5", wantErr: true},
+		{hash: "sha512", wantErr: true},
+		{hash: "md5,foo", wantErr: true},
+		{hash: "md5,,sha1", wantErr: true},
+		{hash: "md5,", wantErr: true},
+	}
+	for _, tc := range cases {
+		err := validateHashFlag(tc.hash)
+		if tc.wantErr {
+			require.Error(t, err, "%q", tc.hash)
+		} else {
+			require.NoError(t, err, "%q", tc.hash)
+		}
+	}
+}
